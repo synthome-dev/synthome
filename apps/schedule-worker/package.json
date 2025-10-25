@@ -1,0 +1,24 @@
+{
+  "name": "schedule-worker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "start": "bun src/index.ts",
+    "railway-start": "sleep 3 && bun run src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@repo/db": "workspace:*",
+    "@repo/jobs": "workspace:*",
+    "@repo/storage": "workspace:*",
+    "dotenv": "^16.4.5",
+    "pg-boss": "^9.0.3"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/node": "^20.11.24",
+    "typescript": "^5.3.3"
+  }
+}

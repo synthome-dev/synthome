@@ -1,0 +1,15 @@
+{
+  "name": "ffmpeg-railway",
+  "module": "index.ts",
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "^1.2.2"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "fluent-ffmpeg": "^2.1.3",
+    "hono": "^4.7.1"
+  }
+}
