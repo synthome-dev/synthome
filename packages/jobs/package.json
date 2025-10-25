@@ -1,0 +1,25 @@
+{
+  "name": "@repo/jobs",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@repo/db": "workspace:*",
+    "@repo/storage": "workspace:*",
+    "@repo/providers": "workspace:*",
+    "@repo/model-schemas": "workspace:*",
+    "nanoid": "^5.0.8",
+    "pg-boss": "^9.0.3",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.24",
+    "@types/pg": "^8.10.9",
+    "typescript": "^5.3.3"
+  }
+}

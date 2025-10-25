@@ -20,5 +20,11 @@
   "workspaces": [
     "apps/*",
     "packages/*"
-  ]
+  ],
+  "resolutions": {
+    "drizzle-orm": "0.38.3"
+  },
+  "overrides": {
+    "drizzle-orm": "0.38.3"
+  }
 }
