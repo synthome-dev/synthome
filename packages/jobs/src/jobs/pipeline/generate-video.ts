@@ -1,15 +1,14 @@
 import type PgBoss from "pg-boss";
 import { BasePipelineJob, type PipelineJobData } from "./base-pipeline-job.js";
-import { getOrchestrator } from "../../orchestrator/execution-orchestrator.js";
 import { VideoProviderFactory } from "@repo/providers";
-import { storage } from "@repo/storage";
-import { getModelInfo } from "@repo/model-schemas";
+import { getModelInfo, getModelCapabilities } from "@repo/model-schemas";
+import { db, executionJobs, eq } from "@repo/db";
 
 export class GenerateVideoJob extends BasePipelineJob {
-  readonly type: string = "pipeline:generate";
+  readonly type: string = "generate";
 
   async work(job: PgBoss.Job<PipelineJobData>): Promise<void> {
-    const { jobRecordId, executionId, jobId, params } = job.data;
+    const { jobRecordId, params } = job.data;
 
     try {
       await this.updateJobProgress(jobRecordId, "starting", 0);
@@ -29,50 +28,74 @@ export class GenerateVideoJob extends BasePipelineJob {
         throw new Error(`Unknown model: ${modelId}`);
       }
 
+      // Get model capabilities to determine waiting strategy
+      const capabilities = getModelCapabilities(modelId);
+      const waitingStrategy = capabilities.defaultStrategy;
+
+      console.log(
+        `[GenerateVideoJob] Using ${waitingStrategy} strategy for model ${modelId}`,
+      );
+
       await this.updateJobProgress(jobRecordId, "calling provider API", 10);
 
       const provider = VideoProviderFactory.getProvider(modelInfo.provider);
-      const generationResult = await provider.generateVideo(
-        modelId,
-        providerParams as Record<string, any>,
+
+      // Build webhook URL if provider supports webhooks
+      const webhookUrl = capabilities.supportsWebhooks
+        ? `${process.env.API_BASE_URL || "http://localhost:3000"}/api/webhooks/job/${jobRecordId}`
+        : undefined;
+
+      console.log(
+        `[GenerateVideoJob] Webhook URL: ${webhookUrl} (API_BASE_URL: ${process.env.API_BASE_URL})`,
       );
+
+      // Start generation (non-blocking)
+      const generationStart = await provider.startGeneration(
+        modelId,
+        providerParams as Record<string, unknown>,
+        webhookUrl,
+      );
+
+      console.log(
+        `[GenerateVideoJob] Started provider job: ${generationStart.providerJobId}`,
+      );
+
+      // Calculate next poll time for polling strategy
+      const nextPollAt =
+        waitingStrategy === "polling"
+          ? new Date(Date.now() + 5000) // Poll after 5 seconds
+          : undefined;
+
+      // Update job record with provider job info
+      await db
+        .update(executionJobs)
+        .set({
+          providerJobId: generationStart.providerJobId,
+          waitingStrategy,
+          nextPollAt,
+          metadata: {
+            ...params,
+            modelId, // Store modelId in metadata for webhook/polling parsing
+            providerJobId: generationStart.providerJobId,
+          },
+        })
+        .where(eq(executionJobs.id, jobRecordId));
 
       await this.updateJobProgress(
         jobRecordId,
-        "downloading video from provider",
-        60,
+        waitingStrategy === "webhook"
+          ? "waiting for webhook"
+          : "waiting for polling",
+        20,
       );
 
-      const videoBuffer = await storage.downloadFromUrl(generationResult.url);
-
-      await this.updateJobProgress(jobRecordId, "uploading to S3", 80);
-
-      const s3Key = `executions/${executionId}/${jobId}/output.mp4`;
-      const uploadResult = await storage.upload(
-        s3Key,
-        Buffer.from(videoBuffer),
-        {
-          contentType: "video/mp4",
-        },
+      console.log(
+        `[GenerateVideoJob] Job ${jobRecordId} now waiting via ${waitingStrategy}. ` +
+          `Provider job ID: ${generationStart.providerJobId}`,
       );
 
-      if ("error" in uploadResult) {
-        throw uploadResult.error;
-      }
-
-      const result = {
-        url: uploadResult.url,
-        providerUrl: generationResult.url,
-        metadata: generationResult.metadata,
-      };
-
-      await this.updateJobProgress(jobRecordId, "completed", 100);
-      await this.completeJob(jobRecordId, result);
-
-      const orchestrator = await getOrchestrator();
-      await orchestrator.checkAndEmitDependentJobs(executionId, jobId);
-
-      console.log(`[GenerateVideoJob] Video generated:`, result);
+      // Job stays in "processing" state
+      // Completion will be handled by webhook or polling worker
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";

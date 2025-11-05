@@ -5,59 +5,74 @@ import { getOrchestrator } from "../../orchestrator/execution-orchestrator.js";
 import { BasePipelineJob, type PipelineJobData } from "./base-pipeline-job.js";
 
 export class MergeVideosJob extends BasePipelineJob {
-  readonly type: string = "pipeline:merge";
+  readonly type: string = "merge";
 
   async work(job: PgBoss.Job<PipelineJobData>): Promise<void> {
-    const { jobRecordId, executionId, jobId, params } = job.data;
+    const { jobRecordId, executionId, jobId, params, dependencies } = job.data;
 
     try {
       await this.updateJobProgress(jobRecordId, "starting", 0);
 
       console.log(`[MergeVideosJob] Merging videos with params:`, params);
+      console.log(`[MergeVideosJob] Dependencies:`, dependencies);
 
-      const { inputs, transition } = params as {
-        inputs: (string | { url: string })[];
-        transition?: { type: "fade"; duration: number };
+      // Extract transition params
+      const { transition, transitionDuration } = params as {
+        transition?: string;
+        transitionDuration?: number;
       };
 
-      if (!inputs || !Array.isArray(inputs) || inputs.length < 2) {
+      // Get video URLs from dependencies
+      const dependencyResults = Object.values(dependencies);
+
+      if (!dependencyResults || dependencyResults.length < 2) {
         throw new Error("At least 2 inputs required for merging");
       }
 
-      await this.updateJobProgress(jobRecordId, "fetching input videos", 10);
+      await this.updateJobProgress(jobRecordId, "extracting video URLs", 10);
 
-      // Fetch the result URLs from the input jobs or use direct URLs
+      // Extract video URLs from dependency results
       const videoUrls: string[] = [];
-      for (const input of inputs) {
-        // Check if input is a direct URL object
-        if (typeof input === "object" && input.url) {
-          videoUrls.push(input.url);
-        } else if (typeof input === "string") {
-          // Input is a job ID - fetch from database
-          const inputJob = await db.query.executionJobs.findFirst({
-            where: eq(executionJobs.jobId, input),
-          });
-
-          if (!inputJob) {
-            throw new Error(`Input job ${input} not found`);
+      for (const depResult of dependencyResults) {
+        // Check if the result has outputs array (from generate job)
+        if (
+          depResult &&
+          typeof depResult === "object" &&
+          "outputs" in depResult
+        ) {
+          const outputs = (depResult as any).outputs;
+          if (Array.isArray(outputs) && outputs.length > 0 && outputs[0].url) {
+            videoUrls.push(outputs[0].url);
+          } else {
+            throw new Error(
+              `Dependency result has invalid outputs: ${JSON.stringify(depResult)}`,
+            );
           }
-
-          if (inputJob.status !== "completed") {
-            throw new Error(`Input job ${input} is not completed`);
-          }
-
-          const result = inputJob.result as { url?: string } | null;
-          if (!result || !result.url) {
-            throw new Error(`Input job ${input} has no video URL in result`);
-          }
-
-          videoUrls.push(result.url);
+        }
+        // Check if it's a direct URL format
+        else if (
+          depResult &&
+          typeof depResult === "object" &&
+          "url" in depResult
+        ) {
+          videoUrls.push((depResult as any).url);
         } else {
-          throw new Error(`Invalid input format: ${JSON.stringify(input)}`);
+          throw new Error(
+            `Invalid dependency result format: ${JSON.stringify(depResult)}`,
+          );
         }
       }
 
-      console.log(`[MergeVideosJob] Merging ${videoUrls.length} videos`);
+      if (videoUrls.length < 2) {
+        throw new Error(
+          `At least 2 video URLs required for merging, got ${videoUrls.length}`,
+        );
+      }
+
+      console.log(
+        `[MergeVideosJob] Merging ${videoUrls.length} videos:`,
+        videoUrls,
+      );
 
       await this.updateJobProgress(jobRecordId, "calling FFmpeg API", 30);
 
@@ -71,7 +86,12 @@ export class MergeVideosJob extends BasePipelineJob {
         },
         body: JSON.stringify({
           videos: videoUrls.map((url) => ({ url })),
-          transition,
+          transition: transition
+            ? {
+                type: transition,
+                duration: transitionDuration || 1,
+              }
+            : undefined,
         }),
       });
 

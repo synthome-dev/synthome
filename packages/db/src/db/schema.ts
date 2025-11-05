@@ -28,6 +28,14 @@ export const executionJobs = pgTable("execution_jobs", {
   metadata: jsonb("metadata").$type<Record<string, any>>(),
   result: jsonb("result"),
   error: text("error"),
+
+  // Async provider job tracking
+  providerJobId: text("provider_job_id"),
+  providerJobStatus: text("provider_job_status"),
+  waitingStrategy: text("waiting_strategy").$type<"webhook" | "polling">(),
+  nextPollAt: timestamp("next_poll_at"),
+  pollAttempts: integer("poll_attempts").default(0),
+
   createdAt: timestamp("created_at").defaultNow().notNull(),
   startedAt: timestamp("started_at"),
   completedAt: timestamp("completed_at"),
