@@ -1,25 +1,25 @@
-import type { VideoModel, ProviderConfig } from "../core/types.js";
 import type {
-  ReplicateModels,
   ReplicateModelId,
+  ReplicateModels,
   Seedance1ProOptions,
 } from "@repo/model-schemas";
+import type { ProviderConfig, VideoModel } from "../core/types.js";
 
-export type { ReplicateModels, ReplicateModelId, Seedance1ProOptions };
+export type { ReplicateModelId, ReplicateModels, Seedance1ProOptions };
 
 export function replicate<T extends ReplicateModelId>(
   modelId: T,
-  options?: ReplicateModels[T],
+  options?: ReplicateModels[T]
 ): VideoModel<ReplicateModels[T]>;
 
 export function replicate<TOptions extends ProviderConfig = ProviderConfig>(
   modelId: string,
-  options?: TOptions,
+  options?: TOptions
 ): VideoModel<TOptions>;
 
 export function replicate(
   modelId: string,
-  options: ProviderConfig = {},
+  options: ProviderConfig = {}
 ): VideoModel {
   return {
     provider: "replicate",
