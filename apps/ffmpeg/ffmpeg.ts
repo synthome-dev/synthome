@@ -1,4 +1,4 @@
-import { randomUUID } from "crypto";
+import { nanoid } from "nanoid";
 import ffmpeg from "fluent-ffmpeg";
 import { tmpdir } from "os";
 import { join } from "path";
@@ -24,13 +24,19 @@ export interface FFmpegOptions {
 
 export async function processMedia(
   inputBuffer: Buffer,
-  options: FFmpegOptions
+  options: FFmpegOptions,
 ): Promise<Buffer> {
+  // Security: Validate outputFormat to prevent path traversal
+  const safeOutputFormat = options.outputFormat.replace(/[^a-zA-Z0-9]/g, "");
+  if (!safeOutputFormat) {
+    throw new Error("Invalid output format");
+  }
+
   const inputPath = join(
     tmpdir(),
-    `${randomUUID()}.${options.inputFormat || "mp4"}`
+    `${nanoid()}.${options.inputFormat || "mp4"}`,
   );
-  const outputPath = join(tmpdir(), `${randomUUID()}.${options.outputFormat}`);
+  const outputPath = join(tmpdir(), `${nanoid()}.${safeOutputFormat}`);
 
   try {
     await Bun.write(inputPath, inputBuffer);
@@ -47,7 +53,7 @@ export async function processMedia(
       if (options.fps) command = command.fps(options.fps);
       if (options.width || options.height) {
         command = command.size(
-          `${options.width || "?"}x${options.height || "?"}`
+          `${options.width || "?"}x${options.height || "?"}`,
         );
       }
       if (options.aspectRatio) command = command.aspect(options.aspectRatio);
@@ -67,10 +73,10 @@ export async function processMedia(
 
       command
         .on("start", (commandLine: string) =>
-          console.log("Started FFmpeg with command:", commandLine)
+          console.log("Started FFmpeg with command:", commandLine),
         )
         .on("progress", (progress: { percent: number }) =>
-          console.log("Processing:", progress.percent, "% done")
+          console.log("Processing:", progress.percent, "% done"),
         )
         .on("end", resolve)
         .on("error", reject)
@@ -93,30 +99,114 @@ export async function processMedia(
 
 // Common preset functions
 export const presets = {
-  compressVideo: (quality: 'low' | 'medium' | 'high' = 'medium'): FFmpegOptions => ({
-    outputFormat: 'mp4',
-    videoCodec: 'libx264',
-    audioCodec: 'aac',
-    videoBitrate: quality === 'low' ? '500k' : quality === 'medium' ? '1000k' : '2000k',
-    audioBitrate: quality === 'low' ? '64k' : quality === 'medium' ? '128k' : '192k',
+  compressVideo: (
+    quality: "low" | "medium" | "high" = "medium",
+  ): FFmpegOptions => ({
+    outputFormat: "mp4",
+    videoCodec: "libx264",
+    audioCodec: "aac",
+    videoBitrate:
+      quality === "low" ? "500k" : quality === "medium" ? "1000k" : "2000k",
+    audioBitrate:
+      quality === "low" ? "64k" : quality === "medium" ? "128k" : "192k",
   }),
-  
+
   createGif: (fps: number = 10): FFmpegOptions => ({
-    outputFormat: 'gif',
+    outputFormat: "gif",
     fps,
-    filters: ['split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse']
+    filters: ["split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse"],
   }),
-  
-  extractAudio: (format: 'mp3' | 'aac' | 'wav' = 'mp3'): FFmpegOptions => ({
+
+  extractAudio: (format: "mp3" | "aac" | "wav" = "mp3"): FFmpegOptions => ({
     outputFormat: format,
-    audioCodec: format === 'mp3' ? 'libmp3lame' : format === 'aac' ? 'aac' : 'pcm_s16le',
-    audioBitrate: '192k'
+    audioCodec:
+      format === "mp3" ? "libmp3lame" : format === "aac" ? "aac" : "pcm_s16le",
+    audioBitrate: "192k",
   }),
-  
-  thumbnail: (time: string = '00:00:01', size: { width?: number; height?: number } = {}): FFmpegOptions => ({
-    outputFormat: 'jpg',
+
+  thumbnail: (
+    time: string = "00:00:01",
+    size: { width?: number; height?: number } = {},
+  ): FFmpegOptions => ({
+    outputFormat: "jpg",
     seek: time,
-    duration: '1',
-    ...size
-  })
+    duration: "1",
+    ...size,
+  }),
 };
+
+export interface MergeVideosOptions {
+  videos: { url: string }[];
+  transition?: {
+    type: "fade";
+    duration: number;
+  };
+}
+
+export async function mergeVideos(
+  options: MergeVideosOptions,
+): Promise<Buffer> {
+  const tempFiles: string[] = [];
+  // Security: Always use temp directory with random filename, never accept custom output paths
+  const outputPath = join(tmpdir(), `${nanoid()}.mp4`);
+
+  try {
+    // Download all videos to temp files
+    console.log(`Downloading ${options.videos.length} videos...`);
+    for (const video of options.videos) {
+      const response = await fetch(video.url);
+      if (!response.ok) {
+        throw new Error(
+          `Failed to download video from ${video.url}: ${response.statusText}`,
+        );
+      }
+      const buffer = Buffer.from(await response.arrayBuffer());
+      const tempPath = join(tmpdir(), `${nanoid()}.mp4`);
+      await Bun.write(tempPath, buffer);
+      tempFiles.push(tempPath);
+    }
+
+    // Merge videos using FFmpeg concat filter
+    await new Promise<void>((resolve, reject) => {
+      let command = ffmpeg();
+
+      // Add all input files
+      tempFiles.forEach((file) => {
+        command = command.input(file);
+      });
+
+      // Build concat filter
+      const filterComplex =
+        tempFiles.map((_, i) => `[${i}:v][${i}:a]`).join("") +
+        `concat=n=${tempFiles.length}:v=1:a=1[outv][outa]`;
+
+      command
+        .complexFilter(filterComplex)
+        .outputOptions(["-map", "[outv]", "-map", "[outa]"])
+        .videoCodec("libx264")
+        .audioCodec("aac")
+        .outputFormat("mp4")
+        .on("start", (commandLine: string) =>
+          console.log("Started FFmpeg merge with command:", commandLine),
+        )
+        .on("progress", (progress: { percent: number }) =>
+          console.log("Merging:", progress.percent, "% done"),
+        )
+        .on("end", resolve)
+        .on("error", reject)
+        .save(outputPath);
+    });
+
+    return Buffer.from(await Bun.file(outputPath).arrayBuffer());
+  } finally {
+    // Cleanup all temp files
+    try {
+      await Promise.all([
+        ...tempFiles.map((file) => Bun.file(file).delete()),
+        Bun.file(outputPath).delete(),
+      ]);
+    } catch (e) {
+      console.error("Cleanup error:", e);
+    }
+  }
+}

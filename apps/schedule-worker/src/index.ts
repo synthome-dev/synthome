@@ -1,8 +1,9 @@
-import { GenerateVideoJob, JobManager } from "@repo/jobs";
+import { GenerateVideoJob, MergeVideosJob, JobManager } from "@repo/jobs";
 import "dotenv/config";
 
 const jobManager = new JobManager();
 jobManager.register(GenerateVideoJob);
+jobManager.register(MergeVideosJob);
 
 async function start() {
   try {
