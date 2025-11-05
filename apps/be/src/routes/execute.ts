@@ -5,22 +5,33 @@ import { db, executions, executionJobs, eq } from "@repo/db";
 const executeRouter = new Hono();
 
 executeRouter.post("/", async (c) => {
-  const { executionPlan, options } = await c.req.json();
+  try {
+    const { executionPlan, options } = await c.req.json();
 
-  const orchestrator = await getOrchestrator();
-  const executionId = await orchestrator.createExecution(
-    executionPlan,
-    options || {},
-  );
+    const orchestrator = await getOrchestrator();
+    const executionId = await orchestrator.createExecution(
+      executionPlan,
+      options || {},
+    );
 
-  return c.json(
-    {
-      id: executionId,
-      status: "pending",
-      createdAt: new Date().toISOString(),
-    },
-    202,
-  );
+    return c.json(
+      {
+        id: executionId,
+        status: "pending",
+        createdAt: new Date().toISOString(),
+      },
+      202,
+    );
+  } catch (error) {
+    console.error("[ExecuteRouter] Error creating execution:", error);
+    return c.json(
+      {
+        error: error instanceof Error ? error.message : "Unknown error",
+        details: error instanceof Error ? error.stack : undefined,
+      },
+      500,
+    );
+  }
 });
 
 executeRouter.get("/:id/status", async (c) => {

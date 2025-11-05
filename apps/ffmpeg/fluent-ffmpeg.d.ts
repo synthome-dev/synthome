@@ -1,4 +1,4 @@
-declare module 'fluent-ffmpeg' {
+declare module "fluent-ffmpeg" {
   interface FFmpegCommand {
     toFormat(format: string): this;
     videoCodec(codec: string): this;
@@ -14,13 +14,19 @@ declare module 'fluent-ffmpeg' {
     setDuration(duration: string): this;
     seek(time: string): this;
     complexFilter(filter: string): this;
-    on(event: 'start', callback: (commandLine: string) => void): this;
-    on(event: 'progress', callback: (progress: { percent: number }) => void): this;
-    on(event: 'end', callback: () => void): this;
-    on(event: 'error', callback: (err: Error) => void): this;
+    input(input: string): this;
+    outputOptions(options: string[]): this;
+    outputFormat(format: string): this;
+    on(event: "start", callback: (commandLine: string) => void): this;
+    on(
+      event: "progress",
+      callback: (progress: { percent: number }) => void,
+    ): this;
+    on(event: "end", callback: () => void): this;
+    on(event: "error", callback: (err: Error) => void): this;
     save(outputPath: string): this;
   }
 
-  function ffmpeg(input: string): FFmpegCommand;
+  function ffmpeg(input?: string): FFmpegCommand;
   export = ffmpeg;
-} 
+}

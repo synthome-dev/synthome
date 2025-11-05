@@ -16,7 +16,10 @@ export class GenerateVideoJob extends BasePipelineJob {
 
       console.log(`[GenerateVideoJob] Generating video with params:`, params);
 
-      const { modelId, ...providerParams } = params;
+      const { modelId, ...providerParams } = params as {
+        modelId?: string;
+        [key: string]: any;
+      };
       if (!modelId) {
         throw new Error("modelId is required in params");
       }
@@ -31,7 +34,7 @@ export class GenerateVideoJob extends BasePipelineJob {
       const provider = VideoProviderFactory.getProvider(modelInfo.provider);
       const generationResult = await provider.generateVideo(
         modelId,
-        providerParams,
+        providerParams as Record<string, any>,
       );
 
       await this.updateJobProgress(

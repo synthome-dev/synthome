@@ -1,5 +1,11 @@
 import { Hono } from "hono";
-import { FFmpegOptions, presets, processMedia } from "./ffmpeg";
+import {
+  FFmpegOptions,
+  presets,
+  processMedia,
+  mergeVideos,
+  MergeVideosOptions,
+} from "./ffmpeg";
 
 const app = new Hono();
 
@@ -31,13 +37,13 @@ app.post("/convert", async (c) => {
 
     c.header(
       "Content-Type",
-      `${file.type.split("/")[0]}/${options.outputFormat}`
+      `${file.type.split("/")[0]}/${options.outputFormat}`,
     );
     c.header(
       "Content-Disposition",
-      `attachment; filename="converted-${Date.now()}.${options.outputFormat}"`
+      `attachment; filename="converted-${Date.now()}.${options.outputFormat}"`,
     );
-    return c.body(outputBuffer);
+    return c.body(new Uint8Array(outputBuffer));
   } catch (error) {
     console.error("Error:", error);
     return c.json({ error: "Failed to process media" }, 500);
@@ -58,15 +64,15 @@ app.post("/extract-audio", async (c) => {
     const buffer = Buffer.from(await file.arrayBuffer());
     const outputBuffer = await processMedia(
       buffer,
-      presets.extractAudio(format)
+      presets.extractAudio(format),
     );
 
     c.header("Content-Type", `audio/${format}`);
     c.header(
       "Content-Disposition",
-      `attachment; filename="audio-${Date.now()}.${format}"`
+      `attachment; filename="audio-${Date.now()}.${format}"`,
     );
-    return c.body(outputBuffer);
+    return c.body(new Uint8Array(outputBuffer));
   } catch (error) {
     console.error("Error:", error);
     return c.json({ error: "Failed to extract audio" }, 500);
@@ -87,15 +93,15 @@ app.post("/compress-video", async (c) => {
     const buffer = Buffer.from(await file.arrayBuffer());
     const outputBuffer = await processMedia(
       buffer,
-      presets.compressVideo(quality)
+      presets.compressVideo(quality),
     );
 
     c.header("Content-Type", "video/mp4");
     c.header(
       "Content-Disposition",
-      `attachment; filename="compressed-${Date.now()}.mp4"`
+      `attachment; filename="compressed-${Date.now()}.mp4"`,
     );
-    return c.body(outputBuffer);
+    return c.body(new Uint8Array(outputBuffer));
   } catch (error) {
     console.error("Error:", error);
     return c.json({ error: "Failed to compress video" }, 500);
@@ -118,9 +124,9 @@ app.post("/create-gif", async (c) => {
     c.header("Content-Type", "image/gif");
     c.header(
       "Content-Disposition",
-      `attachment; filename="animation-${Date.now()}.gif"`
+      `attachment; filename="animation-${Date.now()}.gif"`,
     );
-    return c.body(outputBuffer);
+    return c.body(new Uint8Array(outputBuffer));
   } catch (error) {
     console.error("Error:", error);
     return c.json({ error: "Failed to create GIF" }, 500);
@@ -142,18 +148,40 @@ app.post("/thumbnail", async (c) => {
     const buffer = Buffer.from(await file.arrayBuffer());
     const outputBuffer = await processMedia(
       buffer,
-      presets.thumbnail(time, { width, height })
+      presets.thumbnail(time, { width, height }),
     );
 
     c.header("Content-Type", "image/jpeg");
     c.header(
       "Content-Disposition",
-      `attachment; filename="thumbnail-${Date.now()}.jpg"`
+      `attachment; filename="thumbnail-${Date.now()}.jpg"`,
     );
-    return c.body(outputBuffer);
+    return c.body(new Uint8Array(outputBuffer));
   } catch (error) {
     console.error("Error:", error);
     return c.json({ error: "Failed to create thumbnail" }, 500);
+  }
+});
+
+app.post("/merge", async (c) => {
+  try {
+    const body = await c.req.json<MergeVideosOptions>();
+
+    if (!body.videos || body.videos.length < 2) {
+      return c.json({ error: "At least 2 videos required for merging" }, 400);
+    }
+
+    const outputBuffer = await mergeVideos(body);
+
+    c.header("Content-Type", "video/mp4");
+    c.header(
+      "Content-Disposition",
+      `attachment; filename="merged-${Date.now()}.mp4"`,
+    );
+    return c.body(new Uint8Array(outputBuffer));
+  } catch (error) {
+    console.error("Error:", error);
+    return c.json({ error: "Failed to merge videos" }, 500);
   }
 });
 
@@ -166,12 +194,13 @@ app.get("/", (c) =>
       "/compress-video": "Compress video with quality presets",
       "/create-gif": "Convert video to GIF",
       "/thumbnail": "Generate video thumbnail",
+      "/merge": "Merge multiple videos into one",
     },
-  })
+  }),
 );
 
 const server = {
-  port: process.env.PORT ? parseInt(process.env.PORT) : 3000,
+  port: Bun.env.PORT ? parseInt(Bun.env.PORT) : 3001,
   fetch: app.fetch,
 };
 

@@ -9,10 +9,12 @@ interface ExecutionPlan {
 
 interface JobNode {
   id: string;
-  type: string;
+  type?: string; // For backward compatibility
+  operation?: string; // New field
   params: Record<string, unknown>;
-  dependsOn?: string[];
-  output: string;
+  dependsOn?: string[]; // For backward compatibility
+  dependencies?: string[]; // New field
+  output?: string; // Make optional
 }
 
 interface CreateExecutionOptions {
@@ -57,8 +59,8 @@ export class ExecutionOrchestrator {
       jobId: job.id,
       pgBossJobId: null,
       status: "pending",
-      operation: job.type,
-      dependencies: job.dependsOn || [],
+      operation: job.operation || job.type || "",
+      dependencies: job.dependencies || job.dependsOn || [],
       metadata: {
         params: job.params,
         output: job.output,
@@ -173,10 +175,7 @@ export class ExecutionOrchestrator {
       dependencies: dependencyResults,
     };
 
-    const pgBossJobId = await this.jobClient.emit(
-      `pipeline:${job.operation}`,
-      jobData,
-    );
+    const pgBossJobId = await this.jobClient.emit(job.operation, jobData);
 
     await db
       .update(executionJobs)
