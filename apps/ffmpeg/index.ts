@@ -200,7 +200,7 @@ app.get("/", (c) =>
 );
 
 const server = {
-  port: Bun.env.PORT ? parseInt(Bun.env.PORT) : 3001,
+  port: Bun.env.PORT ? parseInt(Bun.env.PORT) : 3200,
   fetch: app.fetch,
 };
 

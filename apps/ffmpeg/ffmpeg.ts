@@ -167,6 +167,7 @@ export async function mergeVideos(
     }
 
     // Merge videos using FFmpeg concat filter
+    // Handle videos with or without audio
     await new Promise<void>((resolve, reject) => {
       let command = ffmpeg();
 
@@ -175,17 +176,16 @@ export async function mergeVideos(
         command = command.input(file);
       });
 
-      // Build concat filter
-      const filterComplex =
-        tempFiles.map((_, i) => `[${i}:v][${i}:a]`).join("") +
-        `concat=n=${tempFiles.length}:v=1:a=1[outv][outa]`;
+      // Build concat filter for video only (most AI-generated videos don't have audio)
+      // Format: [0:v][1:v]concat=n=2:v=1:a=0[outv]
+      const inputs = tempFiles.map((_, i) => `[${i}:v]`).join("");
+      const filterComplex = `${inputs}concat=n=${tempFiles.length}:v=1:a=0[outv]`;
 
       command
         .complexFilter(filterComplex)
-        .outputOptions(["-map", "[outv]", "-map", "[outa]"])
+        .outputOptions(["-map", "[outv]"])
         .videoCodec("libx264")
-        .audioCodec("aac")
-        .outputFormat("mp4")
+        .toFormat("mp4")
         .on("start", (commandLine: string) =>
           console.log("Started FFmpeg merge with command:", commandLine),
         )

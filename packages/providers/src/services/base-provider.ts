@@ -1,11 +1,59 @@
+import type {
+  ProviderCapabilities,
+  WaitingStrategy,
+} from "@repo/model-schemas";
+
 export interface VideoGenerationResult {
   url: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Result of starting an async video generation
+ */
+export interface AsyncGenerationStart {
+  providerJobId: string;
+  waitingStrategy: WaitingStrategy;
+  estimatedCompletionTime?: number; // seconds
+}
+
+/**
+ * Status of an async job
+ */
+export interface AsyncJobStatus {
+  status: "processing" | "completed" | "failed";
+  result?: VideoGenerationResult;
+  error?: string;
+  progress?: number; // 0-100
 }
 
 export interface VideoProviderService {
+  /**
+   * Legacy synchronous method - waits for video to complete
+   * @deprecated Use startGeneration for better async handling
+   */
   generateVideo(
     modelId: string,
-    params: Record<string, any>,
+    params: Record<string, unknown>
   ): Promise<VideoGenerationResult>;
+
+  /**
+   * Start video generation without waiting for completion
+   * Returns a job ID that can be used to check status or receive webhooks
+   */
+  startGeneration(
+    modelId: string,
+    params: Record<string, unknown>,
+    webhookUrl?: string
+  ): Promise<AsyncGenerationStart>;
+
+  /**
+   * Get the status of an async job (for polling)
+   */
+  getJobStatus(providerJobId: string): Promise<AsyncJobStatus>;
+
+  /**
+   * Get provider capabilities (webhook/polling support)
+   */
+  getCapabilities(): ProviderCapabilities;
 }
