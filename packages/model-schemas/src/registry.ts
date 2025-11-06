@@ -2,6 +2,7 @@ import { z } from "zod";
 import { type FalModelId } from "./fal.js";
 import { type GoogleCloudModelId } from "./google-cloud.js";
 import {
+  parseReplicateAudio,
   parseReplicateImage,
   parseReplicatePolling,
   parseReplicateWebhook,
@@ -10,6 +11,7 @@ import {
   type ReplicateModelId,
 } from "./replicate.js";
 import type {
+  MediaType,
   PollingParser,
   ProviderCapabilities,
   WebhookParser,
@@ -19,6 +21,7 @@ export type VideoProvider = "replicate" | "fal" | "google-cloud";
 
 export interface ModelRegistryEntry {
   provider: VideoProvider;
+  mediaType: MediaType;
   schema: z.ZodType;
   webhookParser: WebhookParser;
   pollingParser: PollingParser;
@@ -30,6 +33,7 @@ type AllModelIds = ReplicateModelId | FalModelId | GoogleCloudModelId;
 export const modelRegistry: Record<AllModelIds, ModelRegistryEntry> = {
   "bytedance/seedance-1-pro": {
     provider: "replicate",
+    mediaType: "video",
     schema: replicateSchemas["bytedance/seedance-1-pro"],
     webhookParser: parseReplicateWebhook,
     pollingParser: parseReplicatePolling,
@@ -37,6 +41,7 @@ export const modelRegistry: Record<AllModelIds, ModelRegistryEntry> = {
   },
   "minimax/video-01": {
     provider: "replicate",
+    mediaType: "video",
     schema: replicateSchemas["minimax/video-01"],
     webhookParser: parseReplicateWebhook,
     pollingParser: parseReplicatePolling,
@@ -44,10 +49,19 @@ export const modelRegistry: Record<AllModelIds, ModelRegistryEntry> = {
   },
   "bytedance/seedream-4": {
     provider: "replicate",
+    mediaType: "image",
     schema: replicateSchemas["bytedance/seedream-4"],
     webhookParser: parseReplicateImage,
     pollingParser: parseReplicateImage,
     capabilities: replicateModelCapabilities["bytedance/seedream-4"],
+  },
+  "elevenlabs/turbo-v2.5": {
+    provider: "replicate",
+    mediaType: "audio",
+    schema: replicateSchemas["elevenlabs/turbo-v2.5"],
+    webhookParser: parseReplicateAudio,
+    pollingParser: parseReplicateAudio,
+    capabilities: replicateModelCapabilities["elevenlabs/turbo-v2.5"],
   },
 };
 
@@ -111,4 +125,12 @@ export function getModelCapabilities(modelId: string): ProviderCapabilities {
   }
 
   return modelInfo.capabilities;
+}
+
+/**
+ * Get the media type (video/audio/image) for a model
+ */
+export function getModelMediaType(modelId: string): MediaType | undefined {
+  const modelInfo = getModelInfo(modelId);
+  return modelInfo?.mediaType;
 }

@@ -42,9 +42,12 @@ export class ReplicateService implements VideoProviderService {
     params: Record<string, unknown>,
     webhookUrl?: string,
   ): Promise<AsyncGenerationStart> {
+    // Transform parameters for specific models
+    const transformedParams = this.transformParams(modelId, params);
+
     const createOptions: any = {
       version: modelId,
-      input: params,
+      input: transformedParams,
     };
 
     // Only include webhook options if webhook URL is provided
@@ -59,6 +62,24 @@ export class ReplicateService implements VideoProviderService {
       providerJobId: prediction.id,
       waitingStrategy: webhookUrl ? "webhook" : "polling",
     };
+  }
+
+  /**
+   * Transform parameters for specific model requirements
+   */
+  private transformParams(
+    modelId: string,
+    params: Record<string, unknown>,
+  ): Record<string, unknown> {
+    // ElevenLabs models expect 'prompt' instead of 'text'
+    if (modelId.includes("elevenlabs")) {
+      const { text, ...rest } = params;
+      if (text !== undefined) {
+        return { prompt: text, ...rest };
+      }
+    }
+
+    return params;
   }
 
   async getJobStatus(providerJobId: string): Promise<AsyncJobStatus> {

@@ -12,11 +12,19 @@ export interface Image {
   height?: number;
 }
 
+export interface Audio {
+  url: string;
+  status: "pending" | "processing" | "completed" | "failed";
+  duration?: number;
+  mimeType?: string;
+}
+
 export type VideoNode = Video | VideoOperation | Pipeline;
 
 export type OperationType =
   | "generate"
   | "generateImage"
+  | "generateAudio"
   | "merge"
   | "reframe"
   | "lipSync"
@@ -30,6 +38,11 @@ export interface VideoOperation {
 
 export interface ImageOperation {
   type: "generateImage";
+  params: Record<string, unknown>;
+}
+
+export interface AudioOperation {
+  type: "generateAudio";
   params: Record<string, unknown>;
 }
 
