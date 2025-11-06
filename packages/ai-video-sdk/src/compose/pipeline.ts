@@ -8,6 +8,7 @@ import type {
   Video,
   VideoNode,
   VideoOperation,
+  ImageOperation,
 } from "../core/video.js";
 
 export type { Pipeline, PipelineProgress, PipelineExecution, ExecuteOptions };
@@ -133,6 +134,23 @@ class VideoPipeline implements Pipeline {
 
       const id = `job${counter++}`;
 
+      // Check if this operation has a nested ImageOperation in params.image
+      let imageJobId: string | undefined;
+      if (op.params.image && typeof op.params.image === "object") {
+        const imageOp = op.params.image as ImageOperation;
+        if (imageOp.type === "generateImage") {
+          // Create an image generation job
+          const imageId = `job${counter++}`;
+          jobs.push({
+            id: imageId,
+            type: "generateImage",
+            params: imageOp.params,
+            output: `$${imageId}`,
+          });
+          imageJobId = imageId;
+        }
+      }
+
       if (op.type === "merge") {
         jobs.push({
           id,
@@ -152,27 +170,54 @@ class VideoPipeline implements Pipeline {
         op.type === "generate" &&
         this.operations[i + 1]?.type === "generate"
       ) {
+        // Multi-scene generation - create job with image dependency if exists
+        const jobParams = { ...op.params };
+        if (imageJobId) {
+          jobParams.image = `_imageJobDependency:${imageJobId}`;
+        }
+
         jobs.push({
           id,
           type: op.type,
-          params: op.params,
+          params: jobParams,
+          dependsOn: imageJobId ? [imageJobId] : undefined,
           output: `$${id}`,
         });
         mergeInputs.push(id);
       } else if (op.type === "generate" && mergeInputs.length > 0) {
+        // Part of multi-scene - create job with image dependency if exists
+        const jobParams = { ...op.params };
+        if (imageJobId) {
+          jobParams.image = `_imageJobDependency:${imageJobId}`;
+        }
+
         jobs.push({
           id,
           type: op.type,
-          params: op.params,
+          params: jobParams,
+          dependsOn: imageJobId ? [imageJobId] : undefined,
           output: `$${id}`,
         });
         mergeInputs.push(id);
       } else {
-        const dependsOn = lastJobId ? [lastJobId] : undefined;
+        // Single operation or non-generate - create job with dependencies
+        const jobParams = { ...op.params };
+        if (imageJobId) {
+          jobParams.image = `_imageJobDependency:${imageJobId}`;
+        }
+
+        const dependsOn = imageJobId
+          ? lastJobId
+            ? [lastJobId, imageJobId]
+            : [imageJobId]
+          : lastJobId
+            ? [lastJobId]
+            : undefined;
+
         jobs.push({
           id,
           type: op.type,
-          params: op.params,
+          params: jobParams,
           dependsOn,
           output: `$${id}`,
         });

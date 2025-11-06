@@ -5,10 +5,18 @@ export interface Video {
   duration: number;
 }
 
+export interface Image {
+  url: string;
+  status: "pending" | "processing" | "completed" | "failed";
+  width?: number;
+  height?: number;
+}
+
 export type VideoNode = Video | VideoOperation | Pipeline;
 
 export type OperationType =
   | "generate"
+  | "generateImage"
   | "merge"
   | "reframe"
   | "lipSync"
@@ -18,6 +26,11 @@ export interface VideoOperation {
   type: OperationType;
   params: Record<string, unknown>;
   inputs?: VideoNode[];
+}
+
+export interface ImageOperation {
+  type: "generateImage";
+  params: Record<string, unknown>;
 }
 
 export interface ExecutionPlan {

@@ -34,7 +34,7 @@ export interface VideoProviderService {
    */
   generateVideo(
     modelId: string,
-    params: Record<string, unknown>
+    params: Record<string, unknown>,
   ): Promise<VideoGenerationResult>;
 
   /**
@@ -44,13 +44,19 @@ export interface VideoProviderService {
   startGeneration(
     modelId: string,
     params: Record<string, unknown>,
-    webhookUrl?: string
+    webhookUrl?: string,
   ): Promise<AsyncGenerationStart>;
 
   /**
    * Get the status of an async job (for polling)
    */
   getJobStatus(providerJobId: string): Promise<AsyncJobStatus>;
+
+  /**
+   * Get the raw provider response (for custom parsing)
+   * Optional - providers can implement this for models that need custom parsing
+   */
+  getRawJobResponse?(providerJobId: string): Promise<unknown>;
 
   /**
    * Get provider capabilities (webhook/polling support)

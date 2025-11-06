@@ -99,4 +99,57 @@ export const parseReplicateWebhook: WebhookParser = (payload: unknown) => {
  */
 export const parseReplicatePolling: PollingParser = parseReplicateWebhook;
 
+/**
+ * Replicate image polling/webhook parser
+ * Handles array of image URLs as output
+ */
+export const parseReplicateImage: PollingParser = (response: unknown) => {
+  const data = response as any;
+
+  if (data.status === "failed" || data.status === "canceled") {
+    return {
+      status: "failed",
+      error: data.error || "Image generation failed",
+    };
+  }
+
+  if (
+    data.status === "starting" ||
+    data.status === "processing" ||
+    data.status === "queued"
+  ) {
+    return {
+      status: "processing",
+    };
+  }
+
+  if (data.status === "succeeded") {
+    // Seedream-4 returns array of image URLs
+    if (Array.isArray(data.output) && data.output.length > 0) {
+      return {
+        status: "completed",
+        outputs: data.output.map((url: string) => ({
+          type: "image",
+          url,
+          mimeType: "image/jpeg",
+        })),
+        metadata: {
+          predictionId: data.id,
+        },
+      };
+    }
+
+    return {
+      status: "failed",
+      error: "No image output in completed response",
+    };
+  }
+
+  return {
+    status: "processing",
+  };
+};
+
+export * from "./minimax/index.js";
 export * from "./seedance/index.js";
+export * from "./seedream/index.js";

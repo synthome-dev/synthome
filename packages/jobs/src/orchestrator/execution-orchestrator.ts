@@ -40,7 +40,7 @@ export class ExecutionOrchestrator {
 
   async createExecution(
     executionPlan: ExecutionPlan,
-    options: CreateExecutionOptions = {}
+    options: CreateExecutionOptions = {},
   ): Promise<string> {
     const executionId = nanoid();
 
@@ -80,7 +80,7 @@ export class ExecutionOrchestrator {
 
   async emitReadyJobs(
     executionId: string,
-    baseExecutionId?: string
+    baseExecutionId?: string,
   ): Promise<void> {
     // Fetch jobs in parallel
     const [allJobs, baseExecutionJobs] = await Promise.all([
@@ -126,14 +126,14 @@ export class ExecutionOrchestrator {
     // Emit all ready jobs in parallel
     await Promise.all(
       jobsToEmit.map(({ job, allJobs, baseJobs }) =>
-        this.emitJobWithData(executionId, job, allJobs, baseJobs)
-      )
+        this.emitJobWithData(executionId, job, allJobs, baseJobs),
+      ),
     );
   }
 
   private async emitJob(
     executionId: string,
-    jobRecordId: string
+    jobRecordId: string,
   ): Promise<void> {
     // Fetch job and execution data in parallel
     const [job, execution] = await Promise.all([
@@ -172,7 +172,7 @@ export class ExecutionOrchestrator {
     executionId: string,
     job: any,
     allJobs: any[],
-    baseExecutionJobs: any[]
+    baseExecutionJobs: any[],
   ): Promise<void> {
     const dependencies = (job.dependencies || []) as string[];
     const dependencyResults: Record<string, any> = {};
@@ -189,12 +189,57 @@ export class ExecutionOrchestrator {
       }
     }
 
+    // Resolve image job dependencies in params
+    let params = (job.metadata as any)?.params || {};
+    if (params.image && typeof params.image === "string") {
+      const imageDepMarker = params.image as string;
+      if (imageDepMarker.startsWith("_imageJobDependency:")) {
+        const imageJobId = imageDepMarker.replace("_imageJobDependency:", "");
+        const imageJob = allJobs.find((j) => j.jobId === imageJobId);
+
+        if (imageJob?.result) {
+          // Extract image URL from the result
+          // The result format from parseReplicateImage:
+          // { status: "completed", outputs: [{ type: "image", url: "...", mimeType: "..." }], metadata: {...} }
+          const result = imageJob.result;
+          if (
+            result.outputs &&
+            Array.isArray(result.outputs) &&
+            result.outputs.length > 0
+          ) {
+            const imageUrl = result.outputs[0].url;
+            if (imageUrl) {
+              params = { ...params, image: imageUrl };
+              console.log(
+                `[Orchestrator] Resolved image dependency ${imageJobId} to URL: ${imageUrl}`,
+              );
+            } else {
+              throw new Error(`Image job ${imageJobId} output has no URL`);
+            }
+          } else {
+            console.error(
+              `[Orchestrator] Image job ${imageJobId} has invalid result format:`,
+              imageJob.result,
+            );
+            throw new Error(
+              `Image job ${imageJobId} did not produce a valid image URL`,
+            );
+          }
+        } else {
+          console.error(
+            `[Orchestrator] Image job ${imageJobId} not found or has no result`,
+          );
+          throw new Error(`Image job dependency ${imageJobId} not found`);
+        }
+      }
+    }
+
     const jobData = {
       executionId,
       jobRecordId: job.id,
       jobId: job.jobId,
       operation: job.operation,
-      params: (job.metadata as any)?.params || {},
+      params,
       dependencies: dependencyResults,
     };
 
@@ -212,7 +257,7 @@ export class ExecutionOrchestrator {
 
   async checkAndEmitDependentJobs(
     executionId: string,
-    completedJobId: string
+    completedJobId: string,
   ): Promise<void> {
     // Fetch execution and jobs in parallel
     const [execution, allJobs] = await Promise.all([
@@ -231,7 +276,7 @@ export class ExecutionOrchestrator {
     const completedJob = allJobs.find((j) => j.jobId === completedJobId);
     if (!completedJob) {
       throw new Error(
-        `Job ${completedJobId} not found in execution ${executionId}`
+        `Job ${completedJobId} not found in execution ${executionId}`,
       );
     }
 
@@ -279,8 +324,8 @@ export class ExecutionOrchestrator {
     if (jobsToEmit.length > 0) {
       await Promise.all(
         jobsToEmit.map((job) =>
-          this.emitJobWithData(executionId, job, allJobs, baseExecutionJobs)
-        )
+          this.emitJobWithData(executionId, job, allJobs, baseExecutionJobs),
+        ),
       );
     }
 
@@ -295,8 +340,8 @@ export class ExecutionOrchestrator {
               error: "Dependency job failed",
               completedAt: new Date(),
             })
-            .where(eq(executionJobs.id, job.id))
-        )
+            .where(eq(executionJobs.id, job.id)),
+        ),
       );
 
       // Update the allJobs array to reflect the failed jobs
@@ -312,7 +357,7 @@ export class ExecutionOrchestrator {
 
     // Check if execution is complete (using updated allJobs)
     const allJobsCompleted = allJobs.every(
-      (j) => j.status === "completed" || j.status === "failed"
+      (j) => j.status === "completed" || j.status === "failed",
     );
 
     if (allJobsCompleted) {

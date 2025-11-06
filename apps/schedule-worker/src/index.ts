@@ -1,9 +1,15 @@
-import { GenerateVideoJob, JobManager, MergeVideosJob } from "@repo/jobs";
+import {
+  GenerateVideoJob,
+  GenerateImageJob,
+  JobManager,
+  MergeVideosJob,
+} from "@repo/jobs";
 import "dotenv/config";
 import { PollingWorker } from "./polling-worker";
 
 const jobManager = new JobManager();
 jobManager.register(GenerateVideoJob);
+jobManager.register(GenerateImageJob);
 jobManager.register(MergeVideosJob);
 
 const pollingWorker = new PollingWorker({
