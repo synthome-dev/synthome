@@ -40,8 +40,10 @@ export class PollingWorker {
       `[PollingWorker] Starting (check interval: ${this.intervalMs}ms)`,
     );
 
-    // Run immediately on start
-    await this.pollPendingJobs();
+    // Run immediately on start (with error handling to not crash the worker)
+    this.pollPendingJobs().catch((error) => {
+      console.error("[PollingWorker] Error in initial polling cycle:", error);
+    });
 
     // Then run on interval
     this.intervalHandle = setInterval(() => {

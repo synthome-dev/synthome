@@ -1,7 +1,11 @@
 import type PgBoss from "pg-boss";
 import { BasePipelineJob, type PipelineJobData } from "./base-pipeline-job.js";
 import { VideoProviderFactory } from "@repo/providers";
-import { getModelInfo, getModelCapabilities } from "@repo/model-schemas";
+import {
+  getModelInfo,
+  getModelCapabilities,
+  parseModelOptions,
+} from "@repo/model-schemas";
 import { db, executionJobs, eq } from "@repo/db";
 
 export class GenerateVideoJob extends BasePipelineJob {
@@ -28,6 +32,37 @@ export class GenerateVideoJob extends BasePipelineJob {
         throw new Error(`Unknown model: ${modelId}`);
       }
 
+      // Validate and parse provider parameters against model schema
+      let validatedParams: Record<string, unknown>;
+      try {
+        validatedParams = parseModelOptions(modelId, providerParams);
+        console.log(
+          `[GenerateVideoJob] Validated params for ${modelId}:`,
+          validatedParams,
+        );
+      } catch (error) {
+        const validationError =
+          error instanceof Error ? error.message : "Unknown validation error";
+        throw new Error(
+          `Parameter validation failed for model ${modelId}: ${validationError}`,
+        );
+      }
+
+      // For Fabric models, convert image/audio to image_url/audio_url for provider API
+      let providerApiParams = validatedParams;
+      if (modelId.includes("fabric")) {
+        const { image, audio, ...rest } = validatedParams;
+        providerApiParams = {
+          ...rest,
+          image_url: (validatedParams.image_url as string) || (image as string),
+          audio_url: (validatedParams.audio_url as string) || (audio as string),
+        };
+        console.log(
+          `[GenerateVideoJob] Mapped params for Fabric:`,
+          providerApiParams,
+        );
+      }
+
       // Get model capabilities to determine waiting strategy
       const capabilities = getModelCapabilities(modelId);
       const waitingStrategy = capabilities.defaultStrategy;
@@ -52,7 +87,7 @@ export class GenerateVideoJob extends BasePipelineJob {
       // Start generation (non-blocking)
       const generationStart = await provider.startGeneration(
         modelId,
-        providerParams as Record<string, unknown>,
+        providerApiParams,
         webhookUrl,
       );
 

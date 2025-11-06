@@ -11,6 +11,7 @@ export const unifiedVideoOptionsSchema = z.object({
   image: z.string().url().optional(), // For image-to-video models
   startImage: z.string().url().optional(),
   endImage: z.string().url().optional(),
+  audio: z.string().url().optional(), // For image-to-video models with audio (e.g., talking head)
   cameraMotion: z.enum(["fixed", "dynamic"]).optional(),
 });
 

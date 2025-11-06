@@ -1,7 +1,11 @@
 import type PgBoss from "pg-boss";
 import { BasePipelineJob, type PipelineJobData } from "./base-pipeline-job.js";
 import { VideoProviderFactory } from "@repo/providers";
-import { getModelInfo, parseModelPolling } from "@repo/model-schemas";
+import {
+  getModelInfo,
+  parseModelPolling,
+  parseModelOptions,
+} from "@repo/model-schemas";
 
 export class GenerateAudioJob extends BasePipelineJob {
   readonly type: string = "generateAudio";
@@ -27,6 +31,22 @@ export class GenerateAudioJob extends BasePipelineJob {
         throw new Error(`Unknown model: ${modelId}`);
       }
 
+      // Validate and parse provider parameters against model schema
+      let validatedParams: Record<string, unknown>;
+      try {
+        validatedParams = parseModelOptions(modelId, providerParams);
+        console.log(
+          `[GenerateAudioJob] Validated params for ${modelId}:`,
+          validatedParams,
+        );
+      } catch (error) {
+        const validationError =
+          error instanceof Error ? error.message : "Unknown validation error";
+        throw new Error(
+          `Parameter validation failed for model ${modelId}: ${validationError}`,
+        );
+      }
+
       console.log(
         `[GenerateAudioJob] Using synchronous polling for model ${modelId}`,
       );
@@ -38,7 +58,7 @@ export class GenerateAudioJob extends BasePipelineJob {
       // Start audio generation (no webhook needed - we'll poll synchronously)
       const generationStart = await provider.startGeneration(
         modelId,
-        providerParams as Record<string, unknown>,
+        validatedParams,
       );
 
       console.log(

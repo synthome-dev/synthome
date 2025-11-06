@@ -1,17 +1,23 @@
 import type { UnifiedVideoOptions } from "@repo/model-schemas";
 import type { ProviderConfig, VideoModel } from "../core/types.js";
-import type { VideoOperation, ImageOperation } from "../core/video.js";
+import type {
+  VideoOperation,
+  ImageOperation,
+  AudioOperation,
+} from "../core/video.js";
 
 export interface GenerateVideoOptions<TModelOptions extends ProviderConfig> {
   model: VideoModel<TModelOptions>;
   image?: string | ImageOperation; // Direct URL or nested image generation
+  audio?: string | AudioOperation; // Direct URL or nested audio generation
 }
 
 export type GenerateVideoUnified = GenerateVideoOptions<ProviderConfig> &
   UnifiedVideoOptions;
 
 export type GenerateVideoProvider<TModelOptions extends ProviderConfig> =
-  GenerateVideoOptions<TModelOptions> & Omit<TModelOptions, "image">;
+  GenerateVideoOptions<TModelOptions> &
+    Partial<Omit<TModelOptions, "image" | "audio" | "apiKey">>;
 
 function isUnifiedOptions(
   options: GenerateVideoUnified | GenerateVideoProvider<any>,
@@ -22,7 +28,7 @@ function isUnifiedOptions(
 export function generateVideo<TModelOptions extends ProviderConfig>(
   options: GenerateVideoUnified | GenerateVideoProvider<TModelOptions>,
 ): VideoOperation {
-  const { model, image } = options;
+  const { model, image, audio } = options;
 
   let params: Record<string, unknown>;
 
@@ -33,6 +39,16 @@ export function generateVideo<TModelOptions extends ProviderConfig>(
       imageValue = image; // Direct URL
     } else if (typeof image === "object" && image.type === "generateImage") {
       imageValue = image; // ImageOperation - will be resolved by pipeline
+    }
+  }
+
+  // Handle audio parameter - can be string URL or AudioOperation
+  let audioValue: string | AudioOperation | undefined = undefined;
+  if (audio) {
+    if (typeof audio === "string") {
+      audioValue = audio; // Direct URL
+    } else if (typeof audio === "object" && audio.type === "generateAudio") {
+      audioValue = audio; // AudioOperation - will be resolved by pipeline
     }
   }
 
@@ -59,6 +75,7 @@ export function generateVideo<TModelOptions extends ProviderConfig>(
       aspectRatio,
       seed,
       image: imageValue,
+      audio: audioValue,
       startImage,
       endImage,
       cameraMotion,
@@ -71,6 +88,7 @@ export function generateVideo<TModelOptions extends ProviderConfig>(
       unified: false,
       ...(options as unknown as Record<string, unknown>),
       image: imageValue,
+      audio: audioValue,
     };
   }
 

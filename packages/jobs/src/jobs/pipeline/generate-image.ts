@@ -1,7 +1,11 @@
 import type PgBoss from "pg-boss";
 import { BasePipelineJob, type PipelineJobData } from "./base-pipeline-job.js";
 import { VideoProviderFactory } from "@repo/providers";
-import { getModelInfo, parseModelPolling } from "@repo/model-schemas";
+import {
+  getModelInfo,
+  parseModelPolling,
+  parseModelOptions,
+} from "@repo/model-schemas";
 
 export class GenerateImageJob extends BasePipelineJob {
   readonly type: string = "generateImage";
@@ -27,6 +31,22 @@ export class GenerateImageJob extends BasePipelineJob {
         throw new Error(`Unknown model: ${modelId}`);
       }
 
+      // Validate and parse provider parameters against model schema
+      let validatedParams: Record<string, unknown>;
+      try {
+        validatedParams = parseModelOptions(modelId, providerParams);
+        console.log(
+          `[GenerateImageJob] Validated params for ${modelId}:`,
+          validatedParams,
+        );
+      } catch (error) {
+        const validationError =
+          error instanceof Error ? error.message : "Unknown validation error";
+        throw new Error(
+          `Parameter validation failed for model ${modelId}: ${validationError}`,
+        );
+      }
+
       console.log(
         `[GenerateImageJob] Using synchronous polling for model ${modelId}`,
       );
@@ -38,7 +58,7 @@ export class GenerateImageJob extends BasePipelineJob {
       // Start image generation (no webhook needed - we'll poll synchronously)
       const generationStart = await provider.startGeneration(
         modelId,
-        providerParams as Record<string, unknown>,
+        validatedParams,
       );
 
       console.log(
@@ -87,30 +107,6 @@ export class GenerateImageJob extends BasePipelineJob {
 
           // Parse the raw response using the model's polling parser
           const parsedResult = parseModelPolling(modelId, rawResponse);
-
-          console.log(
-            `[GenerateImageJob] Image generated successfully:`,
-            parsedResult,
-          );
-
-          await this.updateJobProgress(jobRecordId, "completed", 100);
-          await this.completeJob(jobRecordId, parsedResult);
-          return;
-        }
-
-        if (status.status === "completed" && status.result) {
-          // For images, we need to get the raw prediction to parse properly
-          // The result from getJobStatus is wrapped, we need the raw prediction
-          // Get the prediction directly from Replicate for proper parsing
-          const ReplicateService = (await import("@repo/providers"))
-            .ReplicateService;
-          const replicateClient = new ReplicateService();
-          const rawPrediction = await (
-            replicateClient as any
-          ).client.predictions.get(generationStart.providerJobId);
-
-          // Parse the raw prediction using the model's polling parser
-          const parsedResult = parseModelPolling(modelId, rawPrediction);
 
           console.log(
             `[GenerateImageJob] Image generated successfully:`,
