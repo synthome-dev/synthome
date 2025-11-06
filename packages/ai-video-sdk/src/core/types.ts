@@ -28,9 +28,16 @@ export interface ProviderConfig {
 }
 
 export type VideoProvider = "replicate" | "fal" | "google-cloud";
+export type MediaProvider = VideoProvider;
 
 export interface VideoModel<TOptions extends ProviderConfig = ProviderConfig> {
   provider: VideoProvider;
+  modelId: string;
+  options: TOptions;
+}
+
+export interface ImageModel<TOptions extends ProviderConfig = ProviderConfig> {
+  provider: MediaProvider;
   modelId: string;
   options: TOptions;
 }

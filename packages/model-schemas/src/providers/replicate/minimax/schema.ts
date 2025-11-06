@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { providerConfigSchema } from "../index.js";
+
+// Define inline to avoid circular dependency
+const providerConfigSchema = z.object({
+  apiKey: z.string().optional(),
+});
 
 export const minimaxVideo01RawOptionsSchema = z.object({
   prompt: z.string(),
