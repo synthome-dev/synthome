@@ -152,7 +152,7 @@ import * as fal from "@fal-ai/serverless-client";
 class FalService {
   constructor() {
     fal.config({
-      credentials: process.env.FAL_API_KEY!,
+      credentials: process.env.FAL_KEY!,
     });
   }
 

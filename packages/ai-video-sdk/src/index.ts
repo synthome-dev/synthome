@@ -6,7 +6,11 @@ export type {
 } from "./providers/replicate.js";
 
 export { fal } from "./providers/fal.js";
-export type { FalModelId, FalModels } from "./providers/fal.js";
+export type {
+  FalModelId,
+  FalModels,
+  Fabric1FastOptions,
+} from "./providers/fal.js";
 
 export { googleCloud } from "./providers/google-cloud.js";
 export type {

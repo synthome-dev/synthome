@@ -11,13 +11,13 @@ import type { ProviderCapabilities } from "@repo/model-schemas";
 export class FalService implements VideoProviderService {
   constructor(apiKey?: string) {
     fal.config({
-      credentials: apiKey || process.env.FAL_API_KEY!,
+      credentials: apiKey || process.env.FAL_KEY!,
     });
   }
 
   async generateVideo(
     modelId: string,
-    params: Record<string, unknown>
+    params: Record<string, unknown>,
   ): Promise<VideoGenerationResult> {
     const result: any = await fal.subscribe(modelId, {
       input: params,
@@ -26,7 +26,7 @@ export class FalService implements VideoProviderService {
     const url = result.video?.url || result.data?.video?.url;
     if (!url) {
       throw new Error(
-        `No video URL found in Fal response: ${JSON.stringify(result)}`
+        `No video URL found in Fal response: ${JSON.stringify(result)}`,
       );
     }
 
@@ -36,7 +36,7 @@ export class FalService implements VideoProviderService {
   async startGeneration(
     modelId: string,
     params: Record<string, unknown>,
-    webhookUrl?: string
+    webhookUrl?: string,
   ): Promise<AsyncGenerationStart> {
     const { request_id } = await fal.queue.submit(modelId, {
       input: params,
@@ -44,18 +44,62 @@ export class FalService implements VideoProviderService {
     });
 
     return {
-      providerJobId: request_id,
-      waitingStrategy: "webhook",
+      providerJobId: `${modelId}::${request_id}`, // Store modelId with the job ID
+      waitingStrategy: "polling", // Changed from "webhook" to "polling"
     };
   }
 
   async getJobStatus(providerJobId: string): Promise<AsyncJobStatus> {
-    // Note: FAL's queue.status API requires both modelId and requestId
-    // We'll need to store modelId with the job or pass it as a parameter
-    // For now, returning processing to rely on webhooks
-    return {
-      status: "processing",
-    };
+    // Extract modelId from the composite providerJobId
+    const [modelId, requestId] = providerJobId.split("::");
+
+    if (!modelId || !requestId) {
+      throw new Error(
+        "Invalid providerJobId format. Expected modelId::requestId",
+      );
+    }
+
+    try {
+      // First, check the status
+      const status: any = await fal.queue.status(modelId, {
+        requestId: requestId,
+        logs: false,
+      });
+
+      console.log(`[FalService] Status for ${requestId}:`, status.status);
+
+      // If completed, we need to fetch the actual result
+      // FAL's queue.status() doesn't include the output, only metadata
+      if (status.status === "COMPLETED") {
+        console.log(`[FalService] Job completed, fetching result...`);
+
+        const result = await fal.queue.result(modelId, {
+          requestId: requestId,
+        });
+
+        console.log(
+          `[FalService] Result received:`,
+          JSON.stringify(result, null, 2),
+        );
+
+        // Return the result so the parser can extract the video URL
+        return {
+          status: "processing", // Placeholder - parser will determine actual status
+          result: result as any,
+        };
+      }
+
+      // For other statuses (IN_PROGRESS, IN_QUEUE, FAILED), return the status
+      return {
+        status: "processing", // Placeholder - will be determined by parser
+        result: status as any,
+      };
+    } catch (error) {
+      console.error(`[FalService] Error getting job status:`, error);
+      return {
+        status: "processing", // Default to processing on error
+      };
+    }
   }
 
   getCapabilities(): ProviderCapabilities {

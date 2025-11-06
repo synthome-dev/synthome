@@ -11,13 +11,16 @@ export const providerConfigSchema = z.object({
 
 /**
  * FAL Provider Capabilities
- * FAL supports webhooks natively
+ * Using polling as default since webhooks require publicly accessible URLs
  */
 export const falCapabilities: ProviderCapabilities = {
   supportsWebhooks: true,
   supportsPolling: true,
-  defaultStrategy: "webhook",
+  defaultStrategy: "polling",
 };
+
+// Export Fabric model
+export * from "./fabric/index.js";
 
 /**
  * Example FAL webhook payload:
@@ -80,6 +83,99 @@ export const parseFalWebhook: WebhookParser = (payload: unknown) => {
 
 /**
  * FAL polling response parser
- * Same structure as webhook in most cases
+ * Parses the response from fal.queue.status() OR fal.queue.result()
+ *
+ * NOTE: FAL's queue.status() only returns metadata when COMPLETED
+ * We must call queue.result() to get the actual output (video URL)
  */
-export const parseFalPolling: PollingParser = parseFalWebhook;
+export const parseFalPolling: PollingParser = (response: unknown) => {
+  const data = response as any;
+
+  // Extract the actual response data
+  const queueData = data?.result || data;
+
+  console.log(
+    "[parseFalPolling] Parsing response:",
+    JSON.stringify(queueData, null, 2),
+  );
+
+  // Check if this is a status response (has status field) or a result response (has video field)
+  const isStatusResponse = "status" in queueData;
+  const isResultResponse = "video" in queueData;
+
+  console.log("[parseFalPolling] Response type:", {
+    isStatusResponse,
+    isResultResponse,
+  });
+
+  // Handle result response (from fal.queue.result() - this is the completed job output)
+  if (isResultResponse) {
+    console.log(
+      "[parseFalPolling] This is a result response with video output",
+    );
+
+    const videoUrl = queueData.video?.url || queueData.video;
+
+    if (!videoUrl) {
+      console.error("[parseFalPolling] ❌ No video URL in result response");
+      return {
+        status: "failed",
+        error: "No video URL in result response",
+      };
+    }
+
+    console.log(
+      "[parseFalPolling] ✅ Successfully extracted video URL:",
+      videoUrl,
+    );
+
+    return {
+      status: "completed",
+      outputs: [
+        {
+          type: "video",
+          url: videoUrl,
+          mimeType: "video/mp4",
+        },
+      ],
+    };
+  }
+
+  // Handle status response (from fal.queue.status() - job state)
+  if (isStatusResponse) {
+    const status = queueData.status;
+    console.log("[parseFalPolling] Status:", status);
+
+    if (status === "FAILED") {
+      return {
+        status: "failed",
+        error: queueData.error || "Generation failed",
+      };
+    }
+
+    if (status === "IN_PROGRESS" || status === "IN_QUEUE") {
+      return {
+        status: "processing",
+      };
+    }
+
+    // This shouldn't happen as we fetch result when status is COMPLETED
+    // But handle it just in case
+    if (status === "COMPLETED") {
+      console.warn(
+        "[parseFalPolling] Got COMPLETED status but no result data - this shouldn't happen",
+      );
+      return {
+        status: "processing", // Will retry
+      };
+    }
+  }
+
+  // Unknown response format
+  console.log(
+    "[parseFalPolling] Unknown response format, defaulting to processing",
+  );
+  return {
+    status: "processing",
+  };
+};

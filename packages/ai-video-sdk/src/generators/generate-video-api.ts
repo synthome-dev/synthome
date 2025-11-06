@@ -5,7 +5,6 @@ import type {
   VideoJob,
   VideoModel,
 } from "../core/types.js";
-import { replicate } from "../providers/replicate.js";
 import { mapUnifiedToProviderOptions } from "../utils/mapping.js";
 import { pollJobStatus } from "../utils/polling.js";
 
@@ -114,7 +113,7 @@ function getApiKeyFromEnv(provider: string): string | undefined {
 
   const envVarMap: Record<string, string> = {
     replicate: "REPLICATE_API_KEY",
-    fal: "FAL_API_KEY",
+    fal: "FAL_KEY",
     "google-cloud": "GOOGLE_CLOUD_API_KEY",
   };
 
