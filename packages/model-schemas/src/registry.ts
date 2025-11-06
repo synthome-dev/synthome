@@ -2,9 +2,10 @@ import { z } from "zod";
 import { type FalModelId } from "./fal.js";
 import { type GoogleCloudModelId } from "./google-cloud.js";
 import {
+  parseReplicateImage,
   parseReplicatePolling,
   parseReplicateWebhook,
-  replicateCapabilities,
+  replicateModelCapabilities,
   replicateSchemas,
   type ReplicateModelId,
 } from "./replicate.js";
@@ -32,14 +33,21 @@ export const modelRegistry: Record<AllModelIds, ModelRegistryEntry> = {
     schema: replicateSchemas["bytedance/seedance-1-pro"],
     webhookParser: parseReplicateWebhook,
     pollingParser: parseReplicatePolling,
-    capabilities: replicateCapabilities,
+    capabilities: replicateModelCapabilities["bytedance/seedance-1-pro"],
   },
   "minimax/video-01": {
     provider: "replicate",
     schema: replicateSchemas["minimax/video-01"],
     webhookParser: parseReplicateWebhook,
     pollingParser: parseReplicatePolling,
-    capabilities: replicateCapabilities,
+    capabilities: replicateModelCapabilities["minimax/video-01"],
+  },
+  "bytedance/seedream-4": {
+    provider: "replicate",
+    schema: replicateSchemas["bytedance/seedream-4"],
+    webhookParser: parseReplicateImage,
+    pollingParser: parseReplicateImage,
+    capabilities: replicateModelCapabilities["bytedance/seedream-4"],
   },
 };
 
@@ -49,7 +57,7 @@ export function getModelInfo(modelId: string): ModelRegistryEntry | undefined {
 
 export function validateModelOptions(
   modelId: string,
-  options: unknown
+  options: unknown,
 ): boolean {
   const modelInfo = getModelInfo(modelId);
   if (!modelInfo) {

@@ -8,6 +8,7 @@ export const unifiedVideoOptionsSchema = z.object({
     .enum(["16:9", "4:3", "1:1", "3:4", "9:16", "21:9", "9:21"])
     .optional(),
   seed: z.number().int().optional(),
+  image: z.string().url().optional(), // For image-to-video models
   startImage: z.string().url().optional(),
   endImage: z.string().url().optional(),
   cameraMotion: z.enum(["fixed", "dynamic"]).optional(),

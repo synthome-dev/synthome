@@ -1,16 +1,17 @@
 import type { UnifiedVideoOptions } from "@repo/model-schemas";
 import type { ProviderConfig, VideoModel } from "../core/types.js";
-import type { VideoOperation } from "../core/video.js";
+import type { VideoOperation, ImageOperation } from "../core/video.js";
 
 export interface GenerateVideoOptions<TModelOptions extends ProviderConfig> {
   model: VideoModel<TModelOptions>;
+  image?: string | ImageOperation; // Direct URL or nested image generation
 }
 
 export type GenerateVideoUnified = GenerateVideoOptions<ProviderConfig> &
   UnifiedVideoOptions;
 
 export type GenerateVideoProvider<TModelOptions extends ProviderConfig> =
-  GenerateVideoOptions<TModelOptions> & TModelOptions;
+  GenerateVideoOptions<TModelOptions> & Omit<TModelOptions, "image">;
 
 function isUnifiedOptions(
   options: GenerateVideoUnified | GenerateVideoProvider<any>,
@@ -21,9 +22,19 @@ function isUnifiedOptions(
 export function generateVideo<TModelOptions extends ProviderConfig>(
   options: GenerateVideoUnified | GenerateVideoProvider<TModelOptions>,
 ): VideoOperation {
-  const { model } = options;
+  const { model, image } = options;
 
   let params: Record<string, unknown>;
+
+  // Handle image parameter - can be string URL or ImageOperation
+  let imageValue: string | ImageOperation | undefined = undefined;
+  if (image) {
+    if (typeof image === "string") {
+      imageValue = image; // Direct URL
+    } else if (typeof image === "object" && image.type === "generateImage") {
+      imageValue = image; // ImageOperation - will be resolved by pipeline
+    }
+  }
 
   if (isUnifiedOptions(options)) {
     const {
@@ -47,6 +58,7 @@ export function generateVideo<TModelOptions extends ProviderConfig>(
       resolution,
       aspectRatio,
       seed,
+      image: imageValue,
       startImage,
       endImage,
       cameraMotion,
@@ -58,6 +70,7 @@ export function generateVideo<TModelOptions extends ProviderConfig>(
       apiKey: model.options.apiKey,
       unified: false,
       ...(options as unknown as Record<string, unknown>),
+      image: imageValue,
     };
   }
 

@@ -19,7 +19,7 @@ export class ReplicateService implements VideoProviderService {
 
   async generateVideo(
     modelId: string,
-    params: Record<string, unknown>
+    params: Record<string, unknown>,
   ): Promise<VideoGenerationResult> {
     const output = await this.client.run(modelId as `${string}/${string}`, {
       input: params,
@@ -40,18 +40,24 @@ export class ReplicateService implements VideoProviderService {
   async startGeneration(
     modelId: string,
     params: Record<string, unknown>,
-    webhookUrl?: string
+    webhookUrl?: string,
   ): Promise<AsyncGenerationStart> {
-    const prediction = await this.client.predictions.create({
+    const createOptions: any = {
       version: modelId,
       input: params,
-      webhook: webhookUrl,
-      webhook_events_filter: ["completed"],
-    });
+    };
+
+    // Only include webhook options if webhook URL is provided
+    if (webhookUrl) {
+      createOptions.webhook = webhookUrl;
+      createOptions.webhook_events_filter = ["completed"];
+    }
+
+    const prediction = await this.client.predictions.create(createOptions);
 
     return {
       providerJobId: prediction.id,
-      waitingStrategy: "webhook",
+      waitingStrategy: webhookUrl ? "webhook" : "polling",
     };
   }
 
@@ -87,6 +93,10 @@ export class ReplicateService implements VideoProviderService {
     return {
       status: "processing",
     };
+  }
+
+  async getRawJobResponse(providerJobId: string): Promise<unknown> {
+    return await this.client.predictions.get(providerJobId);
   }
 
   getCapabilities(): ProviderCapabilities {
