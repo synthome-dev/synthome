@@ -13,6 +13,8 @@ export class JobManager {
       throw new Error("DATABASE_URL environment variable is not set");
     }
 
+    console.log("[JobManager] Initializing with database connection");
+
     this.boss = new PgBoss({
       connectionString: connString,
       schema: "pgboss",
@@ -24,6 +26,7 @@ export class JobManager {
       deleteAfterDays: 7,
       monitorStateIntervalSeconds: 30,
       maintenanceIntervalSeconds: 120,
+      application_name: "schedule-worker",
     });
 
     this.boss.on("error", (error: Error) => {
@@ -54,8 +57,16 @@ export class JobManager {
       return;
     }
 
-    await this.boss.start();
-    console.log("[JobManager] PgBoss started successfully");
+    try {
+      console.log("[JobManager] Connecting to database...");
+      await this.boss.start();
+      console.log("[JobManager] PgBoss started successfully");
+    } catch (error) {
+      console.error("[JobManager] Failed to start PgBoss:", error);
+      throw new Error(
+        `Failed to connect to database: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
 
     // Start all registered jobs
     for (const job of this.jobs.values()) {

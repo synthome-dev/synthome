@@ -12,8 +12,15 @@ export type {
   Seedance1ProOptions,
 } from "./replicate.js";
 
-export { falCapabilities, falSchemas } from "./fal.js";
-export type { FalModelId, FalModels } from "./fal.js";
+export { falCapabilities, falSchemas, falMappings } from "./fal.js";
+export type {
+  FalModelId,
+  FalVideoModelId,
+  FalImageModelId,
+  FalAudioModelId,
+  FalModels,
+  Fabric1FastOptions,
+} from "./fal.js";
 
 export { googleCloudCapabilities, googleCloudSchemas } from "./google-cloud.js";
 export type { GoogleCloudModelId, GoogleCloudModels } from "./google-cloud.js";

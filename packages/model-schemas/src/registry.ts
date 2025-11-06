@@ -1,5 +1,11 @@
 import { z } from "zod";
-import { type FalModelId } from "./fal.js";
+import {
+  type FalModelId,
+  falModelCapabilities,
+  parseFalPolling,
+  parseFalWebhook,
+  falSchemas,
+} from "./fal.js";
 import { type GoogleCloudModelId } from "./google-cloud.js";
 import {
   parseReplicateAudio,
@@ -62,6 +68,22 @@ export const modelRegistry: Record<AllModelIds, ModelRegistryEntry> = {
     webhookParser: parseReplicateAudio,
     pollingParser: parseReplicateAudio,
     capabilities: replicateModelCapabilities["elevenlabs/turbo-v2.5"],
+  },
+  "veed/fabric-1.0": {
+    provider: "fal",
+    mediaType: "video",
+    schema: falSchemas["veed/fabric-1.0"],
+    webhookParser: parseFalWebhook,
+    pollingParser: parseFalPolling,
+    capabilities: falModelCapabilities["veed/fabric-1.0"],
+  },
+  "veed/fabric-1.0/fast": {
+    provider: "fal",
+    mediaType: "video",
+    schema: falSchemas["veed/fabric-1.0/fast"],
+    webhookParser: parseFalWebhook,
+    pollingParser: parseFalPolling,
+    capabilities: falModelCapabilities["veed/fabric-1.0/fast"],
   },
 };
 

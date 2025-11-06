@@ -234,6 +234,50 @@ export class ExecutionOrchestrator {
       }
     }
 
+    // Resolve audio job dependencies in params
+    if (params.audio && typeof params.audio === "string") {
+      const audioDepMarker = params.audio as string;
+      if (audioDepMarker.startsWith("_audioJobDependency:")) {
+        const audioJobId = audioDepMarker.replace("_audioJobDependency:", "");
+        const audioJob = allJobs.find((j) => j.jobId === audioJobId);
+
+        if (audioJob?.result) {
+          // Extract audio URL from the result
+          // The result format from parseReplicateAudio:
+          // { status: "completed", outputs: [{ type: "audio", url: "...", mimeType: "..." }], metadata: {...} }
+          const result = audioJob.result;
+          if (
+            result.outputs &&
+            Array.isArray(result.outputs) &&
+            result.outputs.length > 0
+          ) {
+            const audioUrl = result.outputs[0].url;
+            if (audioUrl) {
+              params = { ...params, audio: audioUrl };
+              console.log(
+                `[Orchestrator] Resolved audio dependency ${audioJobId} to URL: ${audioUrl}`,
+              );
+            } else {
+              throw new Error(`Audio job ${audioJobId} output has no URL`);
+            }
+          } else {
+            console.error(
+              `[Orchestrator] Audio job ${audioJobId} has invalid result format:`,
+              audioJob.result,
+            );
+            throw new Error(
+              `Audio job ${audioJobId} did not produce a valid audio URL`,
+            );
+          }
+        } else {
+          console.error(
+            `[Orchestrator] Audio job ${audioJobId} not found or has no result`,
+          );
+          throw new Error(`Audio job dependency ${audioJobId} not found`);
+        }
+      }
+    }
+
     const jobData = {
       executionId,
       jobRecordId: job.id,

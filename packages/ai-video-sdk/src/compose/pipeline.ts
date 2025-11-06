@@ -9,6 +9,7 @@ import type {
   VideoNode,
   VideoOperation,
   ImageOperation,
+  AudioOperation,
 } from "../core/video.js";
 
 export type { Pipeline, PipelineProgress, PipelineExecution, ExecuteOptions };
@@ -151,6 +152,28 @@ class VideoPipeline implements Pipeline {
         }
       }
 
+      // Check if this operation has a nested AudioOperation in params.audio
+      let audioJobId: string | undefined;
+      if (op.params.audio && typeof op.params.audio === "object") {
+        const audioOp = op.params.audio as AudioOperation;
+        if (audioOp.type === "generateAudio") {
+          // Create an audio generation job
+          const audioId = `job${counter++}`;
+          jobs.push({
+            id: audioId,
+            type: "generateAudio",
+            params: audioOp.params,
+            output: `$${audioId}`,
+          });
+          audioJobId = audioId;
+        }
+      }
+
+      // Collect all dependency job IDs
+      const depJobIds = [imageJobId, audioJobId].filter(
+        (id): id is string => id !== undefined,
+      );
+
       if (op.type === "merge") {
         jobs.push({
           id,
@@ -170,32 +193,38 @@ class VideoPipeline implements Pipeline {
         op.type === "generate" &&
         this.operations[i + 1]?.type === "generate"
       ) {
-        // Multi-scene generation - create job with image dependency if exists
+        // Multi-scene generation - create job with dependencies
         const jobParams = { ...op.params };
         if (imageJobId) {
           jobParams.image = `_imageJobDependency:${imageJobId}`;
+        }
+        if (audioJobId) {
+          jobParams.audio = `_audioJobDependency:${audioJobId}`;
         }
 
         jobs.push({
           id,
           type: op.type,
           params: jobParams,
-          dependsOn: imageJobId ? [imageJobId] : undefined,
+          dependsOn: depJobIds.length > 0 ? depJobIds : undefined,
           output: `$${id}`,
         });
         mergeInputs.push(id);
       } else if (op.type === "generate" && mergeInputs.length > 0) {
-        // Part of multi-scene - create job with image dependency if exists
+        // Part of multi-scene - create job with dependencies
         const jobParams = { ...op.params };
         if (imageJobId) {
           jobParams.image = `_imageJobDependency:${imageJobId}`;
+        }
+        if (audioJobId) {
+          jobParams.audio = `_audioJobDependency:${audioJobId}`;
         }
 
         jobs.push({
           id,
           type: op.type,
           params: jobParams,
-          dependsOn: imageJobId ? [imageJobId] : undefined,
+          dependsOn: depJobIds.length > 0 ? depJobIds : undefined,
           output: `$${id}`,
         });
         mergeInputs.push(id);
@@ -205,20 +234,18 @@ class VideoPipeline implements Pipeline {
         if (imageJobId) {
           jobParams.image = `_imageJobDependency:${imageJobId}`;
         }
+        if (audioJobId) {
+          jobParams.audio = `_audioJobDependency:${audioJobId}`;
+        }
 
-        const dependsOn = imageJobId
-          ? lastJobId
-            ? [lastJobId, imageJobId]
-            : [imageJobId]
-          : lastJobId
-            ? [lastJobId]
-            : undefined;
+        const allDeps = [...depJobIds];
+        if (lastJobId) allDeps.unshift(lastJobId);
 
         jobs.push({
           id,
           type: op.type,
           params: jobParams,
-          dependsOn,
+          dependsOn: allDeps.length > 0 ? allDeps : undefined,
           output: `$${id}`,
         });
         lastJobId = id;
