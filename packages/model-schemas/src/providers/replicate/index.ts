@@ -150,6 +150,60 @@ export const parseReplicateImage: PollingParser = (response: unknown) => {
   };
 };
 
+/**
+ * Replicate audio polling/webhook parser
+ * Handles single audio URL as output (MP3 file)
+ */
+export const parseReplicateAudio: PollingParser = (response: unknown) => {
+  const data = response as any;
+
+  if (data.status === "failed" || data.status === "canceled") {
+    return {
+      status: "failed",
+      error: data.error || "Audio generation failed",
+    };
+  }
+
+  if (
+    data.status === "starting" ||
+    data.status === "processing" ||
+    data.status === "queued"
+  ) {
+    return {
+      status: "processing",
+    };
+  }
+
+  if (data.status === "succeeded") {
+    // ElevenLabs returns a single audio URL string
+    if (typeof data.output === "string" && data.output) {
+      return {
+        status: "completed",
+        outputs: [
+          {
+            type: "audio",
+            url: data.output,
+            mimeType: "audio/mpeg",
+          },
+        ],
+        metadata: {
+          predictionId: data.id,
+        },
+      };
+    }
+
+    return {
+      status: "failed",
+      error: "No audio output in completed response",
+    };
+  }
+
+  return {
+    status: "processing",
+  };
+};
+
 export * from "./minimax/index.js";
 export * from "./seedance/index.js";
 export * from "./seedream/index.js";
+export * from "./elevenlabs/index.js";

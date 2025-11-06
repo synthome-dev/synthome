@@ -25,6 +25,7 @@ export type {
   VideoJob,
   VideoModel,
   ImageModel,
+  AudioModel,
   VideoProvider,
   WebhookConfig,
 } from "./core/types.js";
@@ -50,6 +51,12 @@ export type {
   GenerateImageProvider,
 } from "./compose/generate-image.js";
 
+export { generateAudio } from "./compose/generate-audio.js";
+export type {
+  GenerateAudioOptions,
+  GenerateAudioProvider,
+} from "./compose/generate-audio.js";
+
 export { merge, reframe, lipSync, addSubtitles } from "./compose/operations.js";
 export type {
   MergeOptions,
@@ -64,9 +71,11 @@ export type { CreateVideoOptions } from "./compose/video.js";
 export type {
   Video,
   Image,
+  Audio,
   VideoNode,
   VideoOperation,
   ImageOperation,
+  AudioOperation,
   ExecutionPlan,
   JobNode,
   OperationType,

@@ -41,3 +41,9 @@ export interface ImageModel<TOptions extends ProviderConfig = ProviderConfig> {
   modelId: string;
   options: TOptions;
 }
+
+export interface AudioModel<TOptions extends ProviderConfig = ProviderConfig> {
+  provider: MediaProvider;
+  modelId: string;
+  options: TOptions;
+}

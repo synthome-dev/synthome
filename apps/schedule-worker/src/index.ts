@@ -1,6 +1,7 @@
 import {
   GenerateVideoJob,
   GenerateImageJob,
+  GenerateAudioJob,
   JobManager,
   MergeVideosJob,
 } from "@repo/jobs";
@@ -10,6 +11,7 @@ import { PollingWorker } from "./polling-worker";
 const jobManager = new JobManager();
 jobManager.register(GenerateVideoJob);
 jobManager.register(GenerateImageJob);
+jobManager.register(GenerateAudioJob);
 jobManager.register(MergeVideosJob);
 
 const pollingWorker = new PollingWorker({

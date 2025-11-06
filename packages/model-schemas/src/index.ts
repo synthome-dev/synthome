@@ -1,12 +1,15 @@
 export {
   replicateCapabilities,
   replicateMappings,
-  replicateSchemas
+  replicateSchemas,
 } from "./replicate.js";
 export type {
   ReplicateModelId,
+  ReplicateVideoModelId,
+  ReplicateImageModelId,
+  ReplicateAudioModelId,
   ReplicateModels,
-  Seedance1ProOptions
+  Seedance1ProOptions,
 } from "./replicate.js";
 
 export { falCapabilities, falSchemas } from "./fal.js";
@@ -18,11 +21,12 @@ export type { GoogleCloudModelId, GoogleCloudModels } from "./google-cloud.js";
 export {
   getModelCapabilities,
   getModelInfo,
+  getModelMediaType,
   modelRegistry,
   parseModelOptions,
   parseModelPolling,
   parseModelWebhook,
-  validateModelOptions
+  validateModelOptions,
 } from "./registry.js";
 export type { ModelRegistryEntry, VideoProvider } from "./registry.js";
 
@@ -36,6 +40,5 @@ export type {
   ProviderCapabilities,
   WaitingStrategy,
   WebhookParser,
-  WebhookParseResult
+  WebhookParseResult,
 } from "./webhook-types.js";
-
