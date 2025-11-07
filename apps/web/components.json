@@ -18,5 +18,14 @@
     "lib": "@/lib",
     "hooks": "@/hooks"
   },
-  "registries": {}
+  "registries": {
+    "@tailark-pro": {
+      "url": "https://pro.tailark.com/registry/{name}",
+      "headers": {
+        "Authorization": "Bearer ${TAILARK_API_KEY}"
+      }
+    },
+    "@svgl": "https://svgl.app/r/{name}.json",
+    "@motion-primitives": "https://motion-primitives.com/c/{name}.json"
+  }
 }
