@@ -42,7 +42,7 @@ export default function Home() {
                 Composable AI Media Toolkit
                 {/* <span className="max-md:hidden">built</span> for{" "}
                 <span className="bg-linear-to-b from-foreground/50 to-foreground/95 bg-clip-text text-transparent [-webkit-text-stroke:0.5px_var(--color-foreground)]">
-                  SaaS that scales
+                  SaaS that scales 1
                 </span> */}
               </h1>
             </div>
