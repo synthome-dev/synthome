@@ -10,6 +10,8 @@ export type {
   ReplicateAudioModelId,
   ReplicateModels,
   Seedance1ProOptions,
+  RobustVideoMattingRawOptions,
+  NaterawVideoBackgroundRemoverRawOptions,
 } from "./replicate.js";
 
 export { falCapabilities, falSchemas, falMappings } from "./fal.js";
@@ -37,8 +39,17 @@ export {
 } from "./registry.js";
 export type { ModelRegistryEntry, VideoProvider } from "./registry.js";
 
-export { unifiedVideoOptionsSchema } from "./unified.js";
-export type { ParameterMapping, UnifiedVideoOptions } from "./unified.js";
+export {
+  unifiedVideoOptionsSchema,
+  unifiedBackgroundRemovalOptionsSchema,
+} from "./unified.js";
+export type {
+  ParameterMapping,
+  VideoGenerationMapping,
+  BackgroundRemovalMapping,
+  UnifiedVideoOptions,
+  UnifiedBackgroundRemovalOptions,
+} from "./unified.js";
 
 export type {
   MediaOutput,

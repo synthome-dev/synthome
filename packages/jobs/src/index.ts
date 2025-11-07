@@ -7,5 +7,8 @@ export * from "./jobs/pipeline/generate-video";
 export * from "./jobs/pipeline/generate-image";
 export * from "./jobs/pipeline/generate-audio";
 export * from "./jobs/pipeline/merge-videos";
+export * from "./jobs/pipeline/remove-background";
+export * from "./jobs/pipeline/replace-green-screen";
+export * from "./jobs/pipeline/remove-image-background";
 export * from "./orchestrator/execution-orchestrator";
 export * from "./utils/async-job-completion";

@@ -28,7 +28,10 @@ export type OperationType =
   | "merge"
   | "reframe"
   | "lipSync"
-  | "addSubtitles";
+  | "addSubtitles"
+  | "removeBackground"
+  | "replaceGreenScreen"
+  | "removeImageBackground";
 
 export interface VideoOperation {
   type: OperationType;
@@ -37,7 +40,7 @@ export interface VideoOperation {
 }
 
 export interface ImageOperation {
-  type: "generateImage";
+  type: "generateImage" | "removeImageBackground";
   params: Record<string, unknown>;
 }
 
