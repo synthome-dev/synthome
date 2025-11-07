@@ -3,11 +3,15 @@
 import { useState, useEffect } from "react"
 
 export function useMedia(query: string): boolean {
-  const [matches, setMatches] = useState(true)
+  const [matches, setMatches] = useState(() => {
+    if (typeof window !== "undefined") {
+      return window.matchMedia(query).matches
+    }
+    return false
+  })
 
   useEffect(() => {
     const matchMedia = window.matchMedia(query)
-    setMatches(matchMedia.matches)
 
     const handleChange = () => setMatches(matchMedia.matches)
 

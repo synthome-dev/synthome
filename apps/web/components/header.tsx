@@ -7,7 +7,7 @@ import { Menu, X, Shield, SquareActivity, Sparkles, Cpu, Gem, ShoppingBag, BookO
 import { useMedia } from '@/hooks/use-media'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
 import { cn } from '@/lib/utils'
-import { Stripe } from '@/components/logos/stripe'
+import { Logo } from '@/components/logo'
 
 interface FeatureLink {
     href: string
@@ -157,6 +157,7 @@ export default function Header() {
     return (
         <header
             role="banner"
+            data-theme="dark"
             data-state={isMobileMenuOpen ? 'active' : 'inactive'}
             {...(isScrolled && { 'data-scrolled': true })}
             className="has-data-[state=open]:h-screen has-data-[state=open]:backdrop-blur has-data-[state=open]:bg-background/50 fixed inset-x-0 top-0 z-50">
@@ -164,20 +165,20 @@ export default function Header() {
                 className={cn(
                     'border-border-illustration absolute inset-x-0 top-0 z-50 h-14 border-b ring-1 ring-transparent transition-all duration-300',
                     'in-data-scrolled:ring-border-illustration in-data-scrolled:border-transparent in-data-scrolled:bg-background/75 in-data-scrolled:backdrop-blur',
-                    'has-data-[state=open]:ring-foreground/5 has-data-[state=open]:border-transparent has-data-[state=open]:bg-card/75 has-data-[state=open]:shadow-lg has-data-[state=open]:backdrop-blur has-data-[state=open]:border-b has-data-[state=open]:shadow-black/10 has-data-[state=open]:h-[calc(var(--navigation-menu-viewport-height)+3.4rem)]',
+                    'has-data-[state=open]:ring-foreground/5 has-data-[state=open]:border-transparent has-data-[state=open]:bg-background/75 has-data-[state=open]:shadow-lg has-data-[state=open]:backdrop-blur has-data-[state=open]:border-b has-data-[state=open]:shadow-black/10 has-data-[state=open]:h-[calc(var(--navigation-menu-viewport-height)+3.4rem)]',
                     'max-lg:in-data-[state=active]:h-screen max-lg:in-data-[state=active]:bg-background/75 max-lg:in-data-[state=active]:backdrop-blur max-lg:h-14 max-lg:overflow-hidden max-lg:border-b'
                 )}>
                 <div className="mx-auto max-w-5xl px-6">
                     <div className="relative flex flex-wrap items-center justify-between lg:py-3">
                         <div
                             aria-hidden
-                            className="in-has-data-[state=open]:block absolute inset-x-0 bottom-0 hidden h-px bg-[length:4px_1px] bg-repeat-x opacity-20 [background-image:linear-gradient(90deg,var(--color-foreground)_1px,transparent_1px)]"
+                            className="in-has-data-[state=open]:block bg-size-[4px_1px] absolute inset-x-0 bottom-0 hidden h-px bg-[linear-gradient(90deg,var(--color-foreground)_1px,transparent_1px)] bg-repeat-x opacity-20"
                         />
                         <div className="flex items-center justify-between gap-8 max-lg:h-14 max-lg:w-full max-lg:border-b">
                             <Link
                                 href="/"
                                 aria-label="home">
-                                <Stripe className="*:fill-foreground h-5 w-12" />
+                                <Logo className="h-6" />
                             </Link>
 
                             <button
@@ -230,7 +231,7 @@ const MobileMenu = ({ closeMenu }: { closeMenu: () => void }) => {
                                 key={index}
                                 value={link.groupName}
                                 className="before:border-border group relative border-b-0 before:pointer-events-none before:absolute before:inset-x-4 before:bottom-0 before:border-b">
-                                <AccordionTrigger className="**:!font-normal data-[state=open]:bg-muted flex items-center justify-between px-4 py-3 text-lg">{link.groupName}</AccordionTrigger>
+                                <AccordionTrigger className="**:font-normal! data-[state=open]:bg-muted flex items-center justify-between px-4 py-3 text-lg">{link.groupName}</AccordionTrigger>
                                 <AccordionContent className="pb-5">
                                     <ul>
                                         {link.links.map((feature, featureIndex) => (
@@ -297,7 +298,7 @@ const NavMenu = () => {
         <NavigationMenu
             ref={menuRef}
             onValueChange={handleViewportHeight}
-            className="**:data-[slot=navigation-menu-viewport-parent]:max-w-[67rem] **:data-[slot=navigation-menu-viewport]:bg-transparent **:data-[slot=navigation-menu-viewport]:rounded-none **:data-[slot=navigation-menu-viewport]:ring-0 **:data-[slot=navigation-menu-viewport]:border-0 **:data-[slot=navigation-menu-viewport]:shadow-none [--color-muted:color-mix(in_oklch,var(--color-foreground)_5%,transparent)] [--viewport-outer-px:2rem] max-lg:hidden">
+            className="**:data-[slot=navigation-menu-viewport-parent]:max-w-268 **:data-[slot=navigation-menu-viewport]:bg-transparent **:data-[slot=navigation-menu-viewport]:rounded-none **:data-[slot=navigation-menu-viewport]:ring-0 **:data-[slot=navigation-menu-viewport]:border-0 **:data-[slot=navigation-menu-viewport]:shadow-none [--color-muted:color-mix(in_oklch,var(--color-foreground)_5%,transparent)] [--viewport-outer-px:2rem] max-lg:hidden">
             <NavigationMenuList className="gap-3">
                 <NavigationMenuItem value="product">
                     <NavigationMenuTrigger>Product</NavigationMenuTrigger>
@@ -416,7 +417,7 @@ function ListItem({ title, description, children, href, ...props }: React.Compon
                 <Link
                     href={href}
                     className="grid grid-cols-[auto_1fr] gap-3.5">
-                    <div className="bg-background ring-foreground/10 relative flex size-9 items-center justify-center rounded border border-transparent shadow shadow-sm ring-1">{children}</div>
+                    <div className="bg-background ring-foreground/10 relative flex size-9 items-center justify-center rounded border border-transparent shadow-sm ring-1">{children}</div>
                     <div className="space-y-0.5">
                         <div className="text-foreground text-sm font-medium">{title}</div>
                         <p className="text-muted-foreground line-clamp-1 text-xs">{description}</p>

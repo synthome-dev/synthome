@@ -50,7 +50,7 @@ function NavigationMenuTrigger({ className, children, ...props }: React.Componen
             {...props}>
             {children}{' '}
             <ChevronDownIcon
-                className="relative top-[1px] ml-1.5 size-3 opacity-75 transition duration-300 group-data-[state=open]:translate-y-px"
+                className="relative top-px ml-1.5 size-3 opacity-75 transition duration-300 group-data-[state=open]:translate-y-px"
                 aria-hidden="true"
                 strokeWidth={2.5}
             />
@@ -101,7 +101,7 @@ function NavigationMenuIndicator({ className, ...props }: React.ComponentProps<t
     return (
         <NavigationMenuPrimitive.Indicator
             data-slot="navigation-menu-indicator"
-            className={cn('data-[state=visible]:animate-in data-[state=hidden]:animate-out data-[state=hidden]:fade-out data-[state=visible]:fade-in top-full z-[1] flex h-1.5 items-end justify-center overflow-hidden', className)}
+            className={cn('data-[state=visible]:animate-in data-[state=hidden]:animate-out data-[state=hidden]:fade-out data-[state=visible]:fade-in z-1 top-full flex h-1.5 items-end justify-center overflow-hidden', className)}
             {...props}>
             <div className="bg-border relative top-[60%] h-2 w-2 rotate-45 rounded-tl-sm shadow-md" />
         </NavigationMenuPrimitive.Indicator>
