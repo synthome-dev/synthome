@@ -55,10 +55,20 @@ export class GenerateAudioJob extends BasePipelineJob {
 
       const provider = VideoProviderFactory.getProvider(modelInfo.provider);
 
+      console.log(
+        `[GenerateAudioJob] Calling provider.startGeneration with modelId: ${modelId}, params:`,
+        validatedParams,
+      );
+
       // Start audio generation (no webhook needed - we'll poll synchronously)
       const generationStart = await provider.startGeneration(
         modelId,
         validatedParams,
+      );
+
+      console.log(
+        `[GenerateAudioJob] Provider returned:`,
+        JSON.stringify(generationStart, null, 2),
       );
 
       console.log(
@@ -127,7 +137,10 @@ export class GenerateAudioJob extends BasePipelineJob {
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
+      const errorStack = error instanceof Error ? error.stack : undefined;
       console.error(`[GenerateAudioJob] Failed:`, errorMessage);
+      console.error(`[GenerateAudioJob] Error stack:`, errorStack);
+      console.error(`[GenerateAudioJob] Full error object:`, error);
       await this.failJob(jobRecordId, errorMessage);
       throw error;
     }

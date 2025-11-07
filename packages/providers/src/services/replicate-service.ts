@@ -1,5 +1,5 @@
 import type { ProviderCapabilities } from "@repo/model-schemas";
-import { replicateCapabilities } from "@repo/model-schemas";
+import { replicateCapabilities, getModelInfo } from "@repo/model-schemas";
 import Replicate from "replicate";
 import type {
   AsyncGenerationStart,
@@ -45,10 +45,30 @@ export class ReplicateService implements VideoProviderService {
     // Transform parameters for specific models
     const transformedParams = this.transformParams(modelId, params);
 
+    console.log(
+      `[ReplicateService] startGeneration called with modelId: ${modelId}`,
+    );
+    console.log(
+      `[ReplicateService] Transformed params:`,
+      JSON.stringify(transformedParams, null, 2),
+    );
+
+    // Get the provider model ID (version hash) from registry
+    const modelInfo = getModelInfo(modelId);
+    const providerModelId = modelInfo?.providerModelId;
+
     const createOptions: any = {
-      version: modelId,
       input: transformedParams,
     };
+
+    // Use version hash if provided, otherwise use model identifier
+    if (providerModelId) {
+      console.log(`[ReplicateService] Using version hash: ${providerModelId}`);
+      createOptions.version = providerModelId;
+    } else {
+      console.log(`[ReplicateService] Using model identifier: ${modelId}`);
+      createOptions.model = modelId;
+    }
 
     // Only include webhook options if webhook URL is provided
     if (webhookUrl) {
@@ -56,12 +76,27 @@ export class ReplicateService implements VideoProviderService {
       createOptions.webhook_events_filter = ["completed"];
     }
 
-    const prediction = await this.client.predictions.create(createOptions);
+    console.log(
+      `[ReplicateService] Creating prediction with options:`,
+      JSON.stringify(createOptions, null, 2),
+    );
 
-    return {
-      providerJobId: prediction.id,
-      waitingStrategy: webhookUrl ? "webhook" : "polling",
-    };
+    try {
+      const prediction = await this.client.predictions.create(createOptions);
+
+      console.log(
+        `[ReplicateService] Prediction created successfully:`,
+        JSON.stringify(prediction, null, 2),
+      );
+
+      return {
+        providerJobId: prediction.id,
+        waitingStrategy: webhookUrl ? "webhook" : "polling",
+      };
+    } catch (error) {
+      console.error(`[ReplicateService] Failed to create prediction:`, error);
+      throw error;
+    }
   }
 
   /**
@@ -83,9 +118,24 @@ export class ReplicateService implements VideoProviderService {
   }
 
   async getJobStatus(providerJobId: string): Promise<AsyncJobStatus> {
+    console.log(`[ReplicateService] Getting job status for: ${providerJobId}`);
+
     const prediction = await this.client.predictions.get(providerJobId);
 
+    console.log(
+      `[ReplicateService] Prediction status:`,
+      JSON.stringify(prediction, null, 2),
+    );
+
     if (prediction.status === "failed" || prediction.status === "canceled") {
+      console.error(
+        `[ReplicateService] Prediction failed/canceled. Error:`,
+        prediction.error,
+      );
+      console.error(
+        `[ReplicateService] Full prediction object:`,
+        JSON.stringify(prediction, null, 2),
+      );
       return {
         status: "failed",
         error: prediction.error?.toString() || "Generation failed",

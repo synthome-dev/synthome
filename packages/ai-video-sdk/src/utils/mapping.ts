@@ -1,5 +1,8 @@
 import { replicateMappings, falMappings } from "@repo/model-schemas";
-import type { UnifiedVideoOptions } from "@repo/model-schemas";
+import type {
+  UnifiedVideoOptions,
+  VideoGenerationMapping,
+} from "@repo/model-schemas";
 
 export function mapUnifiedToProviderOptions(
   provider: string,
@@ -9,15 +12,19 @@ export function mapUnifiedToProviderOptions(
   if (provider === "replicate") {
     const mapping =
       replicateMappings[modelId as keyof typeof replicateMappings];
-    if (mapping) {
-      return mapping.toProviderOptions(unifiedOptions);
+    if (mapping && "toProviderOptions" in mapping) {
+      return (mapping as VideoGenerationMapping<any>).toProviderOptions(
+        unifiedOptions,
+      );
     }
   }
 
   if (provider === "fal") {
     const mapping = falMappings[modelId as keyof typeof falMappings];
     if (mapping) {
-      return mapping.toProviderOptions(unifiedOptions);
+      return (mapping as VideoGenerationMapping<any>).toProviderOptions(
+        unifiedOptions,
+      );
     }
   }
 

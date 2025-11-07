@@ -1,4 +1,4 @@
-import type { VideoOperation } from "../core/video.js";
+import type { VideoOperation, ImageOperation } from "../core/video.js";
 
 export interface MergeOptions {
   transition?: "crossfade" | "cut" | "dissolve";
@@ -50,6 +50,61 @@ export function addSubtitles(options?: SubtitlesOptions): VideoOperation {
     params: {
       language: options?.language || "en",
       style: options?.style || "default",
+    },
+  };
+}
+
+export interface RemoveBackgroundOptions {
+  outputType?: "green-screen" | "alpha-mask" | "foreground-mask";
+}
+
+export function removeBackground(
+  options?: RemoveBackgroundOptions,
+): VideoOperation {
+  return {
+    type: "removeBackground",
+    params: {
+      outputType: options?.outputType || "green-screen",
+    },
+  };
+}
+
+export interface ReplaceGreenScreenOptions {
+  video?: string | VideoOperation;
+  background: string | string[];
+  chromaKeyColor?: string;
+  similarity?: number;
+  blend?: number;
+}
+
+export function replaceGreenScreen(
+  options: ReplaceGreenScreenOptions,
+): VideoOperation {
+  return {
+    type: "replaceGreenScreen",
+    params: {
+      video: options.video,
+      background: options.background,
+      chromaKeyColor: options.chromaKeyColor,
+      similarity: options.similarity,
+      blend: options.blend,
+    },
+  };
+}
+
+export interface RemoveImageBackgroundOptions {
+  image?: string | ImageOperation;
+  modelId?: string;
+}
+
+export function removeImageBackground(
+  options: RemoveImageBackgroundOptions = {},
+): ImageOperation {
+  return {
+    type: "removeImageBackground",
+    params: {
+      image: options.image,
+      modelId: options.modelId || "codeplugtech/background_remover",
     },
   };
 }

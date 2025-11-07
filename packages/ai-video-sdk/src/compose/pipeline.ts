@@ -139,13 +139,45 @@ class VideoPipeline implements Pipeline {
       let imageJobId: string | undefined;
       if (op.params.image && typeof op.params.image === "object") {
         const imageOp = op.params.image as ImageOperation;
-        if (imageOp.type === "generateImage") {
-          // Create an image generation job
+        if (
+          imageOp.type === "generateImage" ||
+          imageOp.type === "removeImageBackground"
+        ) {
+          // Check if the imageOp itself has a nested image operation
+          let nestedImageJobId: string | undefined;
+          if (
+            imageOp.params.image &&
+            typeof imageOp.params.image === "object"
+          ) {
+            const nestedImageOp = imageOp.params.image as ImageOperation;
+            if (
+              nestedImageOp.type === "generateImage" ||
+              nestedImageOp.type === "removeImageBackground"
+            ) {
+              // Create the nested image job first
+              const nestedImageId = `job${counter++}`;
+              jobs.push({
+                id: nestedImageId,
+                type: nestedImageOp.type,
+                params: nestedImageOp.params,
+                output: `$${nestedImageId}`,
+              });
+              nestedImageJobId = nestedImageId;
+            }
+          }
+
+          // Create an image generation/processing job
           const imageId = `job${counter++}`;
+          const imageParams = { ...imageOp.params };
+          if (nestedImageJobId) {
+            imageParams.image = `_imageJobDependency:${nestedImageJobId}`;
+          }
+
           jobs.push({
             id: imageId,
-            type: "generateImage",
-            params: imageOp.params,
+            type: imageOp.type,
+            params: imageParams,
+            dependsOn: nestedImageJobId ? [nestedImageJobId] : undefined,
             output: `$${imageId}`,
           });
           imageJobId = imageId;
@@ -169,8 +201,25 @@ class VideoPipeline implements Pipeline {
         }
       }
 
+      // Check if this operation has a nested VideoOperation in params.video
+      let videoJobId: string | undefined;
+      if (op.params.video && typeof op.params.video === "object") {
+        const videoOp = op.params.video as VideoOperation;
+        if (videoOp.type === "generate") {
+          // Create a video generation job
+          const videoId = `job${counter++}`;
+          jobs.push({
+            id: videoId,
+            type: "generate",
+            params: videoOp.params,
+            output: `$${videoId}`,
+          });
+          videoJobId = videoId;
+        }
+      }
+
       // Collect all dependency job IDs
-      const depJobIds = [imageJobId, audioJobId].filter(
+      const depJobIds = [imageJobId, audioJobId, videoJobId].filter(
         (id): id is string => id !== undefined,
       );
 
@@ -201,6 +250,9 @@ class VideoPipeline implements Pipeline {
         if (audioJobId) {
           jobParams.audio = `_audioJobDependency:${audioJobId}`;
         }
+        if (videoJobId) {
+          jobParams.video = `_videoJobDependency:${videoJobId}`;
+        }
 
         jobs.push({
           id,
@@ -219,6 +271,9 @@ class VideoPipeline implements Pipeline {
         if (audioJobId) {
           jobParams.audio = `_audioJobDependency:${audioJobId}`;
         }
+        if (videoJobId) {
+          jobParams.video = `_videoJobDependency:${videoJobId}`;
+        }
 
         jobs.push({
           id,
@@ -236,6 +291,9 @@ class VideoPipeline implements Pipeline {
         }
         if (audioJobId) {
           jobParams.audio = `_audioJobDependency:${audioJobId}`;
+        }
+        if (videoJobId) {
+          jobParams.video = `_videoJobDependency:${videoJobId}`;
         }
 
         const allDeps = [...depJobIds];

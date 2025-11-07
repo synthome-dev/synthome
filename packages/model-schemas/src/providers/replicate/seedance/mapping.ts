@@ -1,7 +1,7 @@
-import type { ParameterMapping } from "../../../unified.js";
+import type { VideoGenerationMapping } from "../../../unified.js";
 import type { Seedance1ProRawOptions } from "./schema.js";
 
-export const seedanceMapping: ParameterMapping<Seedance1ProRawOptions> = {
+export const seedanceMapping: VideoGenerationMapping<Seedance1ProRawOptions> = {
   toProviderOptions: (unified) => ({
     prompt: unified.prompt,
     duration: unified.duration,

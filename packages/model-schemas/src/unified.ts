@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+// Video Generation unified schema
 export const unifiedVideoOptionsSchema = z.object({
   prompt: z.string(),
   duration: z.number().int().optional(),
@@ -17,9 +18,28 @@ export const unifiedVideoOptionsSchema = z.object({
 
 export type UnifiedVideoOptions = z.infer<typeof unifiedVideoOptionsSchema>;
 
-export interface ParameterMapping<TProviderOptions> {
-  toProviderOptions: (unified: UnifiedVideoOptions) => TProviderOptions;
-  fromProviderOptions: (
-    provider: TProviderOptions,
-  ) => Partial<UnifiedVideoOptions>;
+// Background Removal unified schema
+export const unifiedBackgroundRemovalOptionsSchema = z.object({
+  video: z.string().url(),
+  outputType: z
+    .enum(["green-screen", "alpha-mask", "foreground-mask"])
+    .optional(),
+});
+
+export type UnifiedBackgroundRemovalOptions = z.infer<
+  typeof unifiedBackgroundRemovalOptionsSchema
+>;
+
+// Generic mapping interface
+export interface ParameterMapping<TUnified, TProviderOptions> {
+  toProviderOptions: (unified: TUnified) => TProviderOptions;
+  fromProviderOptions: (provider: TProviderOptions) => Partial<TUnified>;
 }
+
+// Backward compatibility - existing video generation mappings
+export interface VideoGenerationMapping<TProviderOptions>
+  extends ParameterMapping<UnifiedVideoOptions, TProviderOptions> {}
+
+// Background removal mappings
+export interface BackgroundRemovalMapping<TProviderOptions>
+  extends ParameterMapping<UnifiedBackgroundRemovalOptions, TProviderOptions> {}

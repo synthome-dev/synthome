@@ -278,6 +278,108 @@ export class ExecutionOrchestrator {
       }
     }
 
+    // Resolve video job dependencies in params
+    if (params.video && typeof params.video === "string") {
+      const videoDepMarker = params.video as string;
+      if (videoDepMarker.startsWith("_videoJobDependency:")) {
+        const videoJobId = videoDepMarker.replace("_videoJobDependency:", "");
+        const videoJob = allJobs.find((j) => j.jobId === videoJobId);
+
+        if (videoJob?.result) {
+          // Extract video URL from the result
+          // The result format is:
+          // { status: "completed", outputs: [{ type: "video", url: "...", mimeType: "..." }], metadata: {...} }
+          const result = videoJob.result;
+          if (
+            result.outputs &&
+            Array.isArray(result.outputs) &&
+            result.outputs.length > 0
+          ) {
+            const videoUrl = result.outputs[0].url;
+            if (videoUrl) {
+              params = { ...params, video: videoUrl };
+              console.log(
+                `[Orchestrator] Resolved video dependency ${videoJobId} to URL: ${videoUrl}`,
+              );
+            } else {
+              throw new Error(`Video job ${videoJobId} output has no URL`);
+            }
+          } else {
+            console.error(
+              `[Orchestrator] Video job ${videoJobId} has invalid result format:`,
+              videoJob.result,
+            );
+            throw new Error(
+              `Video job ${videoJobId} did not produce a valid video URL`,
+            );
+          }
+        } else {
+          console.error(
+            `[Orchestrator] Video job ${videoJobId} not found or has no result`,
+          );
+          throw new Error(`Video job dependency ${videoJobId} not found`);
+        }
+      }
+    }
+
+    // Resolve background job dependencies in params (can be string or array)
+    if (params.background) {
+      const backgrounds = Array.isArray(params.background)
+        ? params.background
+        : [params.background];
+      const resolvedBackgrounds: string[] = [];
+
+      for (const bg of backgrounds) {
+        if (typeof bg === "string" && bg.startsWith("_imageJobDependency:")) {
+          const bgJobId = bg.replace("_imageJobDependency:", "");
+          const bgJob = allJobs.find((j) => j.jobId === bgJobId);
+
+          if (bgJob?.result) {
+            const result = bgJob.result;
+            if (
+              result.outputs &&
+              Array.isArray(result.outputs) &&
+              result.outputs.length > 0
+            ) {
+              const bgUrl = result.outputs[0].url;
+              if (bgUrl) {
+                resolvedBackgrounds.push(bgUrl);
+                console.log(
+                  `[Orchestrator] Resolved background dependency ${bgJobId} to URL: ${bgUrl}`,
+                );
+              } else {
+                throw new Error(`Background job ${bgJobId} output has no URL`);
+              }
+            } else {
+              console.error(
+                `[Orchestrator] Background job ${bgJobId} has invalid result format:`,
+                bgJob.result,
+              );
+              throw new Error(
+                `Background job ${bgJobId} did not produce a valid image URL`,
+              );
+            }
+          } else {
+            console.error(
+              `[Orchestrator] Background job ${bgJobId} not found or has no result`,
+            );
+            throw new Error(`Background job dependency ${bgJobId} not found`);
+          }
+        } else {
+          // Not a dependency reference, use as-is
+          resolvedBackgrounds.push(bg as string);
+        }
+      }
+
+      // Update params with resolved backgrounds (preserve single value if input was single)
+      params = {
+        ...params,
+        background: Array.isArray(params.background)
+          ? resolvedBackgrounds
+          : resolvedBackgrounds[0],
+      };
+    }
+
     const jobData = {
       executionId,
       jobRecordId: job.id,

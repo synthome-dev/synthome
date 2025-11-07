@@ -37,7 +37,10 @@ export function generateVideo<TModelOptions extends ProviderConfig>(
   if (image) {
     if (typeof image === "string") {
       imageValue = image; // Direct URL
-    } else if (typeof image === "object" && image.type === "generateImage") {
+    } else if (
+      typeof image === "object" &&
+      (image.type === "generateImage" || image.type === "removeImageBackground")
+    ) {
       imageValue = image; // ImageOperation - will be resolved by pipeline
     }
   }
