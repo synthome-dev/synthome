@@ -32,6 +32,7 @@ export interface ModelRegistryEntry {
   webhookParser: WebhookParser;
   pollingParser: PollingParser;
   capabilities: ProviderCapabilities;
+  providerModelId?: string; // Optional: full model version/identifier for the provider (e.g., Replicate version hash)
 }
 
 type AllModelIds = ReplicateModelId | FalModelId | GoogleCloudModelId;
@@ -69,6 +70,28 @@ export const modelRegistry: Record<AllModelIds, ModelRegistryEntry> = {
     pollingParser: parseReplicateAudio,
     capabilities: replicateModelCapabilities["elevenlabs/turbo-v2.5"],
   },
+  "arielreplicate/robust_video_matting": {
+    provider: "replicate",
+    mediaType: "video",
+    schema: replicateSchemas["arielreplicate/robust_video_matting"],
+    webhookParser: parseReplicateWebhook,
+    pollingParser: parseReplicatePolling,
+    capabilities:
+      replicateModelCapabilities["arielreplicate/robust_video_matting"],
+    providerModelId:
+      "73d2128a371922d5d1abf0712a1d974be0e4e2358cc1218e4e34714767232bac",
+  },
+  "nateraw/video-background-remover": {
+    provider: "replicate",
+    mediaType: "video",
+    schema: replicateSchemas["nateraw/video-background-remover"],
+    webhookParser: parseReplicateWebhook,
+    pollingParser: parseReplicatePolling,
+    capabilities:
+      replicateModelCapabilities["nateraw/video-background-remover"],
+    providerModelId:
+      "ac5c138171b04413a69222c304f67c135e259d46089fc70ef12da685b3c604aa",
+  },
   "veed/fabric-1.0": {
     provider: "fal",
     mediaType: "video",
@@ -84,6 +107,14 @@ export const modelRegistry: Record<AllModelIds, ModelRegistryEntry> = {
     webhookParser: parseFalWebhook,
     pollingParser: parseFalPolling,
     capabilities: falModelCapabilities["veed/fabric-1.0/fast"],
+  },
+  "codeplugtech/background_remover": {
+    provider: "replicate",
+    mediaType: "image",
+    schema: replicateSchemas["codeplugtech/background_remover"],
+    webhookParser: parseReplicateImage,
+    pollingParser: parseReplicateImage,
+    capabilities: replicateModelCapabilities["codeplugtech/background_remover"],
   },
 };
 

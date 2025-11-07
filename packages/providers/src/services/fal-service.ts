@@ -67,26 +67,68 @@ export class FalService implements VideoProviderService {
       });
 
       console.log(`[FalService] Status for ${requestId}:`, status.status);
+      console.log(
+        `[FalService] Full status object:`,
+        JSON.stringify(status, null, 2),
+      );
 
       // If completed, we need to fetch the actual result
       // FAL's queue.status() doesn't include the output, only metadata
       if (status.status === "COMPLETED") {
         console.log(`[FalService] Job completed, fetching result...`);
 
-        const result = await fal.queue.result(modelId, {
-          requestId: requestId,
-        });
+        try {
+          const result = await fal.queue.result(modelId, {
+            requestId: requestId,
+          });
 
-        console.log(
-          `[FalService] Result received:`,
-          JSON.stringify(result, null, 2),
-        );
+          console.log(
+            `[FalService] Result received:`,
+            JSON.stringify(result, null, 2),
+          );
 
-        // Return the result so the parser can extract the video URL
-        return {
-          status: "processing", // Placeholder - parser will determine actual status
-          result: result as any,
-        };
+          // Return the result so the parser can extract the video URL
+          return {
+            status: "processing", // Placeholder - parser will determine actual status
+            result: result as any,
+          };
+        } catch (resultError: any) {
+          console.error(`[FalService] Error fetching result:`, resultError);
+          console.error(`[FalService] Error details:`, resultError?.body);
+
+          // If we can't fetch the result, maybe the status object has the response_url
+          // Try using that instead
+          if (status.response_url) {
+            console.log(
+              `[FalService] Attempting to fetch from response_url:`,
+              status.response_url,
+            );
+            try {
+              const response = await fetch(status.response_url);
+              const result = await response.json();
+              console.log(
+                `[FalService] Result from response_url:`,
+                JSON.stringify(result, null, 2),
+              );
+
+              return {
+                status: "processing",
+                result: result as any,
+              };
+            } catch (fetchError) {
+              console.error(
+                `[FalService] Error fetching from response_url:`,
+                fetchError,
+              );
+            }
+          }
+
+          // If all else fails, return an error status
+          return {
+            status: "processing",
+            error: `Failed to fetch result: ${resultError.message}`,
+          };
+        }
       }
 
       // For other statuses (IN_PROGRESS, IN_QUEUE, FAILED), return the status

@@ -5,6 +5,8 @@ import {
   processMedia,
   mergeVideos,
   MergeVideosOptions,
+  replaceGreenScreen,
+  ReplaceGreenScreenOptions,
 } from "./ffmpeg";
 
 const app = new Hono();
@@ -185,6 +187,45 @@ app.post("/merge", async (c) => {
   }
 });
 
+app.post("/replace-green-screen", async (c) => {
+  try {
+    const body = await c.req.json<ReplaceGreenScreenOptions>();
+
+    if (!body.videoUrl) {
+      return c.json({ error: "videoUrl is required" }, 400);
+    }
+
+    if (!body.backgroundUrls || body.backgroundUrls.length === 0) {
+      return c.json({ error: "At least 1 background image is required" }, 400);
+    }
+
+    console.log("[ReplaceGreenScreen API] Processing request:", {
+      videoUrl: body.videoUrl,
+      backgroundCount: body.backgroundUrls.length,
+      chromaKeyColor: body.chromaKeyColor,
+      similarity: body.similarity,
+      blend: body.blend,
+    });
+
+    const outputBuffer = await replaceGreenScreen(body);
+
+    c.header("Content-Type", "video/mp4");
+    c.header(
+      "Content-Disposition",
+      `attachment; filename="replaced-${Date.now()}.mp4"`,
+    );
+    return c.body(new Uint8Array(outputBuffer));
+  } catch (error) {
+    console.error("Error:", error);
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    return c.json(
+      { error: `Failed to replace green screen: ${errorMessage}` },
+      500,
+    );
+  }
+});
+
 app.get("/", (c) =>
   c.json({
     status: "ok",
@@ -195,6 +236,7 @@ app.get("/", (c) =>
       "/create-gif": "Convert video to GIF",
       "/thumbnail": "Generate video thumbnail",
       "/merge": "Merge multiple videos into one",
+      "/replace-green-screen": "Replace green screen with background images",
     },
   }),
 );

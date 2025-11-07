@@ -4,6 +4,9 @@ import {
   GenerateAudioJob,
   JobManager,
   MergeVideosJob,
+  RemoveBackgroundJob,
+  ReplaceGreenScreenJob,
+  RemoveImageBackgroundJob,
 } from "@repo/jobs";
 import "dotenv/config";
 import { PollingWorker } from "./polling-worker";
@@ -13,6 +16,9 @@ jobManager.register(GenerateVideoJob);
 jobManager.register(GenerateImageJob);
 jobManager.register(GenerateAudioJob);
 jobManager.register(MergeVideosJob);
+jobManager.register(RemoveBackgroundJob);
+jobManager.register(ReplaceGreenScreenJob);
+jobManager.register(RemoveImageBackgroundJob);
 
 const pollingWorker = new PollingWorker({
   intervalMs: 10000, // Check every 10 seconds

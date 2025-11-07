@@ -61,12 +61,29 @@ export type {
   GenerateAudioProvider,
 } from "./compose/generate-audio.js";
 
-export { merge, reframe, lipSync, addSubtitles } from "./compose/operations.js";
+export { removeBackgroundWithModel } from "./compose/remove-background.js";
+export type {
+  RemoveBackgroundWithModelOptions,
+  RemoveBackgroundWithModelUnified,
+} from "./compose/remove-background.js";
+
+export {
+  merge,
+  reframe,
+  lipSync,
+  addSubtitles,
+  removeBackground,
+  replaceGreenScreen,
+  removeImageBackground,
+} from "./compose/operations.js";
 export type {
   MergeOptions,
   ReframeOptions,
   LipSyncOptions,
   SubtitlesOptions,
+  RemoveBackgroundOptions,
+  ReplaceGreenScreenOptions,
+  RemoveImageBackgroundOptions,
 } from "./compose/operations.js";
 
 export { video } from "./compose/video.js";

@@ -1,11 +1,11 @@
-import type { ParameterMapping } from "../../../unified.js";
+import type { VideoGenerationMapping } from "../../../unified.js";
 import type { Fabric1FastRawOptions } from "./schema.js";
 
 /**
  * Parameter mapping for VEED Fabric 1.0 Fast
  * Maps between unified video options and Fabric-specific parameters
  */
-export const fabricMapping: ParameterMapping<Fabric1FastRawOptions> = {
+export const fabricMapping: VideoGenerationMapping<Fabric1FastRawOptions> = {
   // Convert from unified parameters to Fabric-specific format
   toProviderOptions: (unified) => {
     // Map resolution, defaulting to 720p and ensuring it's valid for Fabric

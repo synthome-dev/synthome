@@ -13,8 +13,9 @@ declare module "fluent-ffmpeg" {
     setStartTime(time: string): this;
     setDuration(duration: string): this;
     seek(time: string): this;
-    complexFilter(filter: string): this;
+    complexFilter(filter: string | string[]): this;
     input(input: string): this;
+    inputOptions(options: string[]): this;
     outputOptions(options: string[]): this;
     outputFormat(format: string): this;
     on(event: "start", callback: (commandLine: string) => void): this;
@@ -27,6 +28,30 @@ declare module "fluent-ffmpeg" {
     save(outputPath: string): this;
   }
 
+  interface FfprobeStream {
+    codec_type?: string;
+    width?: number;
+    height?: number;
+    r_frame_rate?: string;
+  }
+
+  interface FfprobeFormat {
+    duration?: number;
+  }
+
+  interface FfprobeData {
+    streams: FfprobeStream[];
+    format: FfprobeFormat;
+  }
+
   function ffmpeg(input?: string): FFmpegCommand;
+
+  namespace ffmpeg {
+    function ffprobe(
+      input: string,
+      callback: (err: Error | null, data: FfprobeData) => void,
+    ): void;
+  }
+
   export = ffmpeg;
 }
