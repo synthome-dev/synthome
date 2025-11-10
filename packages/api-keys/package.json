@@ -1,0 +1,14 @@
+{
+  "name": "@repo/api-keys",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "@repo/db": "workspace:*",
+    "@repo/tools": "workspace:*"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "*"
+  }
+}

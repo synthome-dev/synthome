@@ -8,6 +8,8 @@ import {
   ReplaceGreenScreenJob,
   RemoveImageBackgroundJob,
 } from "@repo/jobs";
+import { Scheduler } from "@repo/scheduler";
+import { resetMonthlyUsage } from "@repo/db";
 import "dotenv/config";
 import { PollingWorker } from "./polling-worker";
 
@@ -27,6 +29,25 @@ const pollingWorker = new PollingWorker({
   initialBackoffMs: 5000,
 });
 
+// Set up monthly usage reset scheduler
+const scheduler = new Scheduler({ timezone: "UTC" });
+scheduler.register({
+  id: "monthly-usage-reset",
+  name: "Monthly Usage Reset",
+  cronExpression: "0 0 1 * *", // Run at midnight on the 1st of every month
+  enabled: true,
+  handler: async () => {
+    console.log("[Scheduler] Running monthly usage reset...");
+    const result = await resetMonthlyUsage();
+    console.log(
+      `[Scheduler] Monthly usage reset completed: ${result.resetCount} organizations reset, ${result.errors.length} errors`,
+    );
+    if (result.errors.length > 0) {
+      console.error("[Scheduler] Errors during reset:", result.errors);
+    }
+  },
+});
+
 async function start() {
   try {
     await jobManager.start();
@@ -34,6 +55,8 @@ async function start() {
 
     await pollingWorker.start();
     console.log("✅ Polling worker started");
+
+    console.log("✅ Monthly usage reset scheduler registered");
   } catch (error) {
     console.error("❌ Failed to start workers:", error);
     process.exit(1);
@@ -47,6 +70,7 @@ start();
 
 process.on("SIGINT", async () => {
   console.log("\n🛑 Received SIGINT, shutting down gracefully...");
+  scheduler.stopAll();
   await pollingWorker.stop();
   await jobManager.stop();
   process.exit(0);
@@ -54,6 +78,7 @@ process.on("SIGINT", async () => {
 
 process.on("SIGTERM", async () => {
   console.log("\n🛑 Received SIGTERM, shutting down gracefully...");
+  scheduler.stopAll();
   await pollingWorker.stop();
   await jobManager.stop();
   process.exit(0);
