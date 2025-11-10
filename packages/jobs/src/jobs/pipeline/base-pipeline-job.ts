@@ -1,6 +1,6 @@
 import type PgBoss from "pg-boss";
 import { BaseJob } from "../../core/base-job";
-import { db, executionJobs, eq } from "@repo/db";
+import { db, executionJobs, executions, eq, logAction } from "@repo/db";
 
 export interface PipelineJobData {
   executionId: string;
@@ -60,6 +60,11 @@ export abstract class BasePipelineJob extends BaseJob<PipelineJobData> {
       throw new Error(`Job ${jobRecordId} not found`);
     }
 
+    // Get execution details for usage logging
+    const execution = await db.query.executions.findFirst({
+      where: eq(executions.id, job.executionId),
+    });
+
     // Update job as completed
     await db
       .update(executionJobs)
@@ -69,6 +74,57 @@ export abstract class BasePipelineJob extends BaseJob<PipelineJobData> {
         completedAt: new Date(),
       })
       .where(eq(executionJobs.id, jobRecordId));
+
+    // Log usage if organization and API key are set, and action hasn't been logged yet
+    if (
+      execution?.organizationId &&
+      execution?.apiKeyId &&
+      job.organizationId &&
+      !job.actionLogged
+    ) {
+      try {
+        // Determine if this is overage
+        const { checkIfOverage, calculateOverageCost } = await import(
+          "@repo/db"
+        );
+        const isOverage = await checkIfOverage(execution.organizationId);
+        const estimatedCost = isOverage
+          ? await calculateOverageCost(execution.organizationId, 1)
+          : null;
+
+        // Log the action
+        await logAction({
+          organizationId: execution.organizationId,
+          apiKeyId: execution.apiKeyId,
+          actionType: job.operation,
+          actionCount: 1,
+          executionId: job.executionId,
+          jobId: job.id,
+          isOverage,
+          estimatedCost: estimatedCost || undefined,
+          metadata: {
+            jobId: job.jobId,
+            operation: job.operation,
+          },
+        });
+
+        // Mark action as logged
+        await db
+          .update(executionJobs)
+          .set({ actionLogged: true })
+          .where(eq(executionJobs.id, jobRecordId));
+
+        console.log(
+          `[BasePipelineJob] Logged action for job ${job.jobId} (${job.operation}) - isOverage: ${isOverage}`,
+        );
+      } catch (error) {
+        console.error(
+          `[BasePipelineJob] Error logging action for job ${job.jobId}:`,
+          error,
+        );
+        // Don't fail the job if usage logging fails
+      }
+    }
 
     // Trigger orchestrator to check execution completion and emit dependent jobs
     const { getOrchestrator } = await import(

@@ -27,9 +27,7 @@ const productDemo = compose(
     duration: 3,
     aspectRatio: "16:9",
   }),
-  merge({ transition: "crossfade" }),
-  lipSync({ audioUrl: "https://cdn.example.com/voiceover.mp3" }),
-  addSubtitles({ language: "en", style: "bold" }),
+  merge(),
 );
 
 const createSocialMediaVariants = () => {

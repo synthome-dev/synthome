@@ -1,4 +1,96 @@
-import { pgTable, text, timestamp, jsonb, integer } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  timestamp,
+  jsonb,
+  integer,
+  boolean,
+  decimal,
+} from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
+
+// API Keys table - secure key storage
+// organizationId references Clerk organization ID
+export const apiKeys = pgTable("api_keys", {
+  id: text("id").primaryKey(),
+  organizationId: text("organization_id").notNull(), // Clerk org ID
+
+  keyHash: text("key_hash").notNull().unique(),
+  keyPrefix: text("key_prefix").notNull(), // 'sy_live_' or 'sy_test_'
+
+  name: text("name"),
+  isActive: boolean("is_active").notNull().default(true),
+  environment: text("environment").notNull().$type<"test" | "production">(),
+
+  // Security tracking
+  lastUsedAt: timestamp("last_used_at"),
+  lastUsedIp: text("last_used_ip"),
+  expiresAt: timestamp("expires_at"),
+
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  revokedAt: timestamp("revoked_at"),
+});
+
+// Usage Limits table - plan limits and current usage
+// organizationId references Clerk organization ID
+export const usageLimits = pgTable("usage_limits", {
+  id: text("id").primaryKey(),
+  organizationId: text("organization_id").notNull().unique(), // Clerk org ID
+
+  planType: text("plan_type").notNull().$type<"free" | "pro" | "custom">(),
+
+  // Limits
+  monthlyActionLimit: integer("monthly_action_limit").notNull(),
+  isUnlimited: boolean("is_unlimited").notNull().default(false),
+
+  // Current period tracking
+  currentPeriodStart: timestamp("current_period_start").notNull(),
+  currentPeriodEnd: timestamp("current_period_end").notNull(),
+  actionsUsedThisPeriod: integer("actions_used_this_period")
+    .notNull()
+    .default(0),
+
+  // Pro plan overage (no payment integration yet, just tracking)
+  overageAllowed: boolean("overage_allowed").notNull().default(false),
+  overagePricePerAction: decimal("overage_price_per_action", {
+    precision: 10,
+    scale: 4,
+  }),
+  overageActionsThisPeriod: integer("overage_actions_this_period")
+    .notNull()
+    .default(0),
+
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Action Logs table - detailed usage tracking
+export const actionLogs = pgTable("action_logs", {
+  id: text("id").primaryKey(),
+  organizationId: text("organization_id").notNull(), // Clerk org ID
+  apiKeyId: text("api_key_id")
+    .notNull()
+    .references(() => apiKeys.id, { onDelete: "cascade" }),
+
+  // Execution context
+  executionId: text("execution_id").references(() => executions.id, {
+    onDelete: "set null",
+  }),
+  jobId: text("job_id").references(() => executionJobs.id, {
+    onDelete: "set null",
+  }),
+
+  // Action details
+  actionType: text("action_type").notNull(), // 'generate-video', 'merge-videos', etc.
+  actionCount: integer("action_count").notNull().default(1),
+
+  // Billing context
+  isOverage: boolean("is_overage").notNull().default(false),
+  estimatedCost: decimal("estimated_cost", { precision: 10, scale: 4 }),
+
+  metadata: jsonb("metadata").$type<Record<string, any>>().default({}),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
 
 export const executions = pgTable("executions", {
   id: text("id").primaryKey(),
@@ -9,6 +101,12 @@ export const executions = pgTable("executions", {
   webhookSecret: text("webhook_secret"),
   result: jsonb("result"),
   error: text("error"),
+
+  // Billing integration - Clerk org ID
+  organizationId: text("organization_id"),
+  apiKeyId: text("api_key_id").references(() => apiKeys.id),
+  actionsCounted: integer("actions_counted").default(0),
+
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   completedAt: timestamp("completed_at"),
@@ -36,7 +134,55 @@ export const executionJobs = pgTable("execution_jobs", {
   nextPollAt: timestamp("next_poll_at"),
   pollAttempts: integer("poll_attempts").default(0),
 
+  // Billing integration - Clerk org ID
+  organizationId: text("organization_id"),
+  actionLogged: boolean("action_logged").default(false),
+
   createdAt: timestamp("created_at").defaultNow().notNull(),
   startedAt: timestamp("started_at"),
   completedAt: timestamp("completed_at"),
 });
+
+// ===== Relations =====
+
+export const apiKeysRelations = relations(apiKeys, ({ many }) => ({
+  actionLogs: many(actionLogs),
+  executions: many(executions),
+}));
+
+export const usageLimitsRelations = relations(usageLimits, ({}) => ({}));
+
+export const actionLogsRelations = relations(actionLogs, ({ one }) => ({
+  apiKey: one(apiKeys, {
+    fields: [actionLogs.apiKeyId],
+    references: [apiKeys.id],
+  }),
+  execution: one(executions, {
+    fields: [actionLogs.executionId],
+    references: [executions.id],
+  }),
+  job: one(executionJobs, {
+    fields: [actionLogs.jobId],
+    references: [executionJobs.id],
+  }),
+}));
+
+export const executionsRelations = relations(executions, ({ one, many }) => ({
+  apiKey: one(apiKeys, {
+    fields: [executions.apiKeyId],
+    references: [apiKeys.id],
+  }),
+  jobs: many(executionJobs),
+  actionLogs: many(actionLogs),
+}));
+
+export const executionJobsRelations = relations(
+  executionJobs,
+  ({ one, many }) => ({
+    execution: one(executions, {
+      fields: [executionJobs.executionId],
+      references: [executions.id],
+    }),
+    actionLogs: many(actionLogs),
+  }),
+);

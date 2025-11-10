@@ -1,18 +1,29 @@
 import { Hono } from "hono";
 import { getOrchestrator } from "../services/execution-orchestrator";
 import { db, executions, executionJobs, eq } from "@repo/db";
+import {
+  authMiddleware,
+  rateLimitMiddleware,
+  getAuthContext,
+} from "../middleware";
 
 const executeRouter = new Hono();
+
+// Apply middleware to all routes
+executeRouter.use("/*", authMiddleware);
+executeRouter.use("/*", rateLimitMiddleware);
 
 executeRouter.post("/", async (c) => {
   try {
     const { executionPlan, options } = await c.req.json();
+    const auth = getAuthContext(c);
 
     const orchestrator = await getOrchestrator();
-    const executionId = await orchestrator.createExecution(
-      executionPlan,
-      options || {},
-    );
+    const executionId = await orchestrator.createExecution(executionPlan, {
+      ...options,
+      organizationId: auth.organizationId,
+      apiKeyId: auth.apiKeyId,
+    });
 
     return c.json(
       {

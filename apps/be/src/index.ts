@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { executeRouter } from "./routes/execute";
 import { webhooksRouter } from "./routes/webhooks";
+import { adminRouter } from "./routes/admin";
 import { getOrchestrator } from "./services/execution-orchestrator";
 
 const app = new Hono();
@@ -31,6 +32,7 @@ app.post("/api/debug/check-dependent-jobs/:executionId/:jobId", async (c) => {
 
 app.route("/api/execute", executeRouter);
 app.route("/api/webhooks", webhooksRouter);
+app.route("/api/admin", adminRouter);
 
 export default {
   port: Bun.env.PORT ? parseInt(Bun.env.PORT) : 3100,
