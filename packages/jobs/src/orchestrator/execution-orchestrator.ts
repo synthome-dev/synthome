@@ -21,6 +21,8 @@ interface CreateExecutionOptions {
   webhookUrl?: string;
   webhookSecret?: string;
   baseExecutionId?: string;
+  organizationId?: string;
+  apiKeyId?: string;
 }
 
 export class ExecutionOrchestrator {
@@ -52,6 +54,8 @@ export class ExecutionOrchestrator {
       status: "pending",
       operation: job.operation || job.type || "",
       dependencies: job.dependencies || job.dependsOn || [],
+      organizationId: options.organizationId,
+      actionLogged: false,
       metadata: {
         params: job.params,
         output: job.output,
@@ -67,6 +71,9 @@ export class ExecutionOrchestrator {
       baseExecutionId: options.baseExecutionId,
       webhookUrl: options.webhookUrl,
       webhookSecret: options.webhookSecret,
+      organizationId: options.organizationId,
+      apiKeyId: options.apiKeyId,
+      actionsCounted: 0,
     });
 
     // Then insert jobs
