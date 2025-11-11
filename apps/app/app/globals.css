@@ -1,0 +1,308 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root,
+.light,
+.dark .invert-theme,
+.light .dark .invert-theme {
+  --text-public-primary: theme(colors.zinc.800);
+
+  --text-primary: theme(colors.gray.800);
+  --text-secondary: theme(colors.gray.600);
+  --text-tertiary: theme(colors.gray.400);
+  --text-placeholder: theme(colors.gray.300);
+
+  --border-color-primary: theme(colors.gray.100);
+  --border-color-secondary: theme(colors.gray.50);
+  --border-color-default: var(--border-color-primary);
+
+  --shadow-xs:
+    0px 0px 2px 0px theme(colors.black/8%),
+    0px 1px 2px 0px theme(colors.black/6%),
+    0px 0px 0px 1px theme(colors.black/4%);
+
+  --surface-50: theme(colors.zinc.100);
+  --surface-100: theme(colors.zinc.50);
+  --surface-200: theme(colors.white);
+
+  color: var(--text-primary);
+
+  --shiki-background: var(--surface-200);
+  --shiki-foreground: var(--text-secondary);
+  --shiki-foreground-subtle: var(--text-tertiary);
+  --shiki-token-comment: theme(colors.gray.500);
+}
+
+/* Dark */
+.dark,
+.light .invert-theme,
+.dark .light .invert-theme {
+  --text-public-primary: theme(colors.zinc.200);
+
+  --text-primary: theme(colors.zinc.100);
+  --text-secondary: theme(colors.zinc.400);
+  --text-tertiary: theme(colors.zinc.600);
+  --text-placeholder: theme(colors.zinc.300);
+
+  --border-color-dark: theme(colors.gray.150);
+  --border-color-primary: theme(colors.gray.100);
+  --border-color-secondary: theme(colors.gray.50);
+  --border-color-default: var(--border-color-primary);
+
+  --shadow-xs:
+    0px 0px 2px 0px theme(colors.black/8%),
+    0px 1px 2px 0px theme(colors.black/6%),
+    0px 0px 0px 1px theme(colors.black/4%);
+
+  --surface-50: theme(colors.zinc.800);
+  --surface-100: #1b1b1f;
+  --surface-200: #111113;
+
+  color: var(--text-primary);
+
+  --shiki-background: var(--surface-200);
+  --shiki-foreground: var(--text-secondary);
+  --shiki-foreground-subtle: var(--text-tertiary);
+  --shiki-token-comment: theme(colors.gray.500);
+  /* --text-primary: theme(colors.gray.100);
+  --text-secondary: theme(colors.gray.400);
+  --text-tertiary: theme(colors.gray.500);
+  --text-placeholder: theme(colors.gray.600);
+
+  --border-color-primary: theme(colors.gray.900);
+  --border-color-secondary: theme(colors.gray.800);
+  --border-color-default: var(--border-color-primary);
+
+  --shadow-xs: 0px 1.5px 2px 0px theme(colors.black/32%),
+    0px -1px 0px 0px theme(colors.white/4%),
+    0px 0px 0px 1px theme(colors.white/12%);
+
+  --surface-50: theme(colors.zinc.950);
+  --surface-100: theme(colors.zinc.900);
+  --surface-200: theme(colors.zinc.800);
+
+  color: var(--text-primary); */
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.56% 92.94%;
+    --input: 240 5.9% 90%;
+    --ring: 240 10% 3.9%;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --radius: 0.5rem;
+    --sidebar-background: 240 4.8% 95.9%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 255 100% 100%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+.prose-sm > div:first-child > p {
+  margin-top: 0;
+}
+
+.prose-sm > div:last-child > p:last-child {
+  margin-bottom: 0;
+}
+
+.textarea-auto-resize {
+  field-sizing: content;
+}
+
+.prose-sm :where(h3):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
+  @apply text-base font-semibold;
+}
+
+.prose-sm :where(h4):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
+  @apply text-base font-semibold;
+}
+
+.prose-sm :where(h5):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
+  @apply text-sm font-semibold;
+}
+
+.ai-blend-animation::before {
+  content: "";
+  position: absolute;
+  top: -16px;
+  left: -16px;
+  right: -16px;
+  bottom: -16px;
+  z-index: 1;
+  border-radius: 48px;
+  background: linear-gradient(
+    45deg,
+    rgba(255, 182, 193, 1),
+    rgba(173, 216, 230, 1),
+    rgba(221, 160, 221, 1),
+    rgba(255, 218, 185, 1),
+    rgba(152, 251, 152, 1)
+  );
+  background-size: 300% 300%;
+  animation: blendColors 10s ease-in-out infinite;
+  /* position: relative;
+  overflow: hidden; */
+}
+
+/* .ai-blend-animation::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.3) 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.3) 100%
+  );
+  animation: shimmer 2s ease-in-out infinite;
+  border-radius: inherit;
+} */
+
+@keyframes blendColors {
+  0% {
+    background-position: 0% 50%;
+    opacity: 0.98;
+  }
+  20% {
+    background-position: 100% 50%;
+    opacity: 0.98;
+  }
+  40% {
+    background-position: 50% 100%;
+    opacity: 0.98;
+  }
+  60% {
+    background-position: 100% 0%;
+    opacity: 0.98;
+  }
+  80% {
+    background-position: 0% 100%;
+    opacity: 0.98;
+  }
+  100% {
+    background-position: 0% 50%;
+    opacity: 0.98;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+/* Premium step reveal animation - subtle and smooth */
+@keyframes stepReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Fade and slide animation for initial elements */
+@keyframes fadeSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.step-animate-in {
+  animation: stepReveal 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  will-change: transform, opacity;
+}
+
+/* Hide scrollbar while keeping scroll functionality */
+.no-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
