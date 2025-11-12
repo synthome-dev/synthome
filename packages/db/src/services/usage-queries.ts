@@ -1,6 +1,6 @@
-import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
-import { db } from "../db/index.js";
-import { usageLimits, actionLogs } from "../db/schema.js";
+import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
+import { db } from "../db";
+import { actionLogs, usageLimits } from "../db/schema";
 
 export interface UsageLimitsInfo {
   id: string;
@@ -54,7 +54,7 @@ export interface GetUsageHistoryParams {
  * Get current usage limits and period info for an organization.
  */
 export async function getCurrentUsage(
-  organizationId: string,
+  organizationId: string
 ): Promise<UsageLimitsInfo | null> {
   const [limits] = await db
     .select()
@@ -69,7 +69,7 @@ export async function getCurrentUsage(
  * Returns paginated results ordered by most recent first.
  */
 export async function getUsageHistory(
-  params: GetUsageHistoryParams,
+  params: GetUsageHistoryParams
 ): Promise<ActionLogInfo[]> {
   const {
     organizationId,
@@ -120,7 +120,7 @@ export async function getUsageHistory(
 export async function getUsageByActionType(
   organizationId: string,
   startDate?: Date,
-  endDate?: Date,
+  endDate?: Date
 ): Promise<UsageByActionType[]> {
   const conditions = [eq(actionLogs.organizationId, organizationId)];
 
@@ -158,7 +158,7 @@ export async function getUsageByActionType(
  * If not found, returns null (organization needs to be initialized).
  */
 export async function getUsageLimits(
-  organizationId: string,
+  organizationId: string
 ): Promise<UsageLimitsInfo | null> {
   return getCurrentUsage(organizationId);
 }
