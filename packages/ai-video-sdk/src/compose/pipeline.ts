@@ -1,6 +1,8 @@
 import type {
+  AudioOperation,
   ExecuteOptions,
   ExecutionPlan,
+  ImageOperation,
   JobNode,
   Pipeline,
   PipelineExecution,
@@ -8,11 +10,10 @@ import type {
   Video,
   VideoNode,
   VideoOperation,
-  ImageOperation,
-  AudioOperation,
 } from "../core/video.js";
+import { getSynthomeApiKey } from "../utils/api-key.js";
 
-export type { Pipeline, PipelineProgress, PipelineExecution, ExecuteOptions };
+export type { ExecuteOptions, Pipeline, PipelineExecution, PipelineProgress };
 
 class VideoExecution implements PipelineExecution {
   id: string;
@@ -23,7 +24,7 @@ class VideoExecution implements PipelineExecution {
   constructor(
     id: string,
     private apiUrl: string,
-    private apiKey?: string,
+    private apiKey?: string
   ) {
     this.id = id;
   }
@@ -36,7 +37,7 @@ class VideoExecution implements PipelineExecution {
   }
 
   async waitForCompletion(
-    progressCallback?: (progress: PipelineProgress) => void,
+    progressCallback?: (progress: PipelineProgress) => void
   ): Promise<Video> {
     const statusUrl = `${this.apiUrl}/${this.id}/status`;
     const interval = 3000;
@@ -220,7 +221,7 @@ class VideoPipeline implements Pipeline {
 
       // Collect all dependency job IDs
       const depJobIds = [imageJobId, audioJobId, videoJobId].filter(
-        (id): id is string => id !== undefined,
+        (id): id is string => id !== undefined
       );
 
       if (op.type === "merge") {
@@ -317,6 +318,9 @@ class VideoPipeline implements Pipeline {
     const plan = this.toJSON();
     const apiUrl = config?.apiUrl || "http://localhost:3000/api/execute";
 
+    // Get SYNTHOME_API_KEY for backend authorization
+    const synthomeApiKey = getSynthomeApiKey(config?.apiKey);
+
     if (config?.baseExecutionId) {
       plan.baseExecutionId = config.baseExecutionId;
     }
@@ -336,7 +340,7 @@ class VideoPipeline implements Pipeline {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ...(config?.apiKey && { Authorization: `Bearer ${config.apiKey}` }),
+        Authorization: `Bearer ${synthomeApiKey}`,
       },
       body: JSON.stringify(requestBody),
     });
@@ -347,7 +351,7 @@ class VideoPipeline implements Pipeline {
 
     const { executionId } = (await response.json()) as { executionId: string };
 
-    const execution = new VideoExecution(executionId, apiUrl, config?.apiKey);
+    const execution = new VideoExecution(executionId, apiUrl, synthomeApiKey);
 
     if (!config?.webhookUrl) {
       execution.waitForCompletion(this.progressCallback);

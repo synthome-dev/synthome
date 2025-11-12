@@ -5,6 +5,7 @@ import type {
   VideoJob,
   VideoModel,
 } from "../core/types.js";
+import { getSynthomeApiKey } from "../utils/api-key.js";
 import { mapUnifiedToProviderOptions } from "../utils/mapping.js";
 import { pollJobStatus } from "../utils/polling.js";
 
@@ -32,6 +33,7 @@ async function createVideoJob<TModelOptions extends ProviderConfig>(
 ): Promise<VideoJob> {
   const { model, webhook } = options;
 
+  // Get provider-specific API key
   const apiKey = model.options.apiKey || getApiKeyFromEnv(model.provider);
 
   if (!apiKey) {
@@ -39,6 +41,9 @@ async function createVideoJob<TModelOptions extends ProviderConfig>(
       `API key not found for provider "${model.provider}". Please provide it in model options or set the environment variable.`
     );
   }
+
+  // Get SYNTHOME_API_KEY for backend authorization
+  const synthomeApiKey = getSynthomeApiKey();
 
   let providerOptions: unknown;
 
@@ -78,6 +83,7 @@ async function createVideoJob<TModelOptions extends ProviderConfig>(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      Authorization: `Bearer ${synthomeApiKey}`,
     },
     body: JSON.stringify({
       provider: model.provider,
@@ -97,7 +103,14 @@ async function createVideoJob<TModelOptions extends ProviderConfig>(
 }
 
 async function fetchJobStatus(jobId: string): Promise<VideoJob> {
-  const response = await fetch(`/api/video/status/${jobId}`);
+  // Get SYNTHOME_API_KEY for backend authorization
+  const synthomeApiKey = getSynthomeApiKey();
+
+  const response = await fetch(`/api/video/status/${jobId}`, {
+    headers: {
+      Authorization: `Bearer ${synthomeApiKey}`,
+    },
+  });
 
   if (!response.ok) {
     throw new Error(`Failed to fetch job status: ${response.statusText}`);
@@ -134,4 +147,3 @@ export async function generateVideo<TModelOptions extends ProviderConfig>(
 
   return pollJobStatus(job.id, fetchJobStatus, options.onProgress);
 }
-
