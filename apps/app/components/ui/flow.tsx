@@ -1,7 +1,12 @@
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { CeramicCard } from "@/components/ui/card";
-import type { Flow as FlowType } from "@repo/db";
+// import type { Flow as FlowType } from "@repo/db";
 import { VideoIcon } from "lucide-react";
+
+type FlowType = {
+  media?: string;
+  name: string;
+};
 
 export const Flow = ({ flow }: { flow: FlowType }) => {
   return (

@@ -1,10 +1,9 @@
 "use client";
 
-import { TrashIcon } from "@/components/icons";
 import { cn } from "@/lib/utils";
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 import { cva, type VariantProps } from "class-variance-authority";
-import { Check, ChevronRight, Circle } from "lucide-react";
+import { Check, ChevronRight, Circle, Trash } from "lucide-react";
 import * as React from "react";
 
 const DropdownMenu = DropdownMenuPrimitive.Root;
@@ -32,7 +31,7 @@ const DropdownMenuSubTrigger = React.forwardRef<
       "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       "before:absolute before:inset-x-1 before:inset-y-px before:-z-1 before:shadow-[inset_0px_1px_0px_hsla(0,0%,100%,0.02),inset_0px_0px_0px_1px_hsla(0,0%,100%,0.02),0px_1px_2px_rgba(0,0,0,0.12),0px_2px_4px_rgba(0,0,0,0.08),0px_0px_0px_0.5px_rgba(0,0,0,0.24)] before:rounded before:bg-gray-800 before:opacity-0 hover:before:opacity-100 focus-visible:before:opacity-100",
       inset && "pl-8",
-      className
+      className,
     )}
     {...props}
   >
@@ -52,7 +51,7 @@ const DropdownMenuSubContent = React.forwardRef<
     className={cn(
       "z-50 min-w-[8rem] rounded-lg bg-gray-925 py-2 text-primary shadow-xl shadow-black/[0.08] ring-1 ring-gray-950",
       "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
-      className
+      className,
     )}
     {...props}
   />
@@ -71,7 +70,7 @@ const DropdownMenuContent = React.forwardRef<
       className={cn(
         "dark z-[99999] min-w-[240px] rounded-lg bg-gray-925 py-xs text-primary shadow-xl shadow-black/[0.08] ring-1 ring-gray-950 dark:ring-zinc-800",
         "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
-        className
+        className,
       )}
       {...props}
     />
@@ -113,11 +112,11 @@ const DropdownMenuItemDelete = React.memo(
           setState("Confirm?");
         }}
       >
-        <TrashIcon className="w-4" />
+        <Trash className="w-4" />
         {state}
       </DropdownMenuItem>
     );
-  }
+  },
 );
 DropdownMenuItemDelete.displayName = "DropdownMenuItemDelete";
 
@@ -141,11 +140,11 @@ const DropdownMenuItem = React.memo(
         // // "before:absolute before:inset-x-1 before:inset-y-px before:-z-1 before:shadow-[inset_0px_1px_0px_hsla(0,0%,100%,0.02),inset_0px_0px_0px_1px_hsla(0,0%,100%,0.02),0px_1px_2px_rgba(0,0,0,0.12),0px_2px_4px_rgba(0,0,0,0.08),0px_0px_0px_0.5px_rgba(0,0,0,0.24)] before:rounded before:opacity-0 hover:before:opacity-100 focus-visible:before:opacity-100",
         // dropdownMenuItemVariants({ variant }),
         // inset && "pl-8",
-        className
+        className,
       )}
       {...props}
     />
-  ))
+  )),
 );
 
 DropdownMenuItem.displayName = DropdownMenuPrimitive.Item.displayName;
@@ -159,7 +158,7 @@ const DropdownMenuCheckboxItem = React.memo(
       ref={ref}
       className={cn(
         "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-        className
+        className,
       )}
       checked={checked}
       {...props}
@@ -171,7 +170,7 @@ const DropdownMenuCheckboxItem = React.memo(
       </span>
       {children}
     </DropdownMenuPrimitive.CheckboxItem>
-  ))
+  )),
 );
 DropdownMenuCheckboxItem.displayName =
   DropdownMenuPrimitive.CheckboxItem.displayName;
@@ -185,7 +184,7 @@ const DropdownMenuRadioItem = React.memo(
       ref={ref}
       className={cn(
         "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors text-primary data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-        className
+        className,
       )}
       {...props}
     >
@@ -196,7 +195,7 @@ const DropdownMenuRadioItem = React.memo(
       </span>
       {children}
     </DropdownMenuPrimitive.RadioItem>
-  ))
+  )),
 );
 DropdownMenuRadioItem.displayName = DropdownMenuPrimitive.RadioItem.displayName;
 
@@ -212,11 +211,11 @@ const DropdownMenuLabel = React.memo(
       className={cn(
         "py-1.5 pl-3 pr-2 text-sm font-semibold text-secondary",
         inset && "pl-8",
-        className
+        className,
       )}
       {...props}
     />
-  ))
+  )),
 );
 DropdownMenuLabel.displayName = DropdownMenuPrimitive.Label.displayName;
 
@@ -299,7 +298,7 @@ export type {
   MenuSeparatorType,
   MenuSubType,
   MenuTextType,
-  MenuWidth
+  MenuWidth,
 };
 
 function isTruthy<T>(value: T | null | undefined | false | 0 | ""): value is T {
@@ -307,7 +306,7 @@ function isTruthy<T>(value: T | null | undefined | false | 0 | ""): value is T {
 }
 
 function buildMenuItems(
-  items?: (MenuItem | undefined | false | null | "")[] | false
+  items?: (MenuItem | undefined | false | null | "")[] | false,
 ): MenuItem[] {
   if (!items) return [];
   return items?.filter(isTruthy) ?? [];
@@ -315,22 +314,21 @@ function buildMenuItems(
 
 export { buildMenuItems };
 
-  export {
-    DropdownMenu,
-    DropdownMenuCheckboxItem,
-    DropdownMenuContent,
-    DropdownMenuGroup,
-    DropdownMenuItem,
-    DropdownMenuItemDelete,
-    DropdownMenuLabel,
-    DropdownMenuPortal,
-    DropdownMenuRadioGroup,
-    DropdownMenuRadioItem,
-    DropdownMenuSeparator,
-    DropdownMenuShortcut,
-    DropdownMenuSub,
-    DropdownMenuSubContent,
-    DropdownMenuSubTrigger,
-    DropdownMenuTrigger
-  };
-
+export {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuItemDelete,
+  DropdownMenuLabel,
+  DropdownMenuPortal,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+};
