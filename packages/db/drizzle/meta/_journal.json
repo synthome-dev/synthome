@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1729267200000,
+      "tag": "0002_add_campaign_short_description",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1730809200000,
+      "tag": "0003_add_pipeline_execution_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1762941941917,
+      "tag": "0002_worthless_snowbird",
+      "breakpoints": true
+    }
+  ]
+}

@@ -1,1 +1,1 @@
-export { generateId, generateIdWithLength } from "./id.js";
+export { generateId, generateIdWithLength } from "./id";

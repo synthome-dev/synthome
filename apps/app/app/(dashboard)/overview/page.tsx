@@ -1,7 +1,10 @@
-export default function DashboardPage() {
+import { PageWrapper } from "@/components/page-wrapper";
+import { PageTitle } from "@/components/page-title";
+
+export default function OverviewPage() {
   return (
-    <div className="p-8">
-      <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
+    <PageWrapper>
+      <PageTitle className="mb-6">Overview</PageTitle>
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-lg border bg-card p-6">
           <h3 className="font-semibold mb-2">Total Requests</h3>
@@ -16,6 +19,6 @@ export default function DashboardPage() {
           <p className="text-3xl font-bold">0</p>
         </div>
       </div>
-    </div>
+    </PageWrapper>
   );
 }
