@@ -8,8 +8,14 @@ RUN apt-get update && \
 
 WORKDIR /app
 
-# Copy only the source code
-COPY . .
+# Copy package files first for better caching
+COPY apps/ffmpeg/package.json apps/ffmpeg/bun.lock* ./
+
+# Install dependencies
+RUN bun install --frozen-lockfile
+
+# Copy the ffmpeg app source code
+COPY apps/ffmpeg/ .
 
 # Expose the port
 EXPOSE 3000
