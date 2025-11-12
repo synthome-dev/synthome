@@ -19,6 +19,9 @@ export class GenerateVideoJob extends BasePipelineJob {
 
       console.log(`[GenerateVideoJob] Generating video with params:`, params);
 
+      // Fetch execution to get provider API keys
+      const execution = await this.getExecutionWithProviderKeys(jobRecordId);
+
       const { modelId, ...providerParams } = params as {
         modelId?: string;
         [key: string]: any;
@@ -73,22 +76,31 @@ export class GenerateVideoJob extends BasePipelineJob {
 
       await this.updateJobProgress(jobRecordId, "calling provider API", 10);
 
-      const provider = VideoProviderFactory.getProvider(modelInfo.provider);
+      // Get client's API key for this provider (if provided)
+      const providerApiKey =
+        execution.providerApiKeys?.[
+          modelInfo.provider as keyof typeof execution.providerApiKeys
+        ];
+
+      const provider = VideoProviderFactory.getProvider(
+        modelInfo.provider,
+        providerApiKey,
+      );
 
       // Build webhook URL if provider supports webhooks
-      const webhookUrl = capabilities.supportsWebhooks
+      const webhook = capabilities.supportsWebhooks
         ? `${process.env.API_BASE_URL || "http://localhost:3000"}/api/webhooks/job/${jobRecordId}`
         : undefined;
 
       console.log(
-        `[GenerateVideoJob] Webhook URL: ${webhookUrl} (API_BASE_URL: ${process.env.API_BASE_URL})`,
+        `[GenerateVideoJob] Webhook URL: ${webhook} (API_BASE_URL: ${process.env.API_BASE_URL})`,
       );
 
       // Start generation (non-blocking)
       const generationStart = await provider.startGeneration(
         modelId,
         providerApiParams,
-        webhookUrl,
+        webhook,
       );
 
       console.log(

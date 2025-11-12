@@ -20,7 +20,7 @@ export class GoogleCloudService implements VideoProviderService {
 
   async generateVideo(
     modelId: string,
-    params: Record<string, unknown>
+    params: Record<string, unknown>,
   ): Promise<VideoGenerationResult> {
     const generativeModel = this.vertex.getGenerativeModel({ model: modelId });
 
@@ -31,7 +31,7 @@ export class GoogleCloudService implements VideoProviderService {
 
     if (!fileUri) {
       throw new Error(
-        `No video URL found in Google Cloud response: ${JSON.stringify(result)}`
+        `No video URL found in Google Cloud response: ${JSON.stringify(result)}`,
       );
     }
 
@@ -41,7 +41,7 @@ export class GoogleCloudService implements VideoProviderService {
   async startGeneration(
     modelId: string,
     params: Record<string, unknown>,
-    webhookUrl?: string
+    webhook?: string,
   ): Promise<AsyncGenerationStart> {
     // Google Cloud Vertex AI doesn't support webhooks natively
     // Start the generation and return an operation ID for polling
@@ -50,7 +50,7 @@ export class GoogleCloudService implements VideoProviderService {
     // For now, we'll use a simplified approach
     // In production, you'd want to use Google Cloud Tasks or Pub/Sub
     throw new Error(
-      "Google Cloud async generation not yet implemented - use polling"
+      "Google Cloud async generation not yet implemented - use polling",
     );
   }
 

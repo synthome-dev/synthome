@@ -36,11 +36,11 @@ export class FalService implements VideoProviderService {
   async startGeneration(
     modelId: string,
     params: Record<string, unknown>,
-    webhookUrl?: string,
+    webhook?: string,
   ): Promise<AsyncGenerationStart> {
     const { request_id } = await fal.queue.submit(modelId, {
       input: params,
-      webhookUrl,
+      webhookUrl: webhook,
     });
 
     return {

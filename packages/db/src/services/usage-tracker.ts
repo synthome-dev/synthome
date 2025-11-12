@@ -55,6 +55,10 @@ export async function logAction(params: LogActionParams): Promise<string> {
     })
     .returning({ id: actionLogs.id });
 
+  if (!actionLog) {
+    throw new Error("Failed to insert action log");
+  }
+
   // Increment the usage counters
   await incrementUsage({
     organizationId,
@@ -70,7 +74,7 @@ export async function logAction(params: LogActionParams): Promise<string> {
  * Increments either actionsUsedThisPeriod or overageActionsThisPeriod.
  */
 export async function incrementUsage(
-  params: IncrementUsageParams
+  params: IncrementUsageParams,
 ): Promise<void> {
   const { organizationId, actionCount, isOverage } = params;
 
@@ -115,7 +119,7 @@ export async function checkIfOverage(organizationId: string): Promise<boolean> {
 
   if (!limits) {
     throw new Error(
-      `Usage limits not found for organization: ${organizationId}`
+      `Usage limits not found for organization: ${organizationId}`,
     );
   }
 
@@ -139,7 +143,7 @@ export async function checkIfOverage(organizationId: string): Promise<boolean> {
  */
 export async function calculateOverageCost(
   organizationId: string,
-  actionCount: number = 1
+  actionCount: number = 1,
 ): Promise<string | null> {
   const [limits] = await db
     .select({

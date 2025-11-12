@@ -5,10 +5,13 @@
     "dev": "bun run --hot src/index.ts"
   },
   "dependencies": {
+    "@clerk/backend": "^1.21.0",
     "hono": "^4.9.10",
     "nanoid": "^5.0.8",
+    "svix": "^1.40.0",
+    "@repo/api-types": "workspace:*",
     "@repo/db": "workspace:*",
-    "@repo/ai-video-sdk": "workspace:*",
+    "@synthome/sdk": "workspace:*",
     "@repo/jobs": "workspace:*",
     "drizzle-orm": "0.38.3"
   },

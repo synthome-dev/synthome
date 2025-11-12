@@ -18,6 +18,9 @@ export class GenerateImageJob extends BasePipelineJob {
 
       console.log(`[GenerateImageJob] Generating image with params:`, params);
 
+      // Fetch execution to get provider API keys
+      const execution = await this.getExecutionWithProviderKeys(jobRecordId);
+
       const { modelId, ...providerParams } = params as {
         modelId?: string;
         [key: string]: any;
@@ -53,7 +56,16 @@ export class GenerateImageJob extends BasePipelineJob {
 
       await this.updateJobProgress(jobRecordId, "calling provider API", 10);
 
-      const provider = VideoProviderFactory.getProvider(modelInfo.provider);
+      // Get client's API key for this provider (if provided)
+      const providerApiKey =
+        execution.providerApiKeys?.[
+          modelInfo.provider as keyof typeof execution.providerApiKeys
+        ];
+
+      const provider = VideoProviderFactory.getProvider(
+        modelInfo.provider,
+        providerApiKey,
+      );
 
       // Start image generation (no webhook needed - we'll poll synchronously)
       const generationStart = await provider.startGeneration(

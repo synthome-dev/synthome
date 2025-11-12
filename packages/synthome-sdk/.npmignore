@@ -1,0 +1,16 @@
+# Source files
+src/
+tsconfig.json
+
+# Development files
+*.md
+!README.md
+
+# Tests
+*.test.ts
+*.spec.ts
+__tests__/
+
+# Build config
+.eslintrc*
+.prettierrc*

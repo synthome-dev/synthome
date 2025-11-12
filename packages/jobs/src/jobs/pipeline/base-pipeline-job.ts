@@ -14,6 +14,50 @@ export interface PipelineJobData {
 export abstract class BasePipelineJob extends BaseJob<PipelineJobData> {
   abstract work(job: PgBoss.Job<PipelineJobData>): Promise<void>;
 
+  /**
+   * Fetches the execution record and provider API keys for a job
+   * This is a reusable function used by all pipeline jobs to get access to client-provided provider API keys
+   *
+   * @param jobRecordId The ID of the job record
+   * @returns The execution record with provider API keys
+   * @throws Error if job record or execution is not found
+   */
+  protected async getExecutionWithProviderKeys(jobRecordId: string): Promise<{
+    executionId: string;
+    providerApiKeys?: {
+      replicate?: string;
+      fal?: string;
+      "google-cloud"?: string;
+    };
+    organizationId?: string;
+    apiKeyId?: string;
+  }> {
+    // Fetch job record
+    const jobRecord = await db.query.executionJobs.findFirst({
+      where: eq(executionJobs.id, jobRecordId),
+    });
+
+    if (!jobRecord) {
+      throw new Error(`Job record ${jobRecordId} not found`);
+    }
+
+    // Fetch execution to get provider API keys
+    const execution = await db.query.executions.findFirst({
+      where: eq(executions.id, jobRecord.executionId),
+    });
+
+    if (!execution) {
+      throw new Error(`Execution ${jobRecord.executionId} not found`);
+    }
+
+    return {
+      executionId: execution.id,
+      providerApiKeys: execution.providerApiKeys as any,
+      organizationId: execution.organizationId ?? undefined,
+      apiKeyId: execution.apiKeyId ?? undefined,
+    };
+  }
+
   protected async updateJobProgress(
     jobRecordId: string,
     stage: string,
