@@ -76,10 +76,27 @@ export interface PipelineExecution {
 }
 
 export interface ExecuteOptions {
+  /**
+   * SYNTHOME_API_KEY for backend authorization.
+   * If not provided, will attempt to read from SYNTHOME_API_KEY environment variable.
+   */
   apiKey?: string;
+  /**
+   * Base URL for the API endpoint.
+   * Defaults to http://localhost:3000/api/execute
+   */
   apiUrl?: string;
+  /**
+   * Reference to a parent execution ID for dependency chaining.
+   */
   baseExecutionId?: string;
+  /**
+   * Webhook URL to receive completion notification.
+   */
   webhookUrl?: string;
+  /**
+   * Secret for HMAC webhook signature verification.
+   */
   webhookSecret?: string;
 }
 
