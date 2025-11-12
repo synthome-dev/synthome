@@ -8,6 +8,72 @@ import type {
 } from "./types";
 
 export class ApiKeyService {
+  private readonly ENCRYPTION_KEY: Buffer;
+  private readonly ALGORITHM = "aes-256-gcm";
+  private readonly IV_LENGTH = 16;
+  private readonly AUTH_TAG_LENGTH = 16;
+
+  constructor() {
+    // Get encryption key from environment variable
+    const encryptionKey = process.env.API_KEY_ENCRYPTION_SECRET;
+    if (!encryptionKey) {
+      throw new Error(
+        "API_KEY_ENCRYPTION_SECRET environment variable is required",
+      );
+    }
+    // Ensure key is 32 bytes for AES-256
+    this.ENCRYPTION_KEY = crypto
+      .createHash("sha256")
+      .update(encryptionKey)
+      .digest();
+  }
+
+  /**
+   * Encrypt an API key
+   */
+  private encrypt(plaintext: string): string {
+    const iv = crypto.randomBytes(this.IV_LENGTH);
+    const cipher = crypto.createCipheriv(
+      this.ALGORITHM,
+      this.ENCRYPTION_KEY,
+      iv,
+    );
+
+    let encrypted = cipher.update(plaintext, "utf8", "hex");
+    encrypted += cipher.final("hex");
+
+    const authTag = cipher.getAuthTag();
+
+    // Format: iv:authTag:encrypted
+    return `${iv.toString("hex")}:${authTag.toString("hex")}:${encrypted}`;
+  }
+
+  /**
+   * Decrypt an API key
+   */
+  private decrypt(encrypted: string): string {
+    const parts = encrypted.split(":");
+    if (parts.length !== 3) {
+      throw new Error("Invalid encrypted key format");
+    }
+
+    const iv = Buffer.from(parts[0]!, "hex");
+    const authTag = Buffer.from(parts[1]!, "hex");
+    const encryptedText = parts[2]!;
+
+    const decipher = crypto.createDecipheriv(
+      this.ALGORITHM,
+      this.ENCRYPTION_KEY,
+      iv,
+    );
+    decipher.setAuthTag(authTag);
+
+    let decrypted = decipher.update(encryptedText, "hex", "utf8");
+    decrypted += decipher.final("utf8");
+
+    return decrypted;
+  }
+
   /**
    * Generate a new API key with Synthome format
    * Format: sy_live_<64-hex-chars> or sy_test_<64-hex-chars>
@@ -24,8 +90,11 @@ export class ApiKeyService {
     const randomBytes = crypto.randomBytes(32).toString("hex"); // 64 chars
     const apiKey = `${prefix}${randomBytes}`;
 
-    // Hash for storage (never store plaintext)
+    // Hash for validation (used for API authentication)
     const keyHash = crypto.createHash("sha256").update(apiKey).digest("hex");
+
+    // Encrypt for storage (can be decrypted for display)
+    const keyEncrypted = this.encrypt(apiKey);
 
     // Store in database
     const records = await db
@@ -34,6 +103,7 @@ export class ApiKeyService {
         id: generateId(),
         organizationId: organizationId,
         keyHash: keyHash,
+        keyEncrypted: keyEncrypted,
         keyPrefix: prefix,
         name: name || null,
         environment: environment,
@@ -47,7 +117,7 @@ export class ApiKeyService {
       throw new Error("Failed to create API key");
     }
 
-    // Return plaintext key ONLY ONCE
+    // Return plaintext key
     return {
       apiKey: apiKey,
       id: record.id,
@@ -94,7 +164,32 @@ export class ApiKeyService {
   }
 
   /**
-   * List all API keys for an organization (without plaintext or hash)
+   * List all API keys for an organization with decrypted keys
+   */
+  async listApiKeysWithDecryption(
+    organizationId: string,
+  ): Promise<Array<ApiKeyInfo & { decryptedKey: string }>> {
+    const keys = await db.query.apiKeys.findMany({
+      where: eq(apiKeys.organizationId, organizationId),
+      orderBy: (apiKeys, { desc }) => [desc(apiKeys.createdAt)],
+    });
+
+    return keys.map((key) => ({
+      id: key.id,
+      name: key.name,
+      keyPrefix: key.keyPrefix,
+      environment: key.environment,
+      isActive: key.isActive,
+      lastUsedAt: key.lastUsedAt,
+      createdAt: key.createdAt,
+      revokedAt: key.revokedAt,
+      expiresAt: key.expiresAt,
+      decryptedKey: this.decrypt(key.keyEncrypted),
+    }));
+  }
+
+  /**
+   * List all API keys for an organization (without decrypted keys)
    * Uses Drizzle's column selection for type-safe field exclusion
    */
   async listApiKeys(organizationId: string): Promise<ApiKeyInfo[]> {
@@ -110,23 +205,36 @@ export class ApiKeyService {
         createdAt: true,
         revokedAt: true,
         expiresAt: true,
-        // Excluded fields (not selected): keyHash, organizationId, lastUsedIp
+        // Excluded fields (not selected): keyHash, keyEncrypted, organizationId, lastUsedIp
       },
       orderBy: (apiKeys, { desc }) => [desc(apiKeys.createdAt)],
     });
   }
 
   /**
-   * Revoke an API key (soft delete)
+   * Delete an API key (hard delete)
    */
-  async revokeApiKey(keyId: string): Promise<{ success: boolean }> {
-    await db
-      .update(apiKeys)
-      .set({
-        isActive: false,
-        revokedAt: new Date(),
-      })
-      .where(eq(apiKeys.id, keyId));
+  async revokeApiKey(
+    keyId: string,
+    organizationId?: string,
+  ): Promise<{ success: boolean }> {
+    // If organizationId provided, verify ownership
+    if (organizationId) {
+      const key = await db.query.apiKeys.findFirst({
+        where: eq(apiKeys.id, keyId),
+      });
+
+      if (!key) {
+        throw new Error("API key not found");
+      }
+
+      if (key.organizationId !== organizationId) {
+        throw new Error("API key does not belong to this organization");
+      }
+    }
+
+    // Hard delete the API key
+    await db.delete(apiKeys).where(eq(apiKeys.id, keyId));
 
     return { success: true };
   }

@@ -230,9 +230,62 @@ module.exports = {
             lineHeight: "2.25rem",
           },
         ],
+        // Ceramic-inspired heading sizes
+        "heading-1": [
+          "2rem",
+          {
+            lineHeight: "2.5rem",
+            letterSpacing: "-0.02em",
+            fontWeight: "600",
+          },
+        ],
+        "heading-2": [
+          "1.75rem",
+          {
+            lineHeight: "2.25rem",
+            letterSpacing: "-0.015em",
+            fontWeight: "550",
+          },
+        ],
+        "heading-3": [
+          "1.625rem",
+          {
+            lineHeight: "2.125rem",
+            letterSpacing: "-0.0125em",
+            fontWeight: "525",
+          },
+        ],
+        "heading-4": [
+          "1.5rem",
+          {
+            lineHeight: "2rem",
+            letterSpacing: "-0.01em",
+            fontWeight: "500",
+          },
+        ],
+        "heading-5": [
+          "1.25rem",
+          {
+            lineHeight: "1.75rem",
+            letterSpacing: "-0.0075em",
+            fontWeight: "500",
+          },
+        ],
+        "heading-6": [
+          "1.125rem",
+          {
+            lineHeight: "1.625rem",
+            letterSpacing: "-0.005em",
+            fontWeight: "500",
+          },
+        ],
       },
       fontWeight: {
         book: "450",
+      },
+      letterSpacing: {
+        tighter: "-0.02em",
+        tight: "-0.01em",
       },
       keyframes: {
         slideDown: {

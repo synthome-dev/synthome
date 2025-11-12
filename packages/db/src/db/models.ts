@@ -1,4 +1,7 @@
-import { executionJobs, executions } from "./schema";
+import { apiKeys, executionJobs, executions } from "./schema";
+
+export type ApiKey = typeof apiKeys.$inferSelect;
+export type NewApiKey = typeof apiKeys.$inferInsert;
 
 export type Execution = typeof executions.$inferSelect;
 export type NewExecution = typeof executions.$inferInsert;
