@@ -8,11 +8,11 @@ RUN apt-get update && \
 
 WORKDIR /app
 
-# Copy package files first for better caching
-COPY apps/ffmpeg/package.json apps/ffmpeg/bun.lock* ./
+# Copy package.json for dependency installation
+COPY apps/ffmpeg/package.json ./
 
-# Install dependencies
-RUN bun install --frozen-lockfile
+# Install dependencies (will generate fresh lockfile)
+RUN bun install
 
 # Copy the ffmpeg app source code
 COPY apps/ffmpeg/ .
