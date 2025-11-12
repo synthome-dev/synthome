@@ -16,6 +16,7 @@ export const apiKeys = pgTable("api_keys", {
   organizationId: text("organization_id").notNull(), // Clerk org ID
 
   keyHash: text("key_hash").notNull().unique(),
+  keyEncrypted: text("key_encrypted").notNull(), // AES-256 encrypted key
   keyPrefix: text("key_prefix").notNull(), // 'sy_live_' or 'sy_test_'
 
   name: text("name"),

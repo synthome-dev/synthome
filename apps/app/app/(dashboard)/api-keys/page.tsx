@@ -1,10 +1,31 @@
-export default function ApiKeysPage() {
+import { PageWrapper } from "@/components/page-wrapper";
+import { ApiKeysContent } from "@/features/api-keys";
+import { auth } from "@clerk/nextjs/server";
+import { apiKeyService } from "@repo/api-keys";
+
+export default async function ApiKeysPage() {
+  const { orgId } = await auth();
+
+  if (!orgId) {
+    return (
+      <PageWrapper>
+        <h1 className="text-[1.5rem] leading-[2rem] tracking-[-0.01em] font-medium text-primary mb-6">
+          API Keys
+        </h1>
+        <div className="rounded-lg border bg-card p-6">
+          <p className="text-muted-foreground">
+            Please select an organization to view API keys.
+          </p>
+        </div>
+      </PageWrapper>
+    );
+  }
+
+  const keys = await apiKeyService.listApiKeysWithDecryption(orgId);
+
   return (
-    <div className="p-8">
-      <h1 className="text-3xl font-bold mb-6">API Keys</h1>
-      <div className="rounded-lg border bg-card p-6">
-        <p className="text-muted-foreground">Manage your API keys here.</p>
-      </div>
-    </div>
+    <PageWrapper>
+      <ApiKeysContent keys={keys} />
+    </PageWrapper>
   );
 }

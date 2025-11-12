@@ -13,7 +13,7 @@ import {
 
 const buttonVariants = cva(
   [
-    "group text-balance relative inline-flex select-none items-center justify-center rounded-full bg-[--button-color-bg] font-medium outline-none transition overflow-hidden text-[--button-color-text]",
+    "group text-balance relative inline-flex select-none items-center justify-center rounded-md bg-[--button-color-bg] font-medium outline-none transition overflow-hidden text-[--button-color-text]",
     "before:bg-[radial-gradient(75%_75%_at_center_top,theme(colors.white/20%),transparent)] before:transition after:transition",
     "ring-[3px] ring-transparent ring-offset-[0.0625rem] ring-offset-[--button-color-border]",
     "focus-visible:ring-[--button-color-ring]",
@@ -184,7 +184,7 @@ const buttonVariants = cva(
     },
     defaultVariants: {
       variant: "primary",
-      size: "sm",
+      size: "default",
     },
   }
 );

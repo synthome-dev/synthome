@@ -6,7 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard" },
+  { href: "/overview", label: "Overview" },
   { href: "/logs", label: "Logs" },
   { href: "/api-keys", label: "API Keys" },
 ];
@@ -46,7 +46,7 @@ export function Navigation() {
                   className={cn(
                     "flex items-center px-3.5 relative shrink-0 transition font-book text-[14px]",
                     "hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500",
-                    isActive ? "text-primary" : "text-secondary"
+                    isActive ? "text-primary" : "text-secondary",
                   )}
                 >
                   {item.label}
