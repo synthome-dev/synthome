@@ -1,6 +1,6 @@
 "use client";
 
-import { Delete } from "@/components/icons/Delete";
+import { Trash } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Tooltip,
@@ -56,7 +56,7 @@ export const DeleteButtonWithTooltip = ({
         >
           {state === "initial" ? (
             withIcon ? (
-              <Delete className="w-4" />
+              <Trash className="w-4" />
             ) : (
               label
             )
@@ -109,7 +109,7 @@ export const DeleteButton = ({
     >
       {state === "initial" ? (
         withIcon ? (
-          <Delete className="w-4" />
+          <Trash className="w-4" />
         ) : (
           label
         )
