@@ -1,6 +1,7 @@
 {
   "name": "be",
   "scripts": {
+    "railway-start": "sleep 3 && bun run src/index.ts",
     "dev": "bun run --hot src/index.ts"
   },
   "dependencies": {
