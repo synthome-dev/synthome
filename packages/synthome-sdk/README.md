@@ -1,6 +1,6 @@
 # @synthome/sdk
 
-TypeScript SDK for the Synthome Video API - Generate and manipulate videos with AI models from Replicate, Fal, and Google Cloud.
+TypeScript SDK for the Synthome Video API - Composable AI Media Toolkit for Replicate, Fal, and Google Cloud.
 
 ## Installation
 
@@ -39,7 +39,6 @@ console.log("Video URL:", execution.result?.url);
 ### Environment Variables
 
 - `SYNTHOME_API_KEY` - Your Synthome API key (required)
-- `SYNTHOME_API_URL` - Custom API URL (optional, defaults to `https://api.synthome.dev/api/execute`)
 
 ### Passing Options
 
@@ -52,8 +51,7 @@ const execution = await compose(
     prompt: "A serene landscape",
   }),
 ).execute({
-  apiKey: "your-api-key",
-  apiUrl: "https://api.synthome.dev/api/execute",
+  apiKey: "your-api-key"
 });
 ```
 
@@ -118,13 +116,6 @@ const execution = await compose(
   .execute();
 ```
 
-## Documentation
-
-For detailed documentation, examples, and API reference, visit:
-
-- [Composable Pipelines](./COMPOSABLE.md)
-- [Error Handling](./ERROR_HANDLING.md)
-- [Execution Guide](./EXECUTION.md)
 
 ## License
 
