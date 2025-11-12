@@ -4,14 +4,14 @@
   "description": "Official SDK for Synthome - AI-powered video generation and manipulation",
   "license": "MIT",
   "type": "module",
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     }
   },
   "files": [
@@ -23,7 +23,8 @@
     "build": "tsup src/index.ts --format cjs,esm --dts --clean",
     "lint": "eslint . --max-warnings 0",
     "check-types": "tsc --noEmit",
-    "prepublishOnly": "bun run build"
+    "prepublishOnly": "bun run build",
+    "publish": "npm publish --access public"
   },
   "dependencies": {
     "zod": "^3.23.8"
