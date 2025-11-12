@@ -2,6 +2,8 @@
   "name": "open-video",
   "private": true,
   "scripts": {
+    "start:railway-be": "cd apps/be && bun run railway-start",
+    "start:schedule-worker": "cd apps/schedule-worker && bun run railway-start",
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
