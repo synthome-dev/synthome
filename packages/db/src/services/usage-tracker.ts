@@ -1,7 +1,7 @@
-import { eq, sql } from "drizzle-orm";
-import { db } from "../db/index.js";
-import { actionLogs, usageLimits } from "../db/schema.js";
 import { generateId } from "@repo/tools";
+import { eq, sql } from "drizzle-orm";
+import { db } from "../db/index";
+import { actionLogs, usageLimits } from "../db/schema";
 
 export interface LogActionParams {
   organizationId: string;
@@ -70,7 +70,7 @@ export async function logAction(params: LogActionParams): Promise<string> {
  * Increments either actionsUsedThisPeriod or overageActionsThisPeriod.
  */
 export async function incrementUsage(
-  params: IncrementUsageParams,
+  params: IncrementUsageParams
 ): Promise<void> {
   const { organizationId, actionCount, isOverage } = params;
 
@@ -115,7 +115,7 @@ export async function checkIfOverage(organizationId: string): Promise<boolean> {
 
   if (!limits) {
     throw new Error(
-      `Usage limits not found for organization: ${organizationId}`,
+      `Usage limits not found for organization: ${organizationId}`
     );
   }
 
@@ -139,7 +139,7 @@ export async function checkIfOverage(organizationId: string): Promise<boolean> {
  */
 export async function calculateOverageCost(
   organizationId: string,
-  actionCount: number = 1,
+  actionCount: number = 1
 ): Promise<string | null> {
   const [limits] = await db
     .select({
