@@ -21,6 +21,9 @@ export class RemoveImageBackgroundJob extends BasePipelineJob {
         params,
       );
 
+      // Fetch execution to get provider API keys
+      const execution = await this.getExecutionWithProviderKeys(jobRecordId);
+
       const { modelId, image, _imageJobDependency, ...providerParams } =
         params as {
           modelId?: string;
@@ -111,7 +114,16 @@ export class RemoveImageBackgroundJob extends BasePipelineJob {
 
       await this.updateJobProgress(jobRecordId, "calling provider API", 10);
 
-      const provider = VideoProviderFactory.getProvider(modelInfo.provider);
+      // Get client's API key for this provider (if provided)
+      const providerApiKey =
+        execution.providerApiKeys?.[
+          modelInfo.provider as keyof typeof execution.providerApiKeys
+        ];
+
+      const provider = VideoProviderFactory.getProvider(
+        modelInfo.provider,
+        providerApiKey,
+      );
 
       // Start background removal (no webhook needed - we'll poll synchronously)
       const generationStart = await provider.startGeneration(

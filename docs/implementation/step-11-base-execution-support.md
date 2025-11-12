@@ -23,7 +23,7 @@ export class ExecutionOrchestrator {
       webhookSecret?: string;
     },
   ) {
-    const executionId = nanoid();
+    const executionId = generateId();
 
     // Verify base execution if provided
     let baseExecutionOutputs: Record<string, any> = {};

@@ -1,7 +1,7 @@
+import { db, eq, executionJobs } from "@repo/db";
 import type { MediaOutput } from "@repo/model-schemas";
-import { db, executionJobs, eq } from "@repo/db";
 import { storage } from "@repo/storage";
-import { nanoid } from "nanoid";
+import { generateId } from "@repo/tools";
 import { getOrchestrator } from "../orchestrator/execution-orchestrator";
 
 /**
@@ -14,10 +14,10 @@ import { getOrchestrator } from "../orchestrator/execution-orchestrator";
  */
 export async function completeAsyncJob(
   jobRecordId: string,
-  outputs: MediaOutput[],
+  outputs: MediaOutput[]
 ): Promise<void> {
   console.log(
-    `[AsyncJobCompletion] Completing job ${jobRecordId} with ${outputs.length} outputs`,
+    `[AsyncJobCompletion] Completing job ${jobRecordId} with ${outputs.length} outputs`
   );
 
   try {
@@ -48,13 +48,13 @@ export async function completeAsyncJob(
       }
 
       console.log(
-        `[AsyncJobCompletion] Processing output ${i + 1}/${outputs.length}: ${output.url}`,
+        `[AsyncJobCompletion] Processing output ${i + 1}/${outputs.length}: ${output.url}`
       );
 
       try {
         // Determine file extension based on media type
         const ext = getFileExtension(output.type, output.mimeType);
-        const filename = `${nanoid()}.${ext}`;
+        const filename = `${generateId()}.${ext}`;
         const storagePath = `executions/${job.executionId}/${filename}`;
 
         // Download from provider and upload to CDN
@@ -71,16 +71,16 @@ export async function completeAsyncJob(
         }
 
         console.log(
-          `[AsyncJobCompletion] Uploaded to CDN: ${uploadResult.url}`,
+          `[AsyncJobCompletion] Uploaded to CDN: ${uploadResult.url}`
         );
         cdnUrls.push(uploadResult.url);
       } catch (error) {
         console.error(
           `[AsyncJobCompletion] Error processing output ${i}:`,
-          error,
+          error
         );
         throw new Error(
-          `Failed to download/upload output ${i}: ${error instanceof Error ? error.message : "Unknown error"}`,
+          `Failed to download/upload output ${i}: ${error instanceof Error ? error.message : "Unknown error"}`
         );
       }
     }
@@ -111,18 +111,18 @@ export async function completeAsyncJob(
     await orchestrator.checkAndEmitDependentJobs(job.executionId, job.jobId);
 
     console.log(
-      `[AsyncJobCompletion] Successfully completed job ${jobRecordId}`,
+      `[AsyncJobCompletion] Successfully completed job ${jobRecordId}`
     );
   } catch (error) {
     console.error(
       `[AsyncJobCompletion] Error completing job ${jobRecordId}:`,
-      error,
+      error
     );
 
     // Mark job as failed if completion logic fails
     await failAsyncJob(
       jobRecordId,
-      `Completion failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+      `Completion failed: ${error instanceof Error ? error.message : "Unknown error"}`
     );
 
     throw error;
@@ -134,7 +134,7 @@ export async function completeAsyncJob(
  */
 export async function failAsyncJob(
   jobRecordId: string,
-  error: string,
+  error: string
 ): Promise<void> {
   console.error(`[AsyncJobCompletion] Failing job ${jobRecordId}: ${error}`);
 
@@ -148,7 +148,7 @@ export async function failAsyncJob(
 
     if (!job) {
       console.error(
-        `[AsyncJobCompletion] Job ${jobRecordId} not found for failure update`,
+        `[AsyncJobCompletion] Job ${jobRecordId} not found for failure update`
       );
       return;
     }
@@ -171,7 +171,7 @@ export async function failAsyncJob(
   } catch (failError) {
     console.error(
       `[AsyncJobCompletion] Error marking job as failed:`,
-      failError,
+      failError
     );
   }
 }

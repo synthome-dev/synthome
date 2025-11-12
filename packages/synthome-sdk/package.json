@@ -1,0 +1,58 @@
+{
+  "name": "@synthome/sdk",
+  "version": "0.1.0",
+  "description": "Official SDK for Synthome - AI-powered video generation and manipulation",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts --clean",
+    "lint": "eslint . --max-warnings 0",
+    "check-types": "tsc --noEmit",
+    "prepublishOnly": "bun run build"
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "*",
+    "@repo/typescript-config": "*",
+    "@types/node": "^22.15.3",
+    "eslint": "^9.34.0",
+    "tsup": "^8.5.0",
+    "typescript": "5.9.2"
+  },
+  "keywords": [
+    "synthome",
+    "video",
+    "ai",
+    "generation",
+    "sdk",
+    "video-generation",
+    "ai-video",
+    "replicate",
+    "fal"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/synthome/sdk"
+  },
+  "homepage": "https://synthome.dev",
+  "bugs": {
+    "url": "https://github.com/synthome/sdk/issues"
+  }
+}

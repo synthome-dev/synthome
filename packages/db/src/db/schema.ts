@@ -98,10 +98,17 @@ export const executions = pgTable("executions", {
   status: text("status").notNull(),
   executionPlan: jsonb("execution_plan").notNull(),
   baseExecutionId: text("base_execution_id"),
-  webhookUrl: text("webhook_url"),
+  webhook: text("webhook"),
   webhookSecret: text("webhook_secret"),
   result: jsonb("result"),
   error: text("error"),
+
+  // Provider API keys - client-provided keys for Replicate, FAL, etc.
+  providerApiKeys: jsonb("provider_api_keys").$type<{
+    replicate?: string;
+    fal?: string;
+    "google-cloud"?: string;
+  }>(),
 
   // Billing integration - Clerk org ID
   organizationId: text("organization_id"),
@@ -111,6 +118,11 @@ export const executions = pgTable("executions", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
   completedAt: timestamp("completed_at"),
+
+  // Webhook delivery tracking
+  webhookDeliveredAt: timestamp("webhook_delivered_at"),
+  webhookDeliveryAttempts: integer("webhook_delivery_attempts").default(0),
+  webhookDeliveryError: text("webhook_delivery_error"),
 });
 
 export const executionJobs = pgTable("execution_jobs", {

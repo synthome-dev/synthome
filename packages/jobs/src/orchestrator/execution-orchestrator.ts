@@ -1,5 +1,5 @@
 import { db, eq, executionJobs, executions } from "@repo/db";
-import { nanoid } from "nanoid";
+import { generateId } from "@repo/tools";
 import { JobClient } from "../client/job-client";
 
 interface ExecutionPlan {
@@ -18,11 +18,16 @@ interface JobNode {
 }
 
 interface CreateExecutionOptions {
-  webhookUrl?: string;
+  webhook?: string;
   webhookSecret?: string;
   baseExecutionId?: string;
   organizationId?: string;
   apiKeyId?: string;
+  providerApiKeys?: {
+    replicate?: string;
+    fal?: string;
+    "google-cloud"?: string;
+  };
 }
 
 export class ExecutionOrchestrator {
@@ -44,10 +49,10 @@ export class ExecutionOrchestrator {
     executionPlan: ExecutionPlan,
     options: CreateExecutionOptions = {},
   ): Promise<string> {
-    const executionId = nanoid();
+    const executionId = generateId();
 
     const jobRecords = executionPlan.jobs.map((job) => ({
-      id: nanoid(),
+      id: generateId(),
       executionId,
       jobId: job.id,
       pgBossJobId: null,
@@ -69,10 +74,11 @@ export class ExecutionOrchestrator {
       status: "pending",
       executionPlan,
       baseExecutionId: options.baseExecutionId,
-      webhookUrl: options.webhookUrl,
+      webhook: options.webhook,
       webhookSecret: options.webhookSecret,
       organizationId: options.organizationId,
       apiKeyId: options.apiKeyId,
+      providerApiKeys: options.providerApiKeys,
       actionsCounted: 0,
     });
 
@@ -515,15 +521,84 @@ export class ExecutionOrchestrator {
 
     if (allJobsCompleted) {
       const hasFailures = allJobs.some((j) => j.status === "failed");
+
+      let executionResult = null;
+      let executionError = null;
+
+      if (hasFailures) {
+        // Find root cause failures (jobs that failed due to actual errors, not dependencies)
+        const rootFailures = allJobs.filter(
+          (j) => j.status === "failed" && j.error !== "Dependency job failed",
+        );
+
+        if (rootFailures.length === 1) {
+          // Single failure - simple message
+          const failure = rootFailures[0];
+          executionError = `Job '${failure?.operation}' failed: ${failure?.error}`;
+        } else if (rootFailures.length > 1) {
+          // Multiple failures - list them
+          const failureMessages = rootFailures
+            .map((j) => `${j.operation} (${j.error})`)
+            .join(", ");
+          executionError = `${rootFailures.length} jobs failed: ${failureMessages}`;
+        } else {
+          // All failures are dependency failures
+          executionError = "Execution failed due to dependency errors";
+        }
+      } else {
+        // Success - find the last job result
+        const lastJob = findLastExecutedJob(allJobs);
+        executionResult = lastJob?.result || null;
+      }
+
       await db
         .update(executions)
         .set({
           status: hasFailures ? "failed" : "completed",
+          result: executionResult,
+          error: executionError,
           completedAt: new Date(),
         })
         .where(eq(executions.id, executionId));
+
+      // Emit webhook delivery job if execution has a webhook URL
+      if (execution.webhook) {
+        console.log(
+          `[ExecutionOrchestrator] Emitting webhook delivery job for execution ${executionId}`,
+        );
+        await this.jobClient.emit("webhook-delivery", { executionId });
+      }
     }
   }
+}
+
+/**
+ * Find the last executed job in a pipeline
+ * Returns the leaf node job (job that no other job depends on) with the latest completedAt timestamp
+ */
+function findLastExecutedJob(jobs: any[]): any | null {
+  if (jobs.length === 0) return null;
+
+  // Find all job IDs that are dependencies of other jobs
+  const jobsWithDependents = new Set(
+    jobs.flatMap((j) => (j.dependencies || []) as string[]),
+  );
+
+  // Find leaf jobs (jobs that no other job depends on) that are completed
+  const leafJobs = jobs.filter(
+    (j) => !jobsWithDependents.has(j.jobId) && j.status === "completed",
+  );
+
+  if (leafJobs.length === 0) return null;
+
+  // If multiple leaf jobs, return the one with latest completedAt
+  return (
+    leafJobs.sort((a, b) => {
+      const aTime = a.completedAt ? new Date(a.completedAt).getTime() : 0;
+      const bTime = b.completedAt ? new Date(b.completedAt).getTime() : 0;
+      return bTime - aTime;
+    })[0] || null
+  );
 }
 
 let orchestratorInstance: ExecutionOrchestrator | null = null;
