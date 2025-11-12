@@ -7,6 +7,7 @@ import {
   RemoveBackgroundJob,
   ReplaceGreenScreenJob,
   RemoveImageBackgroundJob,
+  WebhookDeliveryJob,
 } from "@repo/jobs";
 import { Scheduler } from "@repo/scheduler";
 import { resetMonthlyUsage } from "@repo/db";
@@ -21,6 +22,7 @@ jobManager.register(MergeVideosJob);
 jobManager.register(RemoveBackgroundJob);
 jobManager.register(ReplaceGreenScreenJob);
 jobManager.register(RemoveImageBackgroundJob);
+jobManager.register(WebhookDeliveryJob);
 
 const pollingWorker = new PollingWorker({
   intervalMs: 10000, // Check every 10 seconds

@@ -40,7 +40,7 @@ export class ReplicateService implements VideoProviderService {
   async startGeneration(
     modelId: string,
     params: Record<string, unknown>,
-    webhookUrl?: string,
+    webhook?: string,
   ): Promise<AsyncGenerationStart> {
     // Transform parameters for specific models
     const transformedParams = this.transformParams(modelId, params);
@@ -71,8 +71,8 @@ export class ReplicateService implements VideoProviderService {
     }
 
     // Only include webhook options if webhook URL is provided
-    if (webhookUrl) {
-      createOptions.webhook = webhookUrl;
+    if (webhook) {
+      createOptions.webhook = webhook;
       createOptions.webhook_events_filter = ["completed"];
     }
 
@@ -91,7 +91,7 @@ export class ReplicateService implements VideoProviderService {
 
       return {
         providerJobId: prediction.id,
-        waitingStrategy: webhookUrl ? "webhook" : "polling",
+        waitingStrategy: webhook ? "webhook" : "polling",
       };
     } catch (error) {
       console.error(`[ReplicateService] Failed to create prediction:`, error);

@@ -6,6 +6,11 @@ import {
   rateLimitMiddleware,
   getAuthContext,
 } from "../middleware";
+import type {
+  ExecuteResponse,
+  ExecutionStatusResponse,
+  ErrorResponse,
+} from "@repo/api-types";
 
 const executeRouter = new Hono();
 
@@ -23,11 +28,12 @@ executeRouter.post("/", async (c) => {
       ...options,
       organizationId: auth.organizationId,
       apiKeyId: auth.apiKeyId,
+      providerApiKeys: options?.providerApiKeys, // Pass client's provider API keys
     });
 
-    return c.json(
+    return c.json<ExecuteResponse>(
       {
-        id: executionId,
+        executionId,
         status: "pending",
         createdAt: new Date().toISOString(),
       },
@@ -35,7 +41,7 @@ executeRouter.post("/", async (c) => {
     );
   } catch (error) {
     console.error("[ExecuteRouter] Error creating execution:", error);
-    return c.json(
+    return c.json<ErrorResponse>(
       {
         error: error instanceof Error ? error.message : "Unknown error",
         details: error instanceof Error ? error.stack : undefined,
@@ -55,7 +61,7 @@ executeRouter.get("/:id/status", async (c) => {
     .limit(1);
 
   if (!execution) {
-    return c.json({ error: "Execution not found" }, 404);
+    return c.json<ErrorResponse>({ error: "Execution not found" }, 404);
   }
 
   const jobs = await db
@@ -71,11 +77,15 @@ executeRouter.get("/:id/status", async (c) => {
     error: j.error,
   }));
 
-  return c.json({
+  return c.json<ExecutionStatusResponse>({
     id: execution.id,
-    status: execution.status,
+    status: execution.status as
+      | "pending"
+      | "processing"
+      | "completed"
+      | "failed",
     jobs: jobStatuses,
-    result: execution.result,
+    result: (execution.result as any) || null,
     error: execution.error,
     createdAt: execution.createdAt,
     completedAt: execution.completedAt,

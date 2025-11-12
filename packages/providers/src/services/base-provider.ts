@@ -44,7 +44,7 @@ export interface VideoProviderService {
   startGeneration(
     modelId: string,
     params: Record<string, unknown>,
-    webhookUrl?: string,
+    webhook?: string,
   ): Promise<AsyncGenerationStart>;
 
   /**

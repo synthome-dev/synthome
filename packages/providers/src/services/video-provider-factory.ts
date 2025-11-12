@@ -5,38 +5,22 @@ import { FalService } from "./fal-service.js";
 import { GoogleCloudService } from "./google-cloud-service.js";
 
 export class VideoProviderFactory {
-  private static replicateInstance: ReplicateService | null = null;
-  private static falInstance: FalService | null = null;
-  private static googleCloudInstance: GoogleCloudService | null = null;
-
-  static getProvider(provider: VideoProvider): VideoProviderService {
+  static getProvider(
+    provider: VideoProvider,
+    apiKey?: string,
+  ): VideoProviderService {
     switch (provider) {
       case "replicate":
-        if (!this.replicateInstance) {
-          this.replicateInstance = new ReplicateService();
-        }
-        return this.replicateInstance;
+        return new ReplicateService(apiKey);
 
       case "fal":
-        if (!this.falInstance) {
-          this.falInstance = new FalService();
-        }
-        return this.falInstance;
+        return new FalService(apiKey);
 
       case "google-cloud":
-        if (!this.googleCloudInstance) {
-          this.googleCloudInstance = new GoogleCloudService();
-        }
-        return this.googleCloudInstance;
+        return new GoogleCloudService(apiKey);
 
       default:
         throw new Error(`Unknown provider: ${provider}`);
     }
-  }
-
-  static reset() {
-    this.replicateInstance = null;
-    this.falInstance = null;
-    this.googleCloudInstance = null;
   }
 }
