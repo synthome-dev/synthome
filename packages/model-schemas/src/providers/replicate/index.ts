@@ -151,8 +151,8 @@ export const parseReplicateImage: PollingParser = (response: unknown) => {
 };
 
 /**
- * Replicate audio polling/webhook parser
- * Handles single audio URL as output (MP3 file)
+ * Replicate Audio Polling Parser
+ * Handles Replicate audio generation models
  */
 export const parseReplicateAudio: PollingParser = (response: unknown) => {
   const data = response as any;
@@ -175,7 +175,7 @@ export const parseReplicateAudio: PollingParser = (response: unknown) => {
   }
 
   if (data.status === "succeeded") {
-    // ElevenLabs returns a single audio URL string
+    // Replicate returns a single audio URL string
     if (typeof data.output === "string" && data.output) {
       return {
         status: "completed",
@@ -210,4 +210,3 @@ export * from "./seedance/index.js";
 export * from "./seedream/index.js";
 export * from "./video-background-remover/index.js";
 export * from "./video-matting/index.js";
-

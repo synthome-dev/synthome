@@ -65,6 +65,28 @@ export const usageLimits = pgTable("usage_limits", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Provider API Keys table - stores user's provider keys (Replicate, FAL, Google Cloud, Hume, ElevenLabs)
+export const providerApiKeys = pgTable("provider_api_keys", {
+  id: text("id").primaryKey(),
+  organizationId: text("organization_id").notNull(), // Clerk org ID
+
+  // Provider identification - one record per provider per org
+  provider: text("provider")
+    .notNull()
+    .$type<"replicate" | "fal" | "google-cloud" | "hume" | "elevenlabs">(),
+
+  // Encrypted API key (nullable - empty until user adds key)
+  keyEncrypted: text("key_encrypted"), // AES-256 encrypted, null until set
+  keyPrefix: text("key_prefix"), // 'r8_', 'fal_', etc. for display
+
+  isActive: boolean("is_active").notNull().default(true),
+
+  // Tracking
+  lastUsedAt: timestamp("last_used_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Action Logs table - detailed usage tracking
 export const actionLogs = pgTable("action_logs", {
   id: text("id").primaryKey(),
@@ -108,6 +130,8 @@ export const executions = pgTable("executions", {
     replicate?: string;
     fal?: string;
     "google-cloud"?: string;
+    hume?: string;
+    elevenlabs?: string;
   }>(),
 
   // Billing integration - Clerk org ID
@@ -164,6 +188,11 @@ export const apiKeysRelations = relations(apiKeys, ({ many }) => ({
 }));
 
 export const usageLimitsRelations = relations(usageLimits, ({}) => ({}));
+
+export const providerApiKeysRelations = relations(
+  providerApiKeys,
+  ({}) => ({}),
+);
 
 export const actionLogsRelations = relations(actionLogs, ({ one }) => ({
   apiKey: one(apiKeys, {

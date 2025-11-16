@@ -27,7 +27,12 @@ export interface ProviderConfig {
   apiKey?: string;
 }
 
-export type VideoProvider = "replicate" | "fal" | "google-cloud";
+export type VideoProvider =
+  | "replicate"
+  | "fal"
+  | "google-cloud"
+  | "hume"
+  | "elevenlabs";
 export type MediaProvider = VideoProvider;
 
 export interface VideoModel<TOptions extends ProviderConfig = ProviderConfig> {

@@ -43,6 +43,13 @@
       "when": 1762968687026,
       "tag": "0005_rename_webhookurl_to_webhook",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1763117027021,
+      "tag": "0006_living_blonde_phantom",
+      "breakpoints": true
     }
   ]
 }

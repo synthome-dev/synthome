@@ -9,6 +9,7 @@ const navItems = [
   { href: "/overview", label: "Overview" },
   { href: "/logs", label: "Logs" },
   { href: "/api-keys", label: "API Keys" },
+  { href: "/integrations", label: "Integrations" },
 ];
 
 export function Navigation() {

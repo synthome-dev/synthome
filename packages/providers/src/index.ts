@@ -11,6 +11,7 @@ export const VideoProvider = {
   Replicate: "replicate",
   Fal: "fal",
   Vertex: "vertex",
+  Hume: "hume",
 } as const;
 
 export type VideoProvider = (typeof VideoProvider)[keyof typeof VideoProvider];
@@ -32,4 +33,6 @@ export * from "./services/base-provider.js";
 export * from "./services/replicate-service.js";
 export * from "./services/fal-service.js";
 export * from "./services/google-cloud-service.js";
+export * from "./services/hume-service.js";
+export * from "./services/elevenlabs-service.js";
 export * from "./services/video-provider-factory.js";

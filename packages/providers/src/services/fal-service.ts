@@ -19,18 +19,42 @@ export class FalService implements VideoProviderService {
     modelId: string,
     params: Record<string, unknown>,
   ): Promise<VideoGenerationResult> {
-    const result: any = await fal.subscribe(modelId, {
-      input: params,
-    });
+    try {
+      const result: any = await fal.subscribe(modelId, {
+        input: params,
+      });
 
-    const url = result.video?.url || result.data?.video?.url;
-    if (!url) {
-      throw new Error(
-        `No video URL found in Fal response: ${JSON.stringify(result)}`,
-      );
+      const url = result.video?.url || result.data?.video?.url;
+      if (!url) {
+        throw new Error(
+          `No video URL found in Fal response: ${JSON.stringify(result)}`,
+        );
+      }
+
+      return { url, metadata: result };
+    } catch (error) {
+      console.error(`[FalService] Failed to generate video:`, error);
+
+      // Check if it's an authentication/API key error
+      if (error && typeof error === "object") {
+        const errorMessage = (error as any).message || "";
+        const statusCode = (error as any).status || (error as any).statusCode;
+
+        // Check for 401 Unauthorized or authentication-related errors
+        if (
+          statusCode === 401 ||
+          errorMessage.toLowerCase().includes("unauthorized") ||
+          errorMessage.toLowerCase().includes("authentication") ||
+          errorMessage.toLowerCase().includes("api key")
+        ) {
+          throw new Error(
+            "Please configure your Fal API key in the dashboard or export FAL_KEY in your environment",
+          );
+        }
+      }
+
+      throw error;
     }
-
-    return { url, metadata: result };
   }
 
   async startGeneration(
@@ -38,15 +62,39 @@ export class FalService implements VideoProviderService {
     params: Record<string, unknown>,
     webhook?: string,
   ): Promise<AsyncGenerationStart> {
-    const { request_id } = await fal.queue.submit(modelId, {
-      input: params,
-      webhookUrl: webhook,
-    });
+    try {
+      const { request_id } = await fal.queue.submit(modelId, {
+        input: params,
+        webhookUrl: webhook,
+      });
 
-    return {
-      providerJobId: `${modelId}::${request_id}`, // Store modelId with the job ID
-      waitingStrategy: "polling", // Changed from "webhook" to "polling"
-    };
+      return {
+        providerJobId: `${modelId}::${request_id}`, // Store modelId with the job ID
+        waitingStrategy: "polling", // Changed from "webhook" to "polling"
+      };
+    } catch (error) {
+      console.error(`[FalService] Failed to start generation:`, error);
+
+      // Check if it's an authentication/API key error
+      if (error && typeof error === "object") {
+        const errorMessage = (error as any).message || "";
+        const statusCode = (error as any).status || (error as any).statusCode;
+
+        // Check for 401 Unauthorized or authentication-related errors
+        if (
+          statusCode === 401 ||
+          errorMessage.toLowerCase().includes("unauthorized") ||
+          errorMessage.toLowerCase().includes("authentication") ||
+          errorMessage.toLowerCase().includes("api key")
+        ) {
+          throw new Error(
+            "Please configure your Fal API key in the dashboard or export FAL_KEY in your environment",
+          );
+        }
+      }
+
+      throw error;
+    }
   }
 
   async getJobStatus(providerJobId: string): Promise<AsyncJobStatus> {

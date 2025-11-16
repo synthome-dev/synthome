@@ -16,6 +16,18 @@ import {
   replicateSchemas,
   type ReplicateModelId,
 } from "./replicate.js";
+import {
+  humeModelCapabilities,
+  humeSchemas,
+  parseHumeAudio,
+  type HumeModelId,
+} from "./hume.js";
+import {
+  elevenLabsModelCapabilities,
+  elevenLabsSchemas,
+  parseElevenLabsAudio,
+  type ElevenLabsModelId,
+} from "./elevenlabs.js";
 import type {
   MediaType,
   PollingParser,
@@ -23,7 +35,12 @@ import type {
   WebhookParser,
 } from "./webhook-types.js";
 
-export type VideoProvider = "replicate" | "fal" | "google-cloud";
+export type VideoProvider =
+  | "replicate"
+  | "fal"
+  | "google-cloud"
+  | "hume"
+  | "elevenlabs";
 
 export interface ModelRegistryEntry {
   provider: VideoProvider;
@@ -35,7 +52,12 @@ export interface ModelRegistryEntry {
   providerModelId?: string; // Optional: full model version/identifier for the provider (e.g., Replicate version hash)
 }
 
-type AllModelIds = ReplicateModelId | FalModelId | GoogleCloudModelId;
+type AllModelIds =
+  | ReplicateModelId
+  | FalModelId
+  | GoogleCloudModelId
+  | HumeModelId
+  | ElevenLabsModelId;
 
 export const modelRegistry: Record<AllModelIds, ModelRegistryEntry> = {
   "bytedance/seedance-1-pro": {
@@ -61,14 +83,6 @@ export const modelRegistry: Record<AllModelIds, ModelRegistryEntry> = {
     webhookParser: parseReplicateImage,
     pollingParser: parseReplicateImage,
     capabilities: replicateModelCapabilities["bytedance/seedream-4"],
-  },
-  "elevenlabs/turbo-v2.5": {
-    provider: "replicate",
-    mediaType: "audio",
-    schema: replicateSchemas["elevenlabs/turbo-v2.5"],
-    webhookParser: parseReplicateAudio,
-    pollingParser: parseReplicateAudio,
-    capabilities: replicateModelCapabilities["elevenlabs/turbo-v2.5"],
   },
   "arielreplicate/robust_video_matting": {
     provider: "replicate",
@@ -115,6 +129,22 @@ export const modelRegistry: Record<AllModelIds, ModelRegistryEntry> = {
     webhookParser: parseReplicateImage,
     pollingParser: parseReplicateImage,
     capabilities: replicateModelCapabilities["codeplugtech/background_remover"],
+  },
+  "hume/tts": {
+    provider: "hume",
+    mediaType: "audio",
+    schema: humeSchemas["hume/tts"],
+    webhookParser: parseHumeAudio,
+    pollingParser: parseHumeAudio,
+    capabilities: humeModelCapabilities["hume/tts"],
+  },
+  "elevenlabs/turbo-v2.5": {
+    provider: "elevenlabs",
+    mediaType: "audio",
+    schema: elevenLabsSchemas["elevenlabs/turbo-v2.5"],
+    webhookParser: parseElevenLabsAudio,
+    pollingParser: parseElevenLabsAudio,
+    capabilities: elevenLabsModelCapabilities["elevenlabs/turbo-v2.5"],
   },
 };
 
