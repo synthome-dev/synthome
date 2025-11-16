@@ -11,6 +11,7 @@ import type {
   ExecutionStatusResponse,
   ErrorResponse,
 } from "@repo/api-types";
+import { providerKeyService } from "@repo/api-keys";
 
 const executeRouter = new Hono();
 
@@ -23,13 +24,41 @@ executeRouter.post("/", async (c) => {
     const { executionPlan, options } = await c.req.json();
     const auth = getAuthContext(c);
 
+    // Priority: Client-provided keys > Stored keys > Server env keys
+    let providerApiKeys = options?.providerApiKeys || {};
+
+    // Fetch stored keys from database
+    const storedKeys = await providerKeyService.getProviderKeysForExecution(
+      auth.organizationId,
+    );
+
+    // Merge: client keys override stored keys
+    providerApiKeys = {
+      ...storedKeys,
+      ...providerApiKeys, // Client-provided keys take priority
+    };
+
     const orchestrator = await getOrchestrator();
     const executionId = await orchestrator.createExecution(executionPlan, {
       ...options,
       organizationId: auth.organizationId,
       apiKeyId: auth.apiKeyId,
-      providerApiKeys: options?.providerApiKeys, // Pass client's provider API keys
+      providerApiKeys, // Merged keys
     });
+
+    // Mark provider keys as used (fire and forget)
+    if (providerApiKeys && Object.keys(providerApiKeys).length > 0) {
+      for (const provider of Object.keys(providerApiKeys)) {
+        providerKeyService
+          .markProviderKeyUsed({
+            organizationId: auth.organizationId,
+            provider: provider as any,
+          })
+          .catch((err) =>
+            console.error("Failed to mark provider key as used:", err),
+          );
+      }
+    }
 
     return c.json<ExecuteResponse>(
       {
@@ -77,6 +106,17 @@ executeRouter.get("/:id/status", async (c) => {
     error: j.error,
   }));
 
+  // If execution error is null but there are failed jobs, construct error from jobs
+  let executionError = execution.error;
+  if (!executionError && execution.status === "failed") {
+    const failedJobs = jobs.filter((j) => j.status === "failed" && j.error);
+    if (failedJobs.length > 0) {
+      executionError = failedJobs
+        .map((j) => `${j.operation}: ${j.error}`)
+        .join("; ");
+    }
+  }
+
   return c.json<ExecutionStatusResponse>({
     id: execution.id,
     status: execution.status as
@@ -86,7 +126,7 @@ executeRouter.get("/:id/status", async (c) => {
       | "failed",
     jobs: jobStatuses,
     result: (execution.result as any) || null,
-    error: execution.error,
+    error: executionError,
     createdAt: execution.createdAt,
     completedAt: execution.completedAt,
   });

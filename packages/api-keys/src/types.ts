@@ -24,3 +24,13 @@ export interface ValidatedApiKey {
   name: string | null;
   keyPrefix: string; // 'sy_live_' or 'sy_test_'
 }
+
+export interface ProviderKeyInfo {
+  id: string;
+  provider: "replicate" | "fal" | "google-cloud" | "hume" | "elevenlabs";
+  keyPrefix: string | null;
+  isActive: boolean;
+  lastUsedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}

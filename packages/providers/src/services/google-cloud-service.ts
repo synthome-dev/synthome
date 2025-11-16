@@ -22,20 +22,47 @@ export class GoogleCloudService implements VideoProviderService {
     modelId: string,
     params: Record<string, unknown>,
   ): Promise<VideoGenerationResult> {
-    const generativeModel = this.vertex.getGenerativeModel({ model: modelId });
+    try {
+      const generativeModel = this.vertex.getGenerativeModel({
+        model: modelId,
+      });
 
-    const result = await generativeModel.generateContent(params as any);
+      const result = await generativeModel.generateContent(params as any);
 
-    const fileUri =
-      result.response.candidates?.[0]?.content?.parts?.[0]?.fileData?.fileUri;
+      const fileUri =
+        result.response.candidates?.[0]?.content?.parts?.[0]?.fileData?.fileUri;
 
-    if (!fileUri) {
-      throw new Error(
-        `No video URL found in Google Cloud response: ${JSON.stringify(result)}`,
-      );
+      if (!fileUri) {
+        throw new Error(
+          `No video URL found in Google Cloud response: ${JSON.stringify(result)}`,
+        );
+      }
+
+      return { url: fileUri };
+    } catch (error) {
+      console.error(`[GoogleCloudService] Failed to generate video:`, error);
+
+      // Check if it's an authentication/API key error
+      if (error && typeof error === "object") {
+        const errorMessage = (error as any).message || "";
+        const statusCode = (error as any).status || (error as any).code;
+
+        // Check for authentication-related errors
+        if (
+          statusCode === 401 ||
+          statusCode === 403 ||
+          errorMessage.toLowerCase().includes("unauthorized") ||
+          errorMessage.toLowerCase().includes("authentication") ||
+          errorMessage.toLowerCase().includes("credentials")
+        ) {
+          throw new Error(
+            "Please configure your Google Cloud project ID in the dashboard or export GOOGLE_CLOUD_PROJECT in your environment",
+          );
+        }
+      }
+
+      throw error;
     }
-
-    return { url: fileUri };
   }
 
   async startGeneration(

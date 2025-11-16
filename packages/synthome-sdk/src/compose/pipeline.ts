@@ -4,10 +4,10 @@ import type {
   ExecutionPlan,
   ImageOperation,
   JobNode,
+  MediaResult,
   Pipeline,
   PipelineExecution,
   PipelineProgress,
-  Video,
   VideoNode,
   VideoOperation,
 } from "../core/video.js";
@@ -55,8 +55,8 @@ function getProviderApiKeysFromEnv():
 class MediaExecution implements PipelineExecution {
   id: string;
   status: "pending" | "processing" | "completed" | "failed" = "pending";
-  result?: Video;
-  private completeCallback?: (video: Video) => void;
+  result?: MediaResult;
+  private completeCallback?: (result: MediaResult) => void;
   private errorCallback?: (error: Error) => void;
 
   constructor(
@@ -71,7 +71,7 @@ class MediaExecution implements PipelineExecution {
     this.errorCallback = callback;
   }
 
-  onComplete(callback: (video: Video) => void): void {
+  onComplete(callback: (result: MediaResult) => void): void {
     this.completeCallback = callback;
     if (this.result && this.status === "completed") {
       callback(this.result);
@@ -112,9 +112,9 @@ class MediaExecution implements PipelineExecution {
 
   async waitForCompletion(
     progressCallback?: (progress: PipelineProgress) => void,
-  ): Promise<Video> {
+  ): Promise<MediaResult> {
     const statusUrl = `${this.apiUrl}/${this.id}/status`;
-    const interval = 3000;
+    const interval = 1000; // Poll every 1 second (faster for audio/quick operations)
 
     try {
       while (true) {
@@ -146,12 +146,13 @@ class MediaExecution implements PipelineExecution {
         }
 
         const status = (await response.json()) as {
-          status: Video["status"];
+          status: MediaResult["status"];
           progress: number;
           totalJobs: number;
           completedJobs: number;
           currentJob: string;
-          result?: Video;
+          result?: MediaResult;
+          error?: string | null;
         };
 
         this.status = status.status;
@@ -165,16 +166,19 @@ class MediaExecution implements PipelineExecution {
           });
         }
 
-        if (status.status === "completed" && status.result) {
+        if (status.status === "completed") {
           this.result = status.result;
-          if (this.completeCallback) {
+          if (this.completeCallback && status.result) {
             this.completeCallback(status.result);
           }
-          return status.result;
+          return status.result!;
         }
 
         if (status.status === "failed") {
-          const error = new Error("Pipeline execution failed");
+          console.log("[SDK] Execution failed, status response:", status);
+          const errorMessage = status.error || "Pipeline execution failed";
+          console.log("[SDK] Error message:", errorMessage);
+          const error = new Error(errorMessage);
           if (this.errorCallback) {
             this.errorCallback(error);
           }
@@ -364,12 +368,71 @@ class VideoPipeline implements Pipeline {
       if (op.params.video && typeof op.params.video === "object") {
         const videoOp = op.params.video as VideoOperation;
         if (videoOp.type === "generate") {
-          // Create a video generation job
+          // Check if the nested video operation has its own nested image/audio operations
+          let nestedVideoImageJobId: string | undefined;
+          let nestedVideoAudioJobId: string | undefined;
+
+          // Handle nested image in the video operation
+          if (
+            videoOp.params.image &&
+            typeof videoOp.params.image === "object"
+          ) {
+            const nestedImageOp = videoOp.params.image as ImageOperation;
+            if (
+              nestedImageOp.type === "generateImage" ||
+              nestedImageOp.type === "removeImageBackground"
+            ) {
+              const nestedImageId = `job${counter++}`;
+              jobs.push({
+                id: nestedImageId,
+                type: nestedImageOp.type,
+                params: nestedImageOp.params,
+                output: `$${nestedImageId}`,
+              });
+              nestedVideoImageJobId = nestedImageId;
+            }
+          }
+
+          // Handle nested audio in the video operation
+          if (
+            videoOp.params.audio &&
+            typeof videoOp.params.audio === "object"
+          ) {
+            const nestedAudioOp = videoOp.params.audio as AudioOperation;
+            if (nestedAudioOp.type === "generateAudio") {
+              const nestedAudioId = `job${counter++}`;
+              jobs.push({
+                id: nestedAudioId,
+                type: "generateAudio",
+                params: nestedAudioOp.params,
+                output: `$${nestedAudioId}`,
+              });
+              nestedVideoAudioJobId = nestedAudioId;
+            }
+          }
+
+          // Create a video generation job with dependency markers
           const videoId = `job${counter++}`;
+          const videoParams = { ...videoOp.params };
+
+          // Replace nested operations with dependency markers
+          if (nestedVideoImageJobId) {
+            videoParams.image = `_imageJobDependency:${nestedVideoImageJobId}`;
+          }
+          if (nestedVideoAudioJobId) {
+            videoParams.audio = `_audioJobDependency:${nestedVideoAudioJobId}`;
+          }
+
+          const videoDeps = [
+            nestedVideoImageJobId,
+            nestedVideoAudioJobId,
+          ].filter((id): id is string => id !== undefined);
+
           jobs.push({
             id: videoId,
             type: "generate",
-            params: videoOp.params,
+            params: videoParams,
+            dependsOn: videoDeps.length > 0 ? videoDeps : undefined,
             output: `$${videoId}`,
           });
           videoJobId = videoId;

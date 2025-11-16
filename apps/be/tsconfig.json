@@ -6,6 +6,10 @@
     "jsxImportSource": "hono/jsx",
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
-    "noEmit": true
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@repo/*": ["../../packages/*"]
+    }
   }
 }
