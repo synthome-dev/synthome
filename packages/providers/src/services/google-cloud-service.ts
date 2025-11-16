@@ -12,8 +12,18 @@ export class GoogleCloudService implements VideoProviderService {
   private vertex: VertexAI;
 
   constructor(projectId?: string) {
+    console.log(
+      `[GoogleCloudService] Constructor called with projectId: ${projectId ? "***PROVIDED***" : "undefined"}`,
+    );
+
+    if (!projectId) {
+      throw new Error(
+        "Please configure your Google Cloud project ID in the dashboard or export GOOGLE_CLOUD_PROJECT in your environment",
+      );
+    }
+
     this.vertex = new VertexAI({
-      project: projectId || process.env.GOOGLE_CLOUD_PROJECT!,
+      project: projectId,
       location: "us-central1",
     });
   }

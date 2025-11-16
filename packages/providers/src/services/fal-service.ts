@@ -10,8 +10,18 @@ import type { ProviderCapabilities } from "@repo/model-schemas";
 
 export class FalService implements VideoProviderService {
   constructor(apiKey?: string) {
+    console.log(
+      `[FalService] Constructor called with apiKey: ${apiKey ? "***PROVIDED***" : "undefined"}`,
+    );
+
+    if (!apiKey) {
+      throw new Error(
+        "Please configure your Fal API key in the dashboard or export FAL_KEY in your environment",
+      );
+    }
+
     fal.config({
-      credentials: apiKey || process.env.FAL_KEY!,
+      credentials: apiKey,
     });
   }
 

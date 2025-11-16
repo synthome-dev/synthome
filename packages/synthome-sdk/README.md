@@ -16,21 +16,62 @@ bun add @synthome/sdk
 
 ## Getting Started
 
-### 1. Get Your API Key
+### 1. Get Your Synthome API Key
 
 Sign up and get your API key from the Synthome dashboard:
 
-**[https://synthome.dev](https://synthome.dev)**
+👉 **[https://synthome.dev](https://synthome.dev)**
 
 Once logged in, navigate to your dashboard to create and manage your API keys.
 
-### 2. Quick Start
+### 2. Configure Provider API Keys
+
+Synthome orchestrates jobs across multiple AI providers (Replicate, Fal, ElevenLabs, Hume, etc.). **You need to provide your own API keys for these providers.**
+
+**Three ways to configure provider API keys:**
+
+#### Option 1: Dashboard (Recommended)
+
+Add your provider API keys in the Synthome dashboard at [https://synthome.dev](https://synthome.dev). This allows you to manage all keys in one place.
+
+#### Option 2: Environment Variables
+
+```bash
+export REPLICATE_API_KEY="your-replicate-key"
+export ELEVENLABS_API_KEY="your-elevenlabs-key"
+export HUME_API_KEY="your-hume-key"
+export FAL_KEY="your-fal-key"
+# ... other provider keys
+```
+
+#### Option 3: Pass Directly in Code
+
+```typescript
+const execution = await compose(
+  generateAudio({
+    model: elevenlabs("elevenlabs/turbo-v2.5", {
+      apiKey: "your-elevenlabs-api-key", // Pass provider key directly
+    }),
+    text: "Hello world",
+    voiceId: "EXAVITQu4vr4xnSDxMaL",
+  }),
+).execute({
+  apiKey: "your-synthome-api-key",
+});
+```
+
+> **Priority Order**: Model-level API key → Dashboard keys → Environment variables
+
+### 3. Quick Start
 
 ```typescript
 import { compose, generateVideo, replicate } from "@synthome/sdk";
 
-// Set your API key
-process.env.SYNTHOME_API_KEY = "your-api-key";
+// Set your Synthome API key
+process.env.SYNTHOME_API_KEY = "your-synthome-api-key";
+
+// Set provider API keys (if not configured in dashboard)
+process.env.REPLICATE_API_KEY = "your-replicate-api-key";
 
 // Generate a video
 const execution = await compose(
@@ -46,14 +87,24 @@ console.log("Video URL:", execution.result?.url);
 
 ## Configuration
 
-### Environment Variables
+### Required API Keys
 
-- `SYNTHOME_API_KEY` - Your Synthome API key (required)
-  - Get your API key from [https://synthome.dev](https://synthome.dev)
+1. **Synthome API Key** (required for all requests)
+   - Get from [https://synthome.dev](https://synthome.dev)
+   - Used for: Authenticating with Synthome's orchestration service
 
-### Passing API Key Directly
+2. **Provider API Keys** (required for each provider you use)
+   - Configure via: Dashboard, environment variables, or code
+   - Examples:
+     - `REPLICATE_API_KEY` - For Replicate models
+     - `ELEVENLABS_API_KEY` - For ElevenLabs audio
+     - `HUME_API_KEY` - For Hume TTS
+     - `FAL_KEY` - For Fal models
+     - `GOOGLE_CLOUD_PROJECT` - For Google Cloud models
 
-You can also pass your API key directly in the code:
+### Passing API Keys
+
+You can pass your Synthome API key directly:
 
 ```typescript
 const execution = await compose(
@@ -62,37 +113,22 @@ const execution = await compose(
     prompt: "A serene landscape",
   }),
 ).execute({
-  apiKey: "your-api-key", // Your API key from https://synthome.dev
-});
-```
-
-### Provider-Specific API Keys
-
-If you want to use your own provider API keys (Replicate, ElevenLabs, Hume, etc.) instead of Synthome's managed keys, you can configure them in your dashboard at [https://synthome.dev](https://synthome.dev) or pass them directly:
-
-```typescript
-// Option 1: Configure in dashboard (recommended)
-// Go to https://synthome.dev and add your provider API keys
-
-// Option 2: Pass directly in the model config
-const execution = await compose(
-  generateAudio({
-    model: elevenlabs("elevenlabs/turbo-v2.5", {
-      apiKey: "your-elevenlabs-api-key", // Optional: use your own key
-    }),
-    text: "Hello world",
-    voiceId: "EXAVITQu4vr4xnSDxMaL",
-  }),
-).execute({
   apiKey: "your-synthome-api-key",
 });
 ```
 
-> **Note**: If you don't provide provider-specific API keys, the error message will guide you:
->
-> ```
-> Please configure your [Provider] API key in the dashboard or export [PROVIDER]_API_KEY in your environment
-> ```
+### Error Messages
+
+If a provider API key is missing, you'll see a helpful error message:
+
+```
+Please configure your [Provider] API key in the dashboard or export [PROVIDER]_API_KEY in your environment
+```
+
+Examples:
+
+- `Please configure your Replicate API key in the dashboard or export REPLICATE_API_KEY in your environment`
+- `Please configure your ElevenLabs API key in the dashboard or export ELEVENLABS_API_KEY in your environment`
 
 ## Features
 
