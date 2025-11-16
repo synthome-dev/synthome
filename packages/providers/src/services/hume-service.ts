@@ -14,8 +14,18 @@ export class HumeService implements VideoProviderService {
   private completedJobs: Map<string, VideoGenerationResult> = new Map();
 
   constructor(apiKey?: string) {
+    console.log(
+      `[HumeService] Constructor called with apiKey: ${apiKey ? "***PROVIDED***" : "undefined"}`,
+    );
+
+    if (!apiKey) {
+      throw new Error(
+        "Please configure your Hume API key in the dashboard or export HUME_API_KEY in your environment",
+      );
+    }
+
     this.client = new HumeClient({
-      apiKey: apiKey || process.env.HUME_API_KEY!,
+      apiKey: apiKey,
     });
   }
 

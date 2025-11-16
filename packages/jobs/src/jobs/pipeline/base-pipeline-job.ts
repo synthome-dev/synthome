@@ -28,6 +28,8 @@ export abstract class BasePipelineJob extends BaseJob<PipelineJobData> {
       replicate?: string;
       fal?: string;
       "google-cloud"?: string;
+      hume?: string;
+      elevenlabs?: string;
     };
     organizationId?: string;
     apiKeyId?: string;
