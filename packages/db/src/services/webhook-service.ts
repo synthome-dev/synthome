@@ -1,7 +1,7 @@
+import crypto from "crypto";
+import { and, eq, lt, sql } from "drizzle-orm";
 import { db } from "../db";
 import { executions } from "../db/schema";
-import { eq, and, lt, sql } from "drizzle-orm";
-import crypto from "crypto";
 
 interface WebhookPayload {
   executionId: string;
@@ -29,8 +29,8 @@ export async function findPendingWebhooks() {
         // Webhook not yet delivered
         sql`${executions.webhookDeliveredAt} IS NULL`,
         // Haven't exceeded retry limit
-        lt(executions.webhookDeliveryAttempts, MAX_RETRY_ATTEMPTS),
-      ),
+        lt(executions.webhookDeliveryAttempts, MAX_RETRY_ATTEMPTS)
+      )
     );
 
   // Also get failed executions
@@ -42,8 +42,8 @@ export async function findPendingWebhooks() {
         eq(executions.status, "failed"),
         sql`${executions.webhook} IS NOT NULL`,
         sql`${executions.webhookDeliveredAt} IS NULL`,
-        lt(executions.webhookDeliveryAttempts, MAX_RETRY_ATTEMPTS),
-      ),
+        lt(executions.webhookDeliveryAttempts, MAX_RETRY_ATTEMPTS)
+      )
     );
 
   return [...pendingExecutions, ...failedExecutions];
@@ -87,14 +87,13 @@ export async function deliverWebhook(execution: {
   const payloadString = JSON.stringify(payload);
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    "User-Agent": "OpenVideo-Webhooks/1.0",
   };
 
   // Add signature if secret is provided
   if (execution.webhookSecret) {
     headers["X-Webhook-Signature"] = generateSignature(
       payloadString,
-      execution.webhookSecret,
+      execution.webhookSecret
     );
   }
 
@@ -102,7 +101,7 @@ export async function deliverWebhook(execution: {
 
   try {
     console.log(
-      `[WebhookService] Delivering webhook to ${execution.webhook} (attempt ${currentAttempt}/${MAX_RETRY_ATTEMPTS})`,
+      `[WebhookService] Delivering webhook to ${execution.webhook} (attempt ${currentAttempt}/${MAX_RETRY_ATTEMPTS})`
     );
 
     const response = await fetch(execution.webhook, {
@@ -139,7 +138,7 @@ export async function deliverWebhook(execution: {
       .where(eq(executions.id, execution.id));
 
     console.log(
-      `[WebhookService] ✅ Webhook delivered successfully to ${execution.webhook}`,
+      `[WebhookService] ✅ Webhook delivered successfully to ${execution.webhook}`
     );
 
     return { success: true };
@@ -147,7 +146,7 @@ export async function deliverWebhook(execution: {
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error";
     console.error(
-      `[WebhookService] Failed to deliver webhook: ${errorMessage}`,
+      `[WebhookService] Failed to deliver webhook: ${errorMessage}`
     );
 
     // Update delivery attempt and error
@@ -174,7 +173,7 @@ export async function processWebhookDeliveries(): Promise<{
   const pendingWebhooks = await findPendingWebhooks();
 
   console.log(
-    `[WebhookService] Found ${pendingWebhooks.length} pending webhooks to deliver`,
+    `[WebhookService] Found ${pendingWebhooks.length} pending webhooks to deliver`
   );
 
   let delivered = 0;

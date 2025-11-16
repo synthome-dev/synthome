@@ -28,6 +28,32 @@ export { googleCloudCapabilities, googleCloudSchemas } from "./google-cloud.js";
 export type { GoogleCloudModelId, GoogleCloudModels } from "./google-cloud.js";
 
 export {
+  humeCapabilities,
+  humeSchemas,
+  humeMappings,
+  parseHumeAudio,
+} from "./hume.js";
+export type {
+  HumeModelId,
+  HumeAudioModelId,
+  HumeModels,
+  HumeTtsOptions,
+} from "./hume.js";
+
+export {
+  elevenLabsCapabilities,
+  elevenLabsSchemas,
+  elevenLabsMappings,
+  parseElevenLabsAudio,
+} from "./elevenlabs.js";
+export type {
+  ElevenLabsModelId,
+  ElevenLabsAudioModelId,
+  ElevenLabsModels,
+  ElevenLabsTurboV25Options,
+} from "./elevenlabs.js";
+
+export {
   getModelCapabilities,
   getModelInfo,
   getModelMediaType,

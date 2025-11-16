@@ -1,23 +1,29 @@
-export interface Video {
+/**
+ * Base interface for all media results (video, audio, image)
+ * Contains the essential fields that all media types share
+ */
+export interface MediaResult {
   url: string;
   status: "pending" | "processing" | "completed" | "failed";
-  aspectRatio: string;
-  duration: number;
 }
 
-export interface Image {
-  url: string;
-  status: "pending" | "processing" | "completed" | "failed";
-  width?: number;
-  height?: number;
-}
+/**
+ * Video result - extends MediaResult
+ * Can be extended in the future with video-specific metadata
+ */
+export interface Video extends MediaResult {}
 
-export interface Audio {
-  url: string;
-  status: "pending" | "processing" | "completed" | "failed";
-  duration?: number;
-  mimeType?: string;
-}
+/**
+ * Image result - extends MediaResult
+ * Can be extended in the future with image-specific metadata
+ */
+export interface Image extends MediaResult {}
+
+/**
+ * Audio result - extends MediaResult
+ * Can be extended in the future with audio-specific metadata
+ */
+export interface Audio extends MediaResult {}
 
 export type VideoNode = Video | VideoOperation | Pipeline;
 
@@ -72,8 +78,8 @@ export interface PipelineProgress {
 export interface PipelineExecution {
   id: string;
   status: "pending" | "processing" | "completed" | "failed";
-  result?: Video;
-  onComplete(callback: (video: Video) => void): void;
+  result?: MediaResult;
+  onComplete(callback: (result: MediaResult) => void): void;
   onError(callback: (error: Error) => void): void;
 }
 

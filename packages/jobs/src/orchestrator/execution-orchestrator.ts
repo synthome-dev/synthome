@@ -27,6 +27,8 @@ interface CreateExecutionOptions {
     replicate?: string;
     fal?: string;
     "google-cloud"?: string;
+    hume?: string;
+    elevenlabs?: string;
   };
 }
 
@@ -548,7 +550,52 @@ export class ExecutionOrchestrator {
       } else {
         // Success - find the last job result
         const lastJob = findLastExecutedJob(allJobs);
-        executionResult = lastJob?.result || null;
+        const jobResult = lastJob?.result;
+
+        // Transform parser result format to flat MediaResult for SDK
+        // New format: { status: "completed", outputs: [{ type, url, mimeType }] }
+        // Old format: { status: "completed", output: { url: "..." } }
+        // SDK expects: { url: "...", status: "completed" }
+        if (jobResult && typeof jobResult === "object") {
+          // Handle new outputs array format (preferred)
+          if (
+            "outputs" in jobResult &&
+            Array.isArray(jobResult.outputs) &&
+            jobResult.outputs.length > 0
+          ) {
+            const firstOutput = jobResult.outputs[0];
+            if (
+              firstOutput &&
+              typeof firstOutput === "object" &&
+              "url" in firstOutput
+            ) {
+              executionResult = {
+                url: firstOutput.url,
+                status: "completed",
+              };
+            } else {
+              executionResult = jobResult;
+            }
+          }
+          // Handle old output object format (backward compatibility)
+          else if (
+            "output" in jobResult &&
+            jobResult.output &&
+            typeof jobResult.output === "object" &&
+            "url" in jobResult.output
+          ) {
+            executionResult = {
+              url: (jobResult.output as any).url,
+              status: "completed",
+            };
+          }
+          // No recognized format, return as-is
+          else {
+            executionResult = jobResult;
+          }
+        } else {
+          executionResult = jobResult || null;
+        }
       }
 
       await db

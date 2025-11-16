@@ -18,6 +18,15 @@ export type {
   GoogleCloudModels,
 } from "./providers/google-cloud.js";
 
+export { hume } from "./providers/hume.js";
+export type { HumeModelId, HumeModels } from "./providers/hume.js";
+
+export { elevenlabs } from "./providers/elevenlabs.js";
+export type {
+  ElevenLabsModelId,
+  ElevenLabsModels,
+} from "./providers/elevenlabs.js";
+
 export { generateVideo as generateVideoAPI } from "./generators/generate-video-api.js";
 export type { GenerateVideoOptions as GenerateVideoAPIOptions } from "./generators/generate-video-api.js";
 
@@ -105,6 +114,7 @@ export type {
   Image,
   ImageOperation,
   JobNode,
+  MediaResult as MediaOutput,
   OperationType,
   Video,
   VideoNode,

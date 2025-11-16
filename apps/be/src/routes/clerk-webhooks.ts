@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { verifyWebhook } from "@clerk/backend/webhooks";
 import { initializeUsageLimits } from "@repo/db";
+import { providerKeyService } from "@repo/api-keys";
 
 const clerkWebhooksRouter = new Hono();
 
@@ -68,6 +69,12 @@ clerkWebhooksRouter.post("/", async (c) => {
         await initializeUsageLimits(organizationId, "free");
         console.log(
           `[ClerkWebhook] Successfully initialized usage limits for organization ${organizationId}`,
+        );
+
+        // Initialize empty provider key records
+        await providerKeyService.initializeProviderKeys(organizationId);
+        console.log(
+          `[ClerkWebhook] Successfully initialized provider keys for organization ${organizationId}`,
         );
 
         return c.json({

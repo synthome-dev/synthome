@@ -95,6 +95,25 @@ export class ReplicateService implements VideoProviderService {
       };
     } catch (error) {
       console.error(`[ReplicateService] Failed to create prediction:`, error);
+
+      // Check if it's an authentication/API key error
+      if (error && typeof error === "object") {
+        const errorMessage = (error as any).message || "";
+        const statusCode = (error as any).status || (error as any).statusCode;
+
+        // Check for 401 Unauthorized or authentication-related errors
+        if (
+          statusCode === 401 ||
+          errorMessage.toLowerCase().includes("unauthorized") ||
+          errorMessage.toLowerCase().includes("authentication") ||
+          errorMessage.toLowerCase().includes("invalid token")
+        ) {
+          throw new Error(
+            "Please configure your Replicate API key in the dashboard or export REPLICATE_API_KEY in your environment",
+          );
+        }
+      }
+
       throw error;
     }
   }

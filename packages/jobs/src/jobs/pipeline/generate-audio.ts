@@ -6,6 +6,7 @@ import {
   parseModelPolling,
   parseModelOptions,
 } from "@repo/model-schemas";
+import { uploadBase64Audio, isBase64String } from "../../utils/upload-audio.js";
 
 export class GenerateAudioJob extends BasePipelineJob {
   readonly type: string = "generateAudio";
@@ -21,8 +22,13 @@ export class GenerateAudioJob extends BasePipelineJob {
       // Fetch execution to get provider API keys
       const execution = await this.getExecutionWithProviderKeys(jobRecordId);
 
-      const { modelId, ...providerParams } = params as {
+      const {
+        modelId,
+        apiKey: modelApiKey,
+        ...providerParams
+      } = params as {
         modelId?: string;
+        apiKey?: string;
         [key: string]: any;
       };
       if (!modelId) {
@@ -56,11 +62,16 @@ export class GenerateAudioJob extends BasePipelineJob {
 
       await this.updateJobProgress(jobRecordId, "calling provider API", 10);
 
-      // Get client's API key for this provider (if provided)
+      // Get API key: prioritize model-level apiKey, fallback to execution-level provider key
       const providerApiKey =
+        modelApiKey ||
         execution.providerApiKeys?.[
           modelInfo.provider as keyof typeof execution.providerApiKeys
         ];
+
+      console.log(
+        `[GenerateAudioJob] Using ${modelApiKey ? "model-level" : "execution-level"} API key for provider ${modelInfo.provider}`,
+      );
 
       const provider = VideoProviderFactory.getProvider(
         modelInfo.provider,
@@ -134,6 +145,49 @@ export class GenerateAudioJob extends BasePipelineJob {
             `[GenerateAudioJob] Audio generated successfully:`,
             parsedResult,
           );
+
+          // Check if result contains base64 audio string and upload to CDN
+          // New format: { status, outputs: [{ type, url, mimeType }] }
+          if (
+            parsedResult &&
+            typeof parsedResult === "object" &&
+            "outputs" in parsedResult &&
+            Array.isArray(parsedResult.outputs) &&
+            parsedResult.outputs.length > 0
+          ) {
+            const firstOutput = parsedResult.outputs[0];
+            if (
+              firstOutput &&
+              typeof firstOutput === "object" &&
+              "url" in firstOutput &&
+              typeof firstOutput.url === "string" &&
+              isBase64String(firstOutput.url)
+            ) {
+              console.log(
+                `[GenerateAudioJob] Detected base64 audio string, uploading to CDN...`,
+              );
+
+              await this.updateJobProgress(
+                jobRecordId,
+                "uploading audio to CDN",
+                92,
+              );
+
+              const cdnUrl = await uploadBase64Audio(firstOutput.url, {
+                executionId: execution.executionId,
+                jobId: jobRecordId,
+              });
+
+              console.log(
+                `[GenerateAudioJob] Successfully uploaded audio to CDN: ${cdnUrl}`,
+              );
+
+              // Replace base64 string with CDN URL in the outputs array
+              if (parsedResult.outputs && parsedResult.outputs[0]) {
+                parsedResult.outputs[0].url = cdnUrl;
+              }
+            }
+          }
 
           await this.updateJobProgress(jobRecordId, "completed", 100);
           await this.completeJob(jobRecordId, parsedResult);

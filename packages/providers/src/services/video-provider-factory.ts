@@ -3,6 +3,8 @@ import type { VideoProviderService } from "./base-provider.js";
 import { ReplicateService } from "./replicate-service.js";
 import { FalService } from "./fal-service.js";
 import { GoogleCloudService } from "./google-cloud-service.js";
+import { HumeService } from "./hume-service.js";
+import { ElevenLabsService } from "./elevenlabs-service.js";
 
 export class VideoProviderFactory {
   static getProvider(
@@ -18,6 +20,12 @@ export class VideoProviderFactory {
 
       case "google-cloud":
         return new GoogleCloudService(apiKey);
+
+      case "hume":
+        return new HumeService(apiKey);
+
+      case "elevenlabs":
+        return new ElevenLabsService(apiKey);
 
       default:
         throw new Error(`Unknown provider: ${provider}`);

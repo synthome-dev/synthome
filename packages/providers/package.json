@@ -10,10 +10,13 @@
     "typescript": "^5"
   },
   "dependencies": {
-    "dotenv-cli": "^8.0.0",
-    "replicate": "^0.34.1",
     "@fal-ai/serverless-client": "^0.14.3",
     "@google-cloud/vertexai": "^1.10.0",
-    "@repo/model-schemas": "workspace:*"
+    "@repo/model-schemas": "workspace:*",
+    "@repo/tools": "workspace:*",
+    "dotenv-cli": "^8.0.0",
+    "elevenlabs": "^1.59.0",
+    "hume": "^0.15.4",
+    "replicate": "^0.34.1"
   }
 }

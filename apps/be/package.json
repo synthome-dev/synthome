@@ -9,6 +9,7 @@
     "@repo/api-types": "workspace:*",
     "@repo/db": "workspace:*",
     "@repo/jobs": "workspace:*",
+    "@repo/model-schemas": "workspace:*",
     "@synthome/sdk": "../../packages/synthome-sdk",
     "drizzle-orm": "0.38.3",
     "hono": "^4.9.10",
