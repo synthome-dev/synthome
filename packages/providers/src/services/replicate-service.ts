@@ -12,8 +12,18 @@ export class ReplicateService implements VideoProviderService {
   private client: Replicate;
 
   constructor(apiKey?: string) {
+    console.log(
+      `[ReplicateService] Constructor called with apiKey: ${apiKey ? "***PROVIDED***" : "undefined"}`,
+    );
+
+    if (!apiKey) {
+      throw new Error(
+        "Please configure your Replicate API key in the dashboard or export REPLICATE_API_KEY in your environment",
+      );
+    }
+
     this.client = new Replicate({
-      auth: apiKey || process.env.REPLICATE_API_KEY!,
+      auth: apiKey,
     });
   }
 
