@@ -15,7 +15,8 @@ export class ElevenLabsService implements VideoProviderService {
 
   constructor(apiKey?: string) {
     console.log(
-      `[ElevenLabsService] Constructor called with apiKey: ${apiKey ? "***PROVIDED***" : "undefined"}`
+      `[ElevenLabsService] Constructor called with apiKey: ${apiKey ? "***PROVIDED***" : "undefined"}`,
+      apiKey
     );
 
     if (!apiKey) {
