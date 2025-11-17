@@ -16,12 +16,21 @@ export class ElevenLabsService implements VideoProviderService {
   constructor(apiKey?: string) {
     console.log(
       `[ElevenLabsService] Constructor called with apiKey: ${apiKey ? "***PROVIDED***" : "undefined"}`,
-      apiKey
+    );
+    console.log(`[ElevenLabsService] API key length: ${apiKey?.length || 0}`);
+    console.log(
+      `[ElevenLabsService] API key starts with: ${apiKey?.substring(0, 10) || "N/A"}`,
+    );
+    console.log(
+      `[ElevenLabsService] API key ends with: ${apiKey?.substring(apiKey.length - 10) || "N/A"}`,
+    );
+    console.log(
+      `[ElevenLabsService] Expected key for comparison: sk_d0907bdb (first 10 chars)`,
     );
 
     if (!apiKey) {
       throw new Error(
-        "Please configure your ElevenLabs API key in the dashboard or export ELEVENLABS_API_KEY in your environment"
+        "Please configure your ElevenLabs API key in the dashboard or export ELEVENLABS_API_KEY in your environment",
       );
     }
 
@@ -36,10 +45,10 @@ export class ElevenLabsService implements VideoProviderService {
    */
   async generateVideo(
     modelId: string,
-    params: Record<string, unknown>
+    params: Record<string, unknown>,
   ): Promise<VideoGenerationResult> {
     console.log(
-      `[ElevenLabsService] Generating audio with modelId: ${modelId}`
+      `[ElevenLabsService] Generating audio with modelId: ${modelId}`,
     );
     console.log(`[ElevenLabsService] Params:`, JSON.stringify(params, null, 2));
 
@@ -73,7 +82,7 @@ export class ElevenLabsService implements VideoProviderService {
       // Prepare TTS request options
       const ttsOptions: any = {
         text,
-        voice: voiceId,
+        // Note: voice/voiceId is passed as first parameter to convert(), not in options
         model_id: (params.modelId as string) || "eleven_turbo_v2_5",
       };
 
@@ -98,17 +107,17 @@ export class ElevenLabsService implements VideoProviderService {
 
       console.log(
         `[ElevenLabsService] TTS request:`,
-        JSON.stringify(ttsOptions, null, 2)
+        JSON.stringify(ttsOptions, null, 2),
       );
 
       // Call ElevenLabs TTS API - returns audio stream
       const audioStream = await this.client.textToSpeech.convert(
         voiceId,
-        ttsOptions
+        ttsOptions,
       );
 
       console.log(
-        `[ElevenLabsService] Audio stream received, converting to base64`
+        `[ElevenLabsService] Audio stream received, converting to base64`,
       );
 
       // Convert audio stream to buffer, then to base64 data URL
@@ -130,7 +139,7 @@ export class ElevenLabsService implements VideoProviderService {
       const base64Audio = Buffer.from(audioBuffer).toString("base64");
 
       console.log(
-        `[ElevenLabsService] Audio generated successfully, size: ${base64Audio.length} bytes`
+        `[ElevenLabsService] Audio generated successfully, size: ${base64Audio.length} bytes`,
       );
 
       return { url: base64Audio };
@@ -150,7 +159,7 @@ export class ElevenLabsService implements VideoProviderService {
           errorMessage.toLowerCase().includes("authentication")
         ) {
           throw new Error(
-            "Please configure your ElevenLabs API key in the dashboard or export ELEVENLABS_API_KEY in your environment"
+            "Please configure your ElevenLabs API key in the dashboard or export ELEVENLABS_API_KEY in your environment",
           );
         }
       }
@@ -165,10 +174,10 @@ export class ElevenLabsService implements VideoProviderService {
   async startGeneration(
     modelId: string,
     params: Record<string, unknown>,
-    _webhook?: string
+    _webhook?: string,
   ): Promise<AsyncGenerationStart> {
     console.log(
-      `[ElevenLabsService] startGeneration called with modelId: ${modelId}`
+      `[ElevenLabsService] startGeneration called with modelId: ${modelId}`,
     );
 
     // Generate audio synchronously
@@ -178,7 +187,7 @@ export class ElevenLabsService implements VideoProviderService {
     const jobId = generateId();
 
     console.log(
-      `[ElevenLabsService] Audio generated successfully with jobId: ${jobId}`
+      `[ElevenLabsService] Audio generated successfully with jobId: ${jobId}`,
     );
 
     // Store result for later retrieval

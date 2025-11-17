@@ -1,4 +1,4 @@
-import { db, executionJobs, and, eq, sql } from "@repo/db";
+import { db, executionJobs, executions, and, eq, sql } from "@repo/db";
 import {
   parseModelPolling,
   getModelCapabilities,
@@ -149,13 +149,39 @@ export class PollingWorker {
         throw new Error(`Model ${modelId} does not support polling`);
       }
 
+      // Fetch execution to get provider API keys
+      const execution = await db.query.executions.findFirst({
+        where: eq(executions.id, job.executionId),
+      });
+
+      if (!execution) {
+        throw new Error(`Execution ${job.executionId} not found`);
+      }
+
+      console.log(
+        `[PollingWorker] Retrieved provider keys for execution ${job.executionId}`,
+      );
+
       // Get provider from model info
       const modelInfo = getModelInfo(modelId);
       if (!modelInfo) {
         throw new Error(`Model ${modelId} not found in registry`);
       }
 
-      const provider = VideoProviderFactory.getProvider(modelInfo.provider);
+      // Get API key for this provider from execution's provider keys
+      const providerApiKey =
+        execution.providerApiKeys?.[
+          modelInfo.provider as keyof typeof execution.providerApiKeys
+        ];
+
+      console.log(
+        `[PollingWorker] Provider: ${modelInfo.provider}, API key present: ${!!providerApiKey}`,
+      );
+
+      const provider = VideoProviderFactory.getProvider(
+        modelInfo.provider,
+        providerApiKey as string | undefined,
+      );
 
       // Poll for job status
       const statusResponse = await provider.getJobStatus(providerJobId);
