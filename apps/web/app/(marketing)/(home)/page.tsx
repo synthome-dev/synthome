@@ -58,7 +58,7 @@ export default function Home() {
                 variant="outline"
                 size="sm"
               >
-                <Link href="#">
+                <Link href="https://x.com/ddubovetzky">
                   Follow on{" "}
                   <svg
                     className="size-5"
