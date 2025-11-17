@@ -26,6 +26,51 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en" data-theme="quartz">
+        <head>
+          <link
+            rel="icon"
+            type="image/png"
+            href="/favicon-96x96.png"
+            sizes="96x96"
+          />
+          <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+          <link rel="shortcut icon" href="/favicon.ico" />
+          <link
+            rel="apple-touch-icon"
+            sizes="180x180"
+            href="/apple-touch-icon.png"
+          />
+          <meta name="apple-mobile-web-app-title" content="Synthome" />
+          <link rel="manifest" href="/site.webmanifest" />
+          <meta
+            property="og:title"
+            content="Synthome – AI Media Pipelines for Developers"
+          />
+          <meta
+            property="og:description"
+            content="Build AI video, image, and audio pipelines with a simple composable API"
+          />
+          <meta
+            property="og:image"
+            content="https://synthome.dev.com/social-preview.png"
+          />
+          <meta property="og:url" content="https://synthome.dev.com" />
+          <meta property="og:type" content="website" />
+
+          <meta name="twitter:card" content="summary_large_image" />
+          <meta
+            name="twitter:title"
+            content="Synthome – AI Media Pipelines for Developers"
+          />
+          <meta
+            name="twitter:description"
+            content="Build AI video, image, and audio pipelines with a simple composable API"
+          />
+          <meta
+            name="twitter:image"
+            content="https://synthome.dev.com/social-preview.png"
+          />
+        </head>
         <body
           data-theme="dark"
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
