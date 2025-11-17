@@ -212,6 +212,20 @@ export class ProviderKeyService {
     for (const key of keys) {
       if (key.keyEncrypted && key.isActive) {
         const decrypted = this.decrypt(key.keyEncrypted);
+
+        // Debug logging for ElevenLabs key
+        if (key.provider === "elevenlabs") {
+          console.log(
+            `[ProviderKeyService] Decrypted ElevenLabs key length: ${decrypted.length}`,
+          );
+          console.log(
+            `[ProviderKeyService] Decrypted ElevenLabs key prefix: ${decrypted.substring(0, 10)}`,
+          );
+          console.log(
+            `[ProviderKeyService] Decrypted ElevenLabs key suffix: ${decrypted.substring(decrypted.length - 10)}`,
+          );
+        }
+
         if (key.provider === "replicate") {
           result.replicate = decrypted;
         } else if (key.provider === "fal") {
