@@ -52,9 +52,9 @@ export default function RootLayout({
           />
           <meta
             property="og:image"
-            content="https://synthome.dev.com/social-preview.png"
+            content="https://synthome.dev/social-preview.png"
           />
-          <meta property="og:url" content="https://synthome.dev.com" />
+          <meta property="og:url" content="https://synthome.dev" />
           <meta property="og:type" content="website" />
 
           <meta name="twitter:card" content="summary_large_image" />
@@ -68,7 +68,13 @@ export default function RootLayout({
           />
           <meta
             name="twitter:image"
-            content="https://synthome.dev.com/social-preview.png"
+            content="https://synthome.dev/social-preview.png"
+          />
+          <script
+            defer
+            data-website-id="dfid_nPdHu4ZXG6oDcOPzMm6Bd"
+            data-domain="synthome.dev"
+            src="https://datafa.st/js/script.js"
           />
         </head>
         <body
