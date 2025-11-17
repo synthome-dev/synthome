@@ -243,6 +243,7 @@ app.get("/", (c) =>
 
 const server = {
   port: Bun.env.PORT ? parseInt(Bun.env.PORT) : 3200,
+  hostname: "::", // Listen on IPv6 (and IPv4 via dual-stack) for Railway private networking
   fetch: app.fetch,
 };
 

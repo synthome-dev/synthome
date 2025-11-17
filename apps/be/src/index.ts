@@ -49,6 +49,7 @@ if (isDevelopment) {
 
 export default {
   port: Bun.env.PORT ? parseInt(Bun.env.PORT) : 3100,
+  hostname: "::", // Listen on IPv6 (and IPv4 via dual-stack) for Railway private networking
   fetch: app.fetch,
   idleTimeout: 255, // Maximum timeout allowed by Bun (255 seconds ~4.25 minutes)
 };
