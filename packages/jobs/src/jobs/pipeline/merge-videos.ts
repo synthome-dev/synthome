@@ -78,7 +78,7 @@ export class MergeVideosJob extends BasePipelineJob {
 
       // Call FFmpeg service to merge videos
       const ffmpegApiUrl =
-        process.env.FFMPEG_API_URL || "http://localhost:3001";
+        process.env.FFMPEG_API_URL || "http://localhost:3200";
       const response = await fetch(`${ffmpegApiUrl}/merge`, {
         method: "POST",
         headers: {
