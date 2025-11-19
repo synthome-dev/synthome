@@ -1,4 +1,4 @@
-import { compose, generateImage, imageModel } from "@synthome/sdk";
+// import { compose, generateImage, imageModel } from "@synthome/sdk";
 import { Hono } from "hono";
 
 const testRouter = new Hono();
@@ -28,22 +28,22 @@ testRouter.get("/", async (c) => {
     //   })
     // ).execute();
 
-    const a = await compose(
-      generateImage({
-        model: imageModel("google/nano-banana", "replicate"),
-        prompt: "A beautiful sunset over the ocean",
-        aspectRatio: "9:16",
-      })
-    ).execute({
-      apiUrl: `http://localhost:3101/api/execute`,
-      apiKey:
-        "sy_test_61aa4d7e73899492b513bc92ccfadbde67a9425bf1de65474c0d08e7263001c1",
-    });
+    // const a = await compose(
+    //   generateImage({
+    //     model: imageModel("google/nano-banana", "replicate"),
+    //     prompt: "A beautiful sunset over the ocean",
+    //     aspectRatio: "9:16",
+    //   })
+    // ).execute({
+    //   apiUrl: `http://localhost:3101/api/execute`,
+    //   apiKey:
+    //     "sy_test_61aa4d7e73899492b513bc92ccfadbde67a9425bf1de65474c0d08e7263001c1",
+    // });
 
     // No need to call waitForCompletion() - execute() already waited!
 
     return c.json({
-      a: a.result?.url,
+      // a: a.result?.url,
       //   executionId: execution.id,
       //   status: execution.status,
       //   result: execution.result,
