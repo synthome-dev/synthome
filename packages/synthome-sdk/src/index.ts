@@ -1,31 +1,20 @@
-export { replicate } from "./providers/replicate.js";
-export type {
-  ReplicateModelId,
-  ReplicateModels,
-  Seedance1ProOptions,
-} from "./providers/replicate.js";
+// Unified Model API (Recommended - Type-Safe)
+export {
+  imageModel,
+  videoModel,
+  audioModel,
+  type ImageModelName,
+  type VideoModelName,
+  type AudioModelName,
+} from "./models.js";
 
-export { fal } from "./providers/fal.js";
-export type {
-  Fabric1FastOptions,
-  FalModelId,
-  FalModels,
-} from "./providers/fal.js";
-
-export { googleCloud } from "./providers/google-cloud.js";
-export type {
-  GoogleCloudModelId,
-  GoogleCloudModels,
-} from "./providers/google-cloud.js";
-
-export { hume } from "./providers/hume.js";
-export type { HumeModelId, HumeModels } from "./providers/hume.js";
-
-export { elevenlabs } from "./providers/elevenlabs.js";
-export type {
-  ElevenLabsModelId,
-  ElevenLabsModels,
-} from "./providers/elevenlabs.js";
+// Model Utility Functions
+export {
+  getModelInfo,
+  listModelProviders,
+  isModelAvailable,
+  type UnifiedModelMapping,
+} from "./model.js";
 
 export { generateVideo as generateVideoAPI } from "./generators/generate-video-api.js";
 export type { GenerateVideoOptions as GenerateVideoAPIOptions } from "./generators/generate-video-api.js";
@@ -71,6 +60,7 @@ export { generateImage } from "./compose/generate-image.js";
 export type {
   GenerateImageOptions,
   GenerateImageProvider,
+  GenerateImageUnified,
 } from "./compose/generate-image.js";
 
 export { generateAudio } from "./compose/generate-audio.js";
@@ -91,7 +81,6 @@ export {
   merge,
   reframe,
   removeBackground,
-  removeImageBackground,
   replaceGreenScreen,
 } from "./compose/operations.js";
 export type {
@@ -99,7 +88,6 @@ export type {
   MergeOptions,
   ReframeOptions,
   RemoveBackgroundOptions,
-  RemoveImageBackgroundOptions,
   ReplaceGreenScreenOptions,
   SubtitlesOptions,
 } from "./compose/operations.js";

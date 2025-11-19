@@ -4,6 +4,7 @@ import {
   falModelCapabilities,
   parseFalPolling,
   parseFalWebhook,
+  parseFalImage,
   falSchemas,
 } from "./fal.js";
 import { type GoogleCloudModelId } from "./google-cloud.js";
@@ -84,6 +85,14 @@ export const modelRegistry: Record<AllModelIds, ModelRegistryEntry> = {
     pollingParser: parseReplicateImage,
     capabilities: replicateModelCapabilities["bytedance/seedream-4"],
   },
+  "google/nano-banana": {
+    provider: "replicate",
+    mediaType: "image",
+    schema: replicateSchemas["google/nano-banana"],
+    webhookParser: parseReplicateImage,
+    pollingParser: parseReplicateImage,
+    capabilities: replicateModelCapabilities["google/nano-banana"],
+  },
   "arielreplicate/robust_video_matting": {
     provider: "replicate",
     mediaType: "video",
@@ -121,6 +130,14 @@ export const modelRegistry: Record<AllModelIds, ModelRegistryEntry> = {
     webhookParser: parseFalWebhook,
     pollingParser: parseFalPolling,
     capabilities: falModelCapabilities["veed/fabric-1.0/fast"],
+  },
+  "fal-ai/nano-banana": {
+    provider: "fal",
+    mediaType: "image",
+    schema: falSchemas["fal-ai/nano-banana"],
+    webhookParser: parseFalImage,
+    pollingParser: parseFalImage,
+    capabilities: falModelCapabilities["fal-ai/nano-banana"],
   },
   "codeplugtech/background_remover": {
     provider: "replicate",

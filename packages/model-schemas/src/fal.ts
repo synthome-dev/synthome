@@ -3,10 +3,15 @@ import {
   falCapabilities,
   parseFalPolling,
   parseFalWebhook,
+  parseFalImage,
   fabricModels,
   fabricMapping,
+  nanobananaImageModels,
+  nanobananaMapping,
   type FabricModelId,
+  type NanobananaImageModelId,
   type Fabric1FastRawOptions,
+  type NanobananaRawOptions,
   providerConfigSchema,
 } from "./providers/fal/index.js";
 import type { ProviderCapabilities } from "./webhook-types.js";
@@ -31,26 +36,32 @@ const fabric1FastOptionsSchema = z
 export const falSchemas = {
   "veed/fabric-1.0": fabric1FastOptionsSchema,
   "veed/fabric-1.0/fast": fabric1FastOptionsSchema,
+  ...nanobananaImageModels,
 } as const;
 
-export type FalModelId = FabricModelId;
+export type FalModelId = FabricModelId | NanobananaImageModelId;
 
 // Categorize models by media type for type-safe model creation
 export type FalVideoModelId = FabricModelId; // Fabric is a video model
-export type FalImageModelId = never; // No FAL image models yet
+export type FalImageModelId = NanobananaImageModelId; // Nanobanana is an image model
 export type FalAudioModelId = never; // No FAL audio models yet
 
 // Export options type for SDK
 export type Fabric1FastOptions = z.infer<typeof fabric1FastOptionsSchema>;
+export type NanobananaOptions = z.infer<
+  (typeof nanobananaImageModels)["fal-ai/nano-banana"]
+>;
 
 export interface FalModels {
   "veed/fabric-1.0": Fabric1FastOptions;
   "veed/fabric-1.0/fast": Fabric1FastOptions;
+  "fal-ai/nano-banana": NanobananaOptions;
 }
 
 export const falMappings = {
   "veed/fabric-1.0": fabricMapping,
   "veed/fabric-1.0/fast": fabricMapping,
+  "fal-ai/nano-banana": nanobananaMapping,
 } as const;
 
 // Model-specific capabilities
@@ -65,6 +76,13 @@ export const falModelCapabilities: Record<FalModelId, ProviderCapabilities> = {
     supportsPolling: true,
     defaultStrategy: "polling",
   },
+  "fal-ai/nano-banana": {
+    supportsWebhooks: false, // Images are fast, use polling
+    supportsPolling: true,
+    defaultStrategy: "polling",
+  },
 };
 
-export { falCapabilities, parseFalPolling, parseFalWebhook };
+export type { Fabric1FastRawOptions, NanobananaRawOptions };
+
+export { falCapabilities, parseFalPolling, parseFalWebhook, parseFalImage };

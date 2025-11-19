@@ -21,6 +21,8 @@ export const falCapabilities: ProviderCapabilities = {
 
 // Export Fabric model
 export * from "./fabric/index.js";
+// Export Nanobanana model
+export * from "./nanobanana/index.js";
 
 /**
  * Example FAL webhook payload:
@@ -174,6 +176,96 @@ export const parseFalPolling: PollingParser = (response: unknown) => {
   // Unknown response format
   console.log(
     "[parseFalPolling] Unknown response format, defaulting to processing",
+  );
+  return {
+    status: "processing",
+  };
+};
+
+/**
+ * FAL Image polling/webhook parser
+ * Handles array of image URLs as output from fal image generation models
+ */
+export const parseFalImage: PollingParser = (response: unknown) => {
+  const data = response as any;
+
+  // Extract the actual response data
+  const queueData = data?.result || data;
+
+  console.log(
+    "[parseFalImage] Parsing response:",
+    JSON.stringify(queueData, null, 2),
+  );
+
+  // Check if this is a status response or result response
+  const isStatusResponse = "status" in queueData;
+  const isResultResponse = "images" in queueData;
+
+  console.log("[parseFalImage] Response type:", {
+    isStatusResponse,
+    isResultResponse,
+  });
+
+  // Handle result response with images array
+  if (isResultResponse) {
+    console.log("[parseFalImage] This is a result response with images");
+
+    const images = queueData.images;
+
+    if (!Array.isArray(images) || images.length === 0) {
+      console.error("[parseFalImage] ❌ No images in result response");
+      return {
+        status: "failed",
+        error: "No images in result response",
+      };
+    }
+
+    console.log(
+      "[parseFalImage] ✅ Successfully extracted images:",
+      images.length,
+    );
+
+    return {
+      status: "completed",
+      outputs: images.map((img: any) => ({
+        type: "image",
+        url: img.url,
+        mimeType: img.content_type || "image/png",
+      })),
+    };
+  }
+
+  // Handle status response
+  if (isStatusResponse) {
+    const status = queueData.status;
+    console.log("[parseFalImage] Status:", status);
+
+    if (status === "FAILED") {
+      return {
+        status: "failed",
+        error: queueData.error || "Image generation failed",
+      };
+    }
+
+    if (status === "IN_PROGRESS" || status === "IN_QUEUE") {
+      return {
+        status: "processing",
+      };
+    }
+
+    if (status === "COMPLETED") {
+      console.warn(
+        "[parseFalImage] Got COMPLETED status but no result data - this shouldn't happen",
+      );
+      return {
+        status: "processing", // Will retry
+      };
+    }
+  }
+
+  // Unknown response format
+  console.log(
+    "[parseFalImage] Unknown response format, defaulting to processing",
   );
   return {
     status: "processing",

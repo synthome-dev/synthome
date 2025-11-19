@@ -108,6 +108,8 @@ export class FalService implements VideoProviderService {
   }
 
   async getJobStatus(providerJobId: string): Promise<AsyncJobStatus> {
+    console.log(`[FalService] getJobStatus called for: ${providerJobId}`);
+
     // Extract modelId from the composite providerJobId
     const [modelId, requestId] = providerJobId.split("::");
 
@@ -145,9 +147,10 @@ export class FalService implements VideoProviderService {
             JSON.stringify(result, null, 2),
           );
 
-          // Return the result so the parser can extract the video URL
+          // Return the result with "completed" status so the job handler knows it's done
+          console.log(`[FalService] Returning completed status to job handler`);
           return {
-            status: "processing", // Placeholder - parser will determine actual status
+            status: "completed",
             result: result as any,
           };
         } catch (resultError: any) {
@@ -170,7 +173,7 @@ export class FalService implements VideoProviderService {
               );
 
               return {
-                status: "processing",
+                status: "completed",
                 result: result as any,
               };
             } catch (fetchError) {
@@ -200,6 +203,33 @@ export class FalService implements VideoProviderService {
         status: "processing", // Default to processing on error
       };
     }
+  }
+
+  /**
+   * Get raw job response for parsing
+   * Returns the full result object that was fetched in getJobStatus
+   */
+  async getRawJobResponse(providerJobId: string): Promise<unknown> {
+    // Extract modelId from the composite providerJobId
+    const [modelId, requestId] = providerJobId.split("::");
+
+    if (!modelId || !requestId) {
+      throw new Error(
+        "Invalid providerJobId format. Expected modelId::requestId",
+      );
+    }
+
+    // Fetch the result directly
+    const result = await fal.queue.result(modelId, {
+      requestId: requestId,
+    });
+
+    console.log(
+      `[FalService] getRawJobResponse - Result:`,
+      JSON.stringify(result, null, 2),
+    );
+
+    return result;
   }
 
   getCapabilities(): ProviderCapabilities {

@@ -1,4 +1,4 @@
-import type { VideoOperation, ImageOperation } from "../core/video.js";
+import type { VideoOperation } from "../core/video.js";
 
 export interface MergeOptions {
   transition?: "crossfade" | "cut" | "dissolve";
@@ -88,23 +88,6 @@ export function replaceGreenScreen(
       chromaKeyColor: options.chromaKeyColor,
       similarity: options.similarity,
       blend: options.blend,
-    },
-  };
-}
-
-export interface RemoveImageBackgroundOptions {
-  image?: string | ImageOperation;
-  modelId?: string;
-}
-
-export function removeImageBackground(
-  options: RemoveImageBackgroundOptions = {},
-): ImageOperation {
-  return {
-    type: "removeImageBackground",
-    params: {
-      image: options.image,
-      modelId: options.modelId || "codeplugtech/background_remover",
     },
   };
 }

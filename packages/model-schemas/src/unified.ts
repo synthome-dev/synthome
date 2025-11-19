@@ -30,6 +30,17 @@ export type UnifiedBackgroundRemovalOptions = z.infer<
   typeof unifiedBackgroundRemovalOptionsSchema
 >;
 
+// Image Generation unified schema
+export const unifiedImageOptionsSchema = z.object({
+  prompt: z.string(),
+  imageInputs: z.array(z.string().url()).optional(), // Input images for image-to-image generation
+  aspectRatio: z.string().optional(), // Aspect ratio (e.g., "16:9", "1:1", etc.)
+  outputFormat: z.enum(["jpg", "png", "webp"]).optional(), // Output format
+  seed: z.number().int().optional(),
+});
+
+export type UnifiedImageOptions = z.infer<typeof unifiedImageOptionsSchema>;
+
 // Generic mapping interface
 export interface ParameterMapping<TUnified, TProviderOptions> {
   toProviderOptions: (unified: TUnified) => TProviderOptions;
@@ -43,3 +54,7 @@ export interface VideoGenerationMapping<TProviderOptions>
 // Background removal mappings
 export interface BackgroundRemovalMapping<TProviderOptions>
   extends ParameterMapping<UnifiedBackgroundRemovalOptions, TProviderOptions> {}
+
+// Image generation mappings
+export interface ImageGenerationMapping<TProviderOptions>
+  extends ParameterMapping<UnifiedImageOptions, TProviderOptions> {}

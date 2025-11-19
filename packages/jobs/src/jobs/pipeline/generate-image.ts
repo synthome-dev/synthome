@@ -5,6 +5,8 @@ import {
   getModelInfo,
   parseModelPolling,
   parseModelOptions,
+  replicateMappings,
+  falMappings,
 } from "@repo/model-schemas";
 
 export class GenerateImageJob extends BasePipelineJob {
@@ -34,10 +36,36 @@ export class GenerateImageJob extends BasePipelineJob {
         throw new Error(`Unknown model: ${modelId}`);
       }
 
+      // Check if this is an image generation model with unified parameter support
+      // Try to find mapping in the appropriate provider's mappings
+      const mapping =
+        replicateMappings[modelId as keyof typeof replicateMappings] ||
+        falMappings[modelId as keyof typeof falMappings];
+
+      let finalParams = providerParams;
+
+      // If mapping exists and params contain unified parameters, convert them
+      if (
+        mapping &&
+        (providerParams.imageInputs ||
+          providerParams.aspectRatio ||
+          providerParams.outputFormat ||
+          providerParams.seed)
+      ) {
+        console.log(
+          `[GenerateImageJob] Converting unified params to provider-specific format`,
+        );
+        const convertedParams = (mapping as any).toProviderOptions(
+          providerParams,
+        );
+        finalParams = convertedParams;
+        console.log(`[GenerateImageJob] Converted params:`, finalParams);
+      }
+
       // Validate and parse provider parameters against model schema
       let validatedParams: Record<string, unknown>;
       try {
-        validatedParams = parseModelOptions(modelId, providerParams);
+        validatedParams = parseModelOptions(modelId, finalParams);
         console.log(
           `[GenerateImageJob] Validated params for ${modelId}:`,
           validatedParams,
