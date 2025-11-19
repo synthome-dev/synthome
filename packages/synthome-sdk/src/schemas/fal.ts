@@ -3,13 +3,16 @@ import {
   falCapabilities,
   parseFalPolling,
   parseFalWebhook,
+  parseFalImage,
   fabricModels,
   fabricMapping,
+  nanobananaMapping,
   type FabricModelId,
   type Fabric1FastRawOptions,
   providerConfigSchema,
 } from "./providers/fal/index.js";
 import type { ProviderCapabilities } from "./webhook-types.js";
+import { unifiedImageOptionsBaseSchema } from "./unified.js";
 
 // Merge raw options with provider config to extend ProviderConfig
 const fabric1FastOptionsSchema = z
@@ -28,29 +31,40 @@ const fabric1FastOptionsSchema = z
     message: "Either 'audio' or 'audio_url' is required",
   });
 
+// Merge nanobanana with unified schema for SDK
+// Users should only use camelCase unified parameters
+const nanobananaOptionsSchema =
+  unifiedImageOptionsBaseSchema.merge(providerConfigSchema);
+
 export const falSchemas = {
   "veed/fabric-1.0": fabric1FastOptionsSchema,
   "veed/fabric-1.0/fast": fabric1FastOptionsSchema,
+  "fal-ai/nano-banana": nanobananaOptionsSchema,
 } as const;
 
-export type FalModelId = FabricModelId;
+// Define model IDs locally
+export type NanobananaImageModelId = "fal-ai/nano-banana";
+export type FalModelId = FabricModelId | NanobananaImageModelId;
 
 // Categorize models by media type for type-safe model creation
 export type FalVideoModelId = FabricModelId; // Fabric is a video model
-export type FalImageModelId = never; // No FAL image models yet
+export type FalImageModelId = NanobananaImageModelId; // Nanobanana is an image model
 export type FalAudioModelId = never; // No FAL audio models yet
 
 // Export options type for SDK
 export type Fabric1FastOptions = z.infer<typeof fabric1FastOptionsSchema>;
+export type NanobananaOptions = z.infer<typeof nanobananaOptionsSchema>;
 
 export interface FalModels {
   "veed/fabric-1.0": Fabric1FastOptions;
   "veed/fabric-1.0/fast": Fabric1FastOptions;
+  "fal-ai/nano-banana": NanobananaOptions;
 }
 
 export const falMappings = {
   "veed/fabric-1.0": fabricMapping,
   "veed/fabric-1.0/fast": fabricMapping,
+  "fal-ai/nano-banana": nanobananaMapping,
 } as const;
 
 // Model-specific capabilities
@@ -65,6 +79,12 @@ export const falModelCapabilities: Record<FalModelId, ProviderCapabilities> = {
     supportsPolling: true,
     defaultStrategy: "polling",
   },
+  "fal-ai/nano-banana": {
+    supportsWebhooks: false, // Images are fast, use polling
+    supportsPolling: true,
+    defaultStrategy: "polling",
+  },
 };
 
-export { falCapabilities, parseFalPolling, parseFalWebhook };
+// Don't export raw provider types - SDK only exposes unified parameters
+export { falCapabilities, parseFalPolling, parseFalWebhook, parseFalImage };

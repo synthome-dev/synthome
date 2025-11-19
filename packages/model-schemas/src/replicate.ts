@@ -11,20 +11,25 @@ import {
   seedanceModels,
   seedream4OptionsSchema,
   seedreamImageModels,
+  seedreamMapping,
   elevenLabsAudioModels,
   videoMattingModels,
   videoMattingMapping,
   videoBackgroundRemoverModels,
   naterawVideoBackgroundRemoverMapping,
   imageBackgroundRemoverModels,
+  nanobananaImageModels,
+  nanobananaMapping,
   type SeedanceModelId,
   type SeedreamImageModelId,
+  type NanobananaImageModelId,
   type ElevenLabsAudioModelId,
   type VideoMattingModelId,
   type VideoBackgroundRemoverModelId,
   type ImageBackgroundRemoverModelId,
   type RobustVideoMattingRawOptions,
   type NaterawVideoBackgroundRemoverRawOptions,
+  type NanobananaRawOptions,
 } from "./providers/replicate/index.js";
 import {
   minimaxMapping,
@@ -40,6 +45,7 @@ export const replicateSchemas = {
   ...seedanceModels,
   ...minimaxModels,
   ...seedreamImageModels,
+  ...nanobananaImageModels,
   ...elevenLabsAudioModels,
   ...videoMattingModels,
   ...videoBackgroundRemoverModels,
@@ -54,12 +60,14 @@ export type ElevenLabsTurboV25Options = z.infer<
 export type {
   RobustVideoMattingRawOptions,
   NaterawVideoBackgroundRemoverRawOptions,
+  NanobananaRawOptions,
 };
 
 export type ReplicateModelId =
   | SeedanceModelId
   | MinimaxModelId
   | SeedreamImageModelId
+  | NanobananaImageModelId
   | ElevenLabsAudioModelId
   | VideoMattingModelId
   | VideoBackgroundRemoverModelId
@@ -69,6 +77,7 @@ export type ReplicateModelId =
 export type ReplicateVideoModelId = SeedanceModelId | MinimaxModelId;
 export type ReplicateImageModelId =
   | SeedreamImageModelId
+  | NanobananaImageModelId
   | ImageBackgroundRemoverModelId;
 export type ReplicateAudioModelId = ElevenLabsAudioModelId;
 
@@ -76,6 +85,9 @@ export interface ReplicateModels {
   "bytedance/seedance-1-pro": Seedance1ProOptions;
   "minimax/video-01": z.infer<(typeof minimaxModels)["minimax/video-01"]>;
   "bytedance/seedream-4": Seedream4Options;
+  "google/nano-banana": z.infer<
+    (typeof nanobananaImageModels)["google/nano-banana"]
+  >;
   "elevenlabs/turbo-v2.5": ElevenLabsTurboV25Options;
   "arielreplicate/robust_video_matting": z.infer<
     (typeof videoMattingModels)["arielreplicate/robust_video_matting"]
@@ -91,6 +103,8 @@ export interface ReplicateModels {
 export const replicateMappings = {
   "bytedance/seedance-1-pro": seedanceMapping,
   "minimax/video-01": minimaxMapping,
+  "bytedance/seedream-4": seedreamMapping,
+  "google/nano-banana": nanobananaMapping,
   "arielreplicate/robust_video_matting": videoMattingMapping,
   "nateraw/video-background-remover": naterawVideoBackgroundRemoverMapping,
 } as const;
@@ -111,6 +125,11 @@ export const replicateModelCapabilities: Record<
     defaultStrategy: "webhook",
   },
   "bytedance/seedream-4": {
+    supportsWebhooks: false, // Images are fast, use polling
+    supportsPolling: true,
+    defaultStrategy: "polling",
+  },
+  "google/nano-banana": {
     supportsWebhooks: false, // Images are fast, use polling
     supportsPolling: true,
     defaultStrategy: "polling",

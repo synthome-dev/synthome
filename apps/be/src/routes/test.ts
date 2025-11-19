@@ -1,13 +1,4 @@
-// import {
-//   compose,
-//   executeFromPlan,
-//   fal,
-//   generateAudio,
-//   generateImage,
-//   generateVideo,
-//   merge,
-//   replicate,
-// } from "@synthome/sdk";
+import { compose, generateImage, imageModel } from "@synthome/sdk";
 import { Hono } from "hono";
 
 const testRouter = new Hono();
@@ -21,37 +12,38 @@ testRouter.get("/", async (c) => {
   try {
     console.log("Starting execution...");
 
-    // console.log(e);
-
-    // const execution = await compose(
+    // await compose(
     //   generateVideo({
     //     model: fal("veed/fabric-1.0"),
-    //     audio: generateAudio({}),
-    //     prompt: "A serene landscape with mountains",
-    //     duration: 5,
+    //     resolution: "480p",
     //     image: generateImage({
     //       model: replicate("bytedance/seedream-4"),
     //       prompt:
-    //         "A man staning in the desert",
+    //         "An old man staing in the desert full body photo on a green background(chromoa key)",
     //     }),
-    //   }),
-    //   generateVideo({
-    //     model: replicate("bytedance/seedance-1-pro"),
-    //     prompt: "A serene landscape with mountains",
-    //     duration: 5,
-    //     image: generateImage({
-    //       model: replicate("bytedance/seedream-4"),
-    //       prompt:
-    //         "A futuristic cityscape at sunset, vibrant colors, high detail",
+    //     audio: generateAudio({
+    //       model: hume("hume/tts"),
+    //       text: "Hello, this is a test of the Hume text to speech model.",
     //     }),
-    //   }),
-    //   merge()
+    //   })
     // ).execute();
+
+    const a = await compose(
+      generateImage({
+        model: imageModel("google/nano-banana", "replicate"),
+        prompt: "A beautiful sunset over the ocean",
+        aspectRatio: "9:16",
+      })
+    ).execute({
+      apiUrl: `http://localhost:3101/api/execute`,
+      apiKey:
+        "sy_test_61aa4d7e73899492b513bc92ccfadbde67a9425bf1de65474c0d08e7263001c1",
+    });
 
     // No need to call waitForCompletion() - execute() already waited!
 
     return c.json({
-      success: true,
+      a: a.result?.url,
       //   executionId: execution.id,
       //   status: execution.status,
       //   result: execution.result,
@@ -60,8 +52,7 @@ testRouter.get("/", async (c) => {
     console.error("Error in /api/test:", error);
     return c.json(
       {
-        error: "Video generation failed",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : "Unknown error",
       },
       500
     );
@@ -73,32 +64,32 @@ testRouter.get("/", async (c) => {
  *
  * Test endpoint to receive webhooks
  */
-// testRouter.post("/webhook", async (c) => {
-//   try {
-//     const body = await c.req.json();
-//     const signature = c.req.header("X-Webhook-Signature");
+testRouter.post("/webhook", async (c) => {
+  try {
+    const body = await c.req.json();
+    const signature = c.req.header("X-Webhook-Signature");
 
-//     console.log("=== Webhook Received ===");
-//     console.log("Signature:", signature);
-//     console.log("Payload:", JSON.stringify(body, null, 2));
-//     console.log("========================");
+    console.log("=== Webhook Received ===");
+    console.log("Signature:", signature);
+    console.log("Payload:", JSON.stringify(body, null, 2));
+    console.log("========================");
 
-//     return c.json({
-//       success: true,
-//       message: "Webhook received",
-//       receivedAt: new Date().toISOString(),
-//     });
-//   } catch (error) {
-//     console.error("Error in /api/test/webhook:", error);
-//     return c.json(
-//       {
-//         error: "Webhook processing failed",
-//         message: error instanceof Error ? error.message : "Unknown error",
-//       },
-//       500
-//     );
-//   }
-// });
+    return c.json({
+      success: true,
+      message: "Webhook received",
+      receivedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Error in /api/test/webhook:", error);
+    return c.json(
+      {
+        error: "Webhook processing failed",
+        message: error instanceof Error ? error.message : "Unknown error",
+      },
+      500
+    );
+  }
+});
 
 // /**
 //  * GET /api/test/webhook-async
