@@ -250,17 +250,146 @@ export async function getVideoMetadata(
   });
 }
 
+/**
+ * Detect if a file path is a video or image based on extension
+ */
+function isVideoFile(filePath: string): boolean {
+  const videoExtensions = [
+    ".mp4",
+    ".mov",
+    ".avi",
+    ".mkv",
+    ".webm",
+    ".flv",
+    ".wmv",
+  ];
+  const ext = filePath.toLowerCase().slice(filePath.lastIndexOf("."));
+  return videoExtensions.includes(ext);
+}
+
+/**
+ * Get metadata for a media file (video or image)
+ */
+async function getMediaMetadata(
+  filePath: string,
+): Promise<VideoMetadata & { isVideo: boolean }> {
+  const isVideo = isVideoFile(filePath);
+
+  if (!isVideo) {
+    // For images, we just need dimensions (duration is not applicable)
+    return new Promise((resolve, reject) => {
+      ffmpeg.ffprobe(filePath, (err, metadata) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+
+        const stream = metadata.streams[0];
+        if (!stream) {
+          reject(new Error("No stream found in image"));
+          return;
+        }
+
+        resolve({
+          duration: 0,
+          width: stream.width || 0,
+          height: stream.height || 0,
+          fps: 0,
+          isVideo: false,
+        });
+      });
+    });
+  }
+
+  // For videos, get full metadata
+  const metadata = await getVideoMetadata(filePath);
+  return { ...metadata, isVideo: true };
+}
+
+/**
+ * Loop a video to match a target duration
+ * Returns path to the looped video file
+ */
+async function loopVideoToMatchDuration(
+  videoPath: string,
+  targetDuration: number,
+  videoMetadata: VideoMetadata,
+  tempFiles: string[],
+): Promise<string> {
+  const loopedPath = join(tmpdir(), `${nanoid()}_looped.mp4`);
+  tempFiles.push(loopedPath);
+
+  if (videoMetadata.duration >= targetDuration) {
+    // Background is longer than target, just trim it
+    console.log(
+      `[LoopVideo] Trimming background from ${videoMetadata.duration}s to ${targetDuration}s`,
+    );
+    await new Promise<void>((resolve, reject) => {
+      ffmpeg()
+        .input(videoPath)
+        .inputOptions([`-t ${targetDuration}`])
+        .videoCodec("libx264")
+        .audioCodec("aac")
+        .outputOptions(["-pix_fmt", "yuv420p"])
+        .toFormat("mp4")
+        .on("start", (commandLine: string) =>
+          console.log("Trim FFmpeg command:", commandLine),
+        )
+        .on("error", reject)
+        .save(loopedPath)
+        .on("end", resolve);
+    });
+    return loopedPath;
+  }
+
+  // Calculate how many loops we need
+  const loopsNeeded = Math.ceil(targetDuration / videoMetadata.duration);
+  console.log(
+    `[LoopVideo] Looping background ${loopsNeeded} times (${videoMetadata.duration}s -> ${targetDuration}s)`,
+  );
+
+  // Create a concat file listing
+  const concatListPath = join(tmpdir(), `${nanoid()}_concat.txt`);
+  tempFiles.push(concatListPath);
+
+  const concatContent = Array(loopsNeeded)
+    .fill(`file '${videoPath}'`)
+    .join("\n");
+  await Bun.write(concatListPath, concatContent);
+
+  // Concat the video multiple times, then trim to exact duration
+  await new Promise<void>((resolve, reject) => {
+    ffmpeg()
+      .input(concatListPath)
+      .inputOptions(["-f", "concat", "-safe", "0"])
+      .outputOptions([`-t ${targetDuration}`])
+      .videoCodec("libx264")
+      .audioCodec("aac")
+      .outputOptions(["-pix_fmt", "yuv420p"])
+      .toFormat("mp4")
+      .on("start", (commandLine: string) =>
+        console.log("Loop FFmpeg command:", commandLine),
+      )
+      .on("error", reject)
+      .save(loopedPath)
+      .on("end", resolve);
+  });
+
+  return loopedPath;
+}
+
 export interface ReplaceGreenScreenOptions {
   videoUrl: string;
-  backgroundUrls: string[]; // Can be single or multiple backgrounds
+  backgroundUrls: string[]; // Can be images or videos (videos will be looped to match main video duration)
   chromaKeyColor?: string; // Default: "0x00FF00" (green)
   similarity?: number; // Default: 0.25 (range: 0.0-1.0, balanced green removal)
   blend?: number; // Default: 0.05 (range: 0.0-1.0, minimal edge blending)
 }
 
 /**
- * Replace green screen in video with background image(s)
+ * Replace green screen in video with background image(s) or video(s)
  * For multiple backgrounds: distributes them evenly across video duration
+ * For video backgrounds: automatically loops them to match the segment duration
  */
 export async function replaceGreenScreen(
   options: ReplaceGreenScreenOptions,
@@ -306,7 +435,12 @@ export async function replaceGreenScreen(
         );
       }
       const bgBuffer = Buffer.from(await bgResponse.arrayBuffer());
-      const bgPath = join(tmpdir(), `${nanoid()}.jpg`);
+
+      // Detect if it's a video or image and use appropriate extension
+      const isVideo = isVideoFile(bgUrl);
+      const ext = isVideo ? "mp4" : "jpg";
+      const bgPath = join(tmpdir(), `${nanoid()}.${ext}`);
+
       await Bun.write(bgPath, bgBuffer);
       backgroundPaths.push(bgPath);
       tempFiles.push(bgPath);
@@ -315,10 +449,32 @@ export async function replaceGreenScreen(
     if (options.backgroundUrls.length === 1) {
       // Single background - simple overlay
       console.log(`[ReplaceGreenScreen] Processing with single background`);
+
+      // Get background metadata
+      const bgMetadata = await getMediaMetadata(backgroundPaths[0]);
+      console.log(
+        `[ReplaceGreenScreen] Background type: ${bgMetadata.isVideo ? "video" : "image"}`,
+      );
+
+      let finalBackgroundPath = backgroundPaths[0];
+
+      // If background is a video, loop it to match main video duration
+      if (bgMetadata.isVideo) {
+        console.log(
+          `[ReplaceGreenScreen] Background video duration: ${bgMetadata.duration}s, main video: ${metadata.duration}s`,
+        );
+        finalBackgroundPath = await loopVideoToMatchDuration(
+          backgroundPaths[0],
+          metadata.duration,
+          bgMetadata,
+          tempFiles,
+        );
+      }
+
       await new Promise<void>((resolve, reject) => {
         ffmpeg()
           .input(videoPath)
-          .input(backgroundPaths[0])
+          .input(finalBackgroundPath)
           .complexFilter([
             // Scale background to video dimensions and crop to fill
             `[1:v]scale=${metadata.width}:${metadata.height}:force_original_aspect_ratio=increase,crop=${metadata.width}:${metadata.height}[bg]`,
@@ -367,11 +523,32 @@ export async function replaceGreenScreen(
           `[ReplaceGreenScreen] Processing segment ${i + 1}/${options.backgroundUrls.length}: ${startTime}s - ${startTime + duration}s`,
         );
 
+        // Get background metadata
+        const bgMetadata = await getMediaMetadata(backgroundPaths[i]);
+        console.log(
+          `[ReplaceGreenScreen] Segment ${i + 1} background type: ${bgMetadata.isVideo ? "video" : "image"}`,
+        );
+
+        let finalBackgroundPath = backgroundPaths[i];
+
+        // If background is a video, loop it to match segment duration
+        if (bgMetadata.isVideo) {
+          console.log(
+            `[ReplaceGreenScreen] Segment ${i + 1} background video duration: ${bgMetadata.duration}s, segment: ${duration}s`,
+          );
+          finalBackgroundPath = await loopVideoToMatchDuration(
+            backgroundPaths[i],
+            duration,
+            bgMetadata,
+            tempFiles,
+          );
+        }
+
         await new Promise<void>((resolve, reject) => {
           ffmpeg()
             .input(videoPath)
             .inputOptions([`-ss ${startTime}`, `-t ${duration}`])
-            .input(backgroundPaths[i])
+            .input(finalBackgroundPath)
             .complexFilter([
               // Scale background to video dimensions and crop to fill
               `[1:v]scale=${metadata.width}:${metadata.height}:force_original_aspect_ratio=increase,crop=${metadata.width}:${metadata.height}[bg]`,
