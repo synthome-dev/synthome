@@ -124,7 +124,7 @@ export const parseReplicateImage: PollingParser = (response: unknown) => {
   }
 
   if (data.status === "succeeded") {
-    // Seedream-4 returns array of image URLs
+    // Handle array of image URLs (e.g., Seedream-4)
     if (Array.isArray(data.output) && data.output.length > 0) {
       return {
         status: "completed",
@@ -133,6 +133,23 @@ export const parseReplicateImage: PollingParser = (response: unknown) => {
           url,
           mimeType: "image/jpeg",
         })),
+        metadata: {
+          predictionId: data.id,
+        },
+      };
+    }
+
+    // Handle single image URL string (e.g., Nanobanana, background removers)
+    if (typeof data.output === "string" && data.output) {
+      return {
+        status: "completed",
+        outputs: [
+          {
+            type: "image",
+            url: data.output,
+            mimeType: "image/jpeg",
+          },
+        ],
         metadata: {
           predictionId: data.id,
         },
@@ -206,8 +223,8 @@ export const parseReplicateAudio: PollingParser = (response: unknown) => {
 export * from "./elevenlabs/index.js";
 export * from "./image-background-remover/index.js";
 export * from "./minimax/index.js";
+export * from "./nanobanana/index.js";
 export * from "./seedance/index.js";
 export * from "./seedream/index.js";
 export * from "./video-background-remover/index.js";
 export * from "./video-matting/index.js";
-

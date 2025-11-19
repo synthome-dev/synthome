@@ -1,11 +1,11 @@
-import { db, executionJobs, executions, and, eq, sql } from "@repo/db";
+import { and, db, eq, executionJobs, executions, sql } from "@repo/db";
+import { completeAsyncJob, failAsyncJob } from "@repo/jobs";
 import {
-  parseModelPolling,
   getModelCapabilities,
   getModelInfo,
+  parseModelPolling,
 } from "@repo/model-schemas";
 import { VideoProviderFactory } from "@repo/providers";
-import { completeAsyncJob, failAsyncJob } from "@repo/jobs";
 
 interface PollingWorkerOptions {
   intervalMs?: number; // How often to check for jobs to poll
@@ -25,7 +25,7 @@ export class PollingWorker {
   constructor(options: PollingWorkerOptions = {}) {
     this.intervalMs = options.intervalMs || 10000; // Default: check every 10 seconds
     this.maxPollAttempts = options.maxPollAttempts || 100; // Default: max 100 attempts
-    this.backoffMultiplier = options.backoffMultiplier || 1.5; // Exponential backoff
+    this.backoffMultiplier = options.backoffMultiplier || 2; // Exponential backoff
     this.initialBackoffMs = options.initialBackoffMs || 5000; // Start with 5 second intervals
   }
 
@@ -37,7 +37,7 @@ export class PollingWorker {
 
     this.isRunning = true;
     console.log(
-      `[PollingWorker] Starting (check interval: ${this.intervalMs}ms)`,
+      `[PollingWorker] Starting (check interval: ${this.intervalMs}ms)`
     );
 
     // Run immediately on start (with error handling to not crash the worker)
@@ -81,8 +81,8 @@ export class PollingWorker {
           and(
             eq(executionJobs.waitingStrategy, "polling"),
             eq(executionJobs.status, "processing"),
-            sql`${executionJobs.nextPollAt} <= ${new Date()}`,
-          ),
+            sql`${executionJobs.nextPollAt} <= ${new Date()}`
+          )
         );
 
       if (jobsToPoll.length === 0) {
@@ -108,13 +108,13 @@ export class PollingWorker {
     const pollAttempts = job.pollAttempts || 0;
 
     console.log(
-      `[PollingWorker] Polling job ${jobRecordId} (attempt ${pollAttempts + 1})`,
+      `[PollingWorker] Polling job ${jobRecordId} (attempt ${pollAttempts + 1})`
     );
 
     // Check if max attempts exceeded
     if (pollAttempts >= this.maxPollAttempts) {
       console.error(
-        `[PollingWorker] Job ${jobRecordId} exceeded max poll attempts`,
+        `[PollingWorker] Job ${jobRecordId} exceeded max poll attempts`
       );
 
       await db
@@ -159,7 +159,7 @@ export class PollingWorker {
       }
 
       console.log(
-        `[PollingWorker] Retrieved provider keys for execution ${job.executionId}`,
+        `[PollingWorker] Retrieved provider keys for execution ${job.executionId}`
       );
 
       // Get provider from model info
@@ -175,12 +175,12 @@ export class PollingWorker {
         ];
 
       console.log(
-        `[PollingWorker] Provider: ${modelInfo.provider}, API key present: ${!!providerApiKey}`,
+        `[PollingWorker] Provider: ${modelInfo.provider}, API key present: ${!!providerApiKey}`
       );
 
       const provider = VideoProviderFactory.getProvider(
         modelInfo.provider,
-        providerApiKey as string | undefined,
+        providerApiKey as string | undefined
       );
 
       // Poll for job status
@@ -190,7 +190,7 @@ export class PollingWorker {
       const parseResult = parseModelPolling(modelId, statusResponse);
 
       console.log(
-        `[PollingWorker] Job ${jobRecordId} status: ${parseResult.status}`,
+        `[PollingWorker] Job ${jobRecordId} status: ${parseResult.status}`
       );
 
       // Handle based on status
@@ -203,7 +203,7 @@ export class PollingWorker {
       } else if (parseResult.status === "failed") {
         await failAsyncJob(
           jobRecordId,
-          parseResult.error || "Provider job failed",
+          parseResult.error || "Provider job failed"
         );
       } else if (parseResult.status === "processing") {
         // Update poll attempts and schedule next poll with exponential backoff
@@ -213,7 +213,7 @@ export class PollingWorker {
         const nextPollAt = new Date(Date.now() + nextBackoffMs);
 
         console.log(
-          `[PollingWorker] Job ${jobRecordId} still processing, next poll at ${nextPollAt.toISOString()}`,
+          `[PollingWorker] Job ${jobRecordId} still processing, next poll at ${nextPollAt.toISOString()}`
         );
 
         await db

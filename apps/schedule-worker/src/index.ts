@@ -1,16 +1,16 @@
+import { resetMonthlyUsage } from "@repo/db";
 import {
-  GenerateVideoJob,
-  GenerateImageJob,
   GenerateAudioJob,
+  GenerateImageJob,
+  GenerateVideoJob,
   JobManager,
   MergeVideosJob,
   RemoveBackgroundJob,
-  ReplaceGreenScreenJob,
   RemoveImageBackgroundJob,
+  ReplaceGreenScreenJob,
   WebhookDeliveryJob,
 } from "@repo/jobs";
 import { Scheduler } from "@repo/scheduler";
-import { resetMonthlyUsage } from "@repo/db";
 import "dotenv/config";
 import { PollingWorker } from "./polling-worker";
 
@@ -27,7 +27,7 @@ jobManager.register(WebhookDeliveryJob);
 const pollingWorker = new PollingWorker({
   intervalMs: 10000, // Check every 10 seconds
   maxPollAttempts: 100,
-  backoffMultiplier: 1.5,
+  backoffMultiplier: 2,
   initialBackoffMs: 5000,
 });
 

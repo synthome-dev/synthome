@@ -11,12 +11,14 @@ import {
   seedanceModels,
   seedream4OptionsSchema,
   seedreamImageModels,
+  seedreamMapping,
   elevenLabsAudioModels,
   videoMattingModels,
   videoMattingMapping,
   videoBackgroundRemoverModels,
   naterawVideoBackgroundRemoverMapping,
   imageBackgroundRemoverModels,
+  nanobananaMapping,
   type SeedanceModelId,
   type SeedreamImageModelId,
   type ElevenLabsAudioModelId,
@@ -32,14 +34,21 @@ import {
   type MinimaxModelId,
 } from "./providers/replicate/minimax/index.js";
 import type { ProviderCapabilities } from "./webhook-types.js";
+import { unifiedImageOptionsBaseSchema } from "./unified.js";
 
 const seedance1ProOptionsSchema =
   seedance1ProRawOptionsSchema.merge(providerConfigSchema);
+
+// Merge nanobanana with unified schema for SDK
+// Users should only use camelCase unified parameters
+const replicateNanobananaSchema =
+  unifiedImageOptionsBaseSchema.merge(providerConfigSchema);
 
 export const replicateSchemas = {
   ...seedanceModels,
   ...minimaxModels,
   ...seedreamImageModels,
+  "google/nano-banana": replicateNanobananaSchema,
   ...elevenLabsAudioModels,
   ...videoMattingModels,
   ...videoBackgroundRemoverModels,
@@ -51,15 +60,19 @@ export type Seedream4Options = z.infer<typeof seedream4OptionsSchema>;
 export type ElevenLabsTurboV25Options = z.infer<
   (typeof elevenLabsAudioModels)["elevenlabs/turbo-v2.5"]
 >;
+export type NanobananaOptions = z.infer<typeof replicateNanobananaSchema>;
 export type {
   RobustVideoMattingRawOptions,
   NaterawVideoBackgroundRemoverRawOptions,
 };
 
+export type NanobananaImageModelId = "google/nano-banana";
+
 export type ReplicateModelId =
   | SeedanceModelId
   | MinimaxModelId
   | SeedreamImageModelId
+  | NanobananaImageModelId
   | ElevenLabsAudioModelId
   | VideoMattingModelId
   | VideoBackgroundRemoverModelId
@@ -69,6 +82,7 @@ export type ReplicateModelId =
 export type ReplicateVideoModelId = SeedanceModelId | MinimaxModelId;
 export type ReplicateImageModelId =
   | SeedreamImageModelId
+  | NanobananaImageModelId
   | ImageBackgroundRemoverModelId;
 export type ReplicateAudioModelId = ElevenLabsAudioModelId;
 
@@ -76,6 +90,7 @@ export interface ReplicateModels {
   "bytedance/seedance-1-pro": Seedance1ProOptions;
   "minimax/video-01": z.infer<(typeof minimaxModels)["minimax/video-01"]>;
   "bytedance/seedream-4": Seedream4Options;
+  "google/nano-banana": NanobananaOptions;
   "elevenlabs/turbo-v2.5": ElevenLabsTurboV25Options;
   "arielreplicate/robust_video_matting": z.infer<
     (typeof videoMattingModels)["arielreplicate/robust_video_matting"]
@@ -91,6 +106,8 @@ export interface ReplicateModels {
 export const replicateMappings = {
   "bytedance/seedance-1-pro": seedanceMapping,
   "minimax/video-01": minimaxMapping,
+  "bytedance/seedream-4": seedreamMapping,
+  "google/nano-banana": nanobananaMapping,
   "arielreplicate/robust_video_matting": videoMattingMapping,
   "nateraw/video-background-remover": naterawVideoBackgroundRemoverMapping,
 } as const;
@@ -111,6 +128,11 @@ export const replicateModelCapabilities: Record<
     defaultStrategy: "webhook",
   },
   "bytedance/seedream-4": {
+    supportsWebhooks: false, // Images are fast, use polling
+    supportsPolling: true,
+    defaultStrategy: "polling",
+  },
+  "google/nano-banana": {
     supportsWebhooks: false, // Images are fast, use polling
     supportsPolling: true,
     defaultStrategy: "polling",

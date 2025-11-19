@@ -1,4 +1,4 @@
-import type { ProviderConfig, VideoModel } from "../core/types.js";
+import type { VideoModel } from "../core/types.js";
 import type { VideoOperation } from "../core/video.js";
 import type { RobustVideoMattingRawOptions } from "../schemas/replicate.js";
 
