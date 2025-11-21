@@ -5,6 +5,76 @@ import { BasePipelineJob, type PipelineJobData } from "./base-pipeline-job.js";
 export class LayerJob extends BasePipelineJob {
   readonly type: string = "layer";
 
+  /**
+   * Helper function to resolve job dependencies to media URLs
+   * Supports: _videoJobDependency, _imageJobDependency, _audioJobDependency
+   * Handles both result formats: { outputs: [{ url }] } and { url }
+   */
+  private resolveMediaDependency(
+    mediaItem: string,
+    dependencies: Record<string, any>,
+  ): string | null {
+    // Check for video dependency
+    if (mediaItem.startsWith("_videoJobDependency:")) {
+      const jobId = mediaItem.replace("_videoJobDependency:", "");
+      return this.extractUrlFromDependency(jobId, dependencies, "video");
+    }
+
+    // Check for image dependency
+    if (mediaItem.startsWith("_imageJobDependency:")) {
+      const jobId = mediaItem.replace("_imageJobDependency:", "");
+      return this.extractUrlFromDependency(jobId, dependencies, "image");
+    }
+
+    // Check for audio dependency
+    if (mediaItem.startsWith("_audioJobDependency:")) {
+      const jobId = mediaItem.replace("_audioJobDependency:", "");
+      return this.extractUrlFromDependency(jobId, dependencies, "audio");
+    }
+
+    return null;
+  }
+
+  /**
+   * Extracts URL from dependency result, handling both formats
+   */
+  private extractUrlFromDependency(
+    jobId: string,
+    dependencies: Record<string, any>,
+    mediaType: string,
+  ): string {
+    const depResult = dependencies[jobId];
+
+    if (!depResult) {
+      throw new Error(
+        `${mediaType} dependency ${jobId} not found in dependencies`,
+      );
+    }
+
+    // Try standard format: { outputs: [{ url }] }
+    if (depResult && typeof depResult === "object" && "outputs" in depResult) {
+      const outputs = (depResult as any).outputs;
+      if (Array.isArray(outputs) && outputs.length > 0 && outputs[0].url) {
+        console.log(
+          `[LayerJob] Resolved ${mediaType} dependency ${jobId} to URL: ${outputs[0].url}`,
+        );
+        return outputs[0].url;
+      }
+    }
+
+    // Try simple format: { url }
+    if (depResult && typeof depResult === "object" && "url" in depResult) {
+      console.log(
+        `[LayerJob] Resolved ${mediaType} dependency ${jobId} to URL: ${(depResult as any).url}`,
+      );
+      return (depResult as any).url;
+    }
+
+    throw new Error(
+      `${mediaType} dependency ${jobId} has invalid result format. Expected { outputs: [{ url }] } or { url }`,
+    );
+  }
+
   async work(job: PgBoss.Job<PipelineJobData>): Promise<void> {
     const { jobRecordId, executionId, jobId, params, dependencies } = job.data;
 
@@ -121,43 +191,16 @@ export class LayerJob extends BasePipelineJob {
 
               for (const mediaItem of mediaArray) {
                 if (typeof mediaItem === "string") {
-                  if (mediaItem.startsWith("_mediaJobDependency:")) {
-                    const jobId = mediaItem.replace("_mediaJobDependency:", "");
-                    const depResult = dependencies[jobId];
+                  // Try to resolve as dependency
+                  const resolvedUrl = this.resolveMediaDependency(
+                    mediaItem,
+                    dependencies,
+                  );
 
-                    if (!depResult) {
-                      throw new Error(
-                        `Media dependency ${jobId} not found in dependencies`,
-                      );
-                    }
-
-                    if (
-                      depResult &&
-                      typeof depResult === "object" &&
-                      "outputs" in depResult
-                    ) {
-                      const outputs = (depResult as any).outputs;
-                      if (
-                        Array.isArray(outputs) &&
-                        outputs.length > 0 &&
-                        outputs[0].url
-                      ) {
-                        resolvedMedia.push(outputs[0].url);
-                        console.log(
-                          `[LayerJob] Resolved timeline media dependency ${jobId} to URL: ${outputs[0].url}`,
-                        );
-                      }
-                    } else if (
-                      depResult &&
-                      typeof depResult === "object" &&
-                      "url" in depResult
-                    ) {
-                      resolvedMedia.push((depResult as any).url);
-                      console.log(
-                        `[LayerJob] Resolved timeline media dependency ${jobId} to URL: ${(depResult as any).url}`,
-                      );
-                    }
+                  if (resolvedUrl) {
+                    resolvedMedia.push(resolvedUrl);
                   } else {
+                    // Not a dependency marker, treat as direct URL
                     resolvedMedia.push(mediaItem);
                   }
                 }
@@ -206,43 +249,16 @@ export class LayerJob extends BasePipelineJob {
 
             for (const mediaItem of mediaArray) {
               if (typeof mediaItem === "string") {
-                if (mediaItem.startsWith("_mediaJobDependency:")) {
-                  const jobId = mediaItem.replace("_mediaJobDependency:", "");
-                  const depResult = dependencies[jobId];
+                // Try to resolve as dependency
+                const resolvedUrl = this.resolveMediaDependency(
+                  mediaItem,
+                  dependencies,
+                );
 
-                  if (!depResult) {
-                    throw new Error(
-                      `Media dependency ${jobId} not found in dependencies`,
-                    );
-                  }
-
-                  if (
-                    depResult &&
-                    typeof depResult === "object" &&
-                    "outputs" in depResult
-                  ) {
-                    const outputs = (depResult as any).outputs;
-                    if (
-                      Array.isArray(outputs) &&
-                      outputs.length > 0 &&
-                      outputs[0].url
-                    ) {
-                      resolvedMedia.push(outputs[0].url);
-                      console.log(
-                        `[LayerJob] Resolved media dependency ${jobId} to URL: ${outputs[0].url}`,
-                      );
-                    }
-                  } else if (
-                    depResult &&
-                    typeof depResult === "object" &&
-                    "url" in depResult
-                  ) {
-                    resolvedMedia.push((depResult as any).url);
-                    console.log(
-                      `[LayerJob] Resolved media dependency ${jobId} to URL: ${(depResult as any).url}`,
-                    );
-                  }
+                if (resolvedUrl) {
+                  resolvedMedia.push(resolvedUrl);
                 } else {
+                  // Not a dependency marker, treat as direct URL
                   resolvedMedia.push(mediaItem);
                 }
               }
@@ -323,9 +339,18 @@ export class LayerJob extends BasePipelineJob {
       console.log(`[LayerJob] Uploaded to storage: ${uploadResult.url}`);
 
       const result = {
-        url: uploadResult.url,
-        layerCount: resolvedLayers.length,
-        size: videoBuffer.length,
+        status: "completed",
+        outputs: [
+          {
+            type: "video",
+            url: uploadResult.url,
+            mimeType: "video/mp4",
+          },
+        ],
+        metadata: {
+          layerCount: resolvedLayers.length,
+          size: videoBuffer.length,
+        },
       };
 
       await this.updateJobProgress(jobRecordId, "completed", 100);

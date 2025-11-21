@@ -517,6 +517,68 @@ class VideoPipeline implements Pipeline {
           for (const layer of layerParams.layers) {
             const processedLayer = { ...layer };
 
+            // Handle timeline layers with nested operations
+            if ("isTimeline" in layer && layer.isTimeline && layer.timeline) {
+              const processedTimeline = [];
+
+              for (const timelineItem of layer.timeline) {
+                const processedItem = { ...timelineItem };
+
+                // Check if timeline item has nested operation in media
+                if (
+                  timelineItem.media &&
+                  typeof timelineItem.media === "object" &&
+                  !Array.isArray(timelineItem.media)
+                ) {
+                  const mediaOp = timelineItem.media as
+                    | VideoOperation
+                    | ImageOperation
+                    | AudioOperation;
+
+                  if (
+                    mediaOp.type === "generate" ||
+                    mediaOp.type === "generateImage" ||
+                    mediaOp.type === "generateAudio" ||
+                    mediaOp.type === "removeBackground" ||
+                    mediaOp.type === "removeImageBackground"
+                  ) {
+                    // Create a job for this nested operation
+                    const mediaJobId = `job${counter++}`;
+                    jobs.push({
+                      id: mediaJobId,
+                      type: mediaOp.type,
+                      params: mediaOp.params,
+                      output: `$${mediaJobId}`,
+                    });
+
+                    // Track dependency
+                    layerDependencies.push(mediaJobId);
+
+                    // Replace media with dependency marker based on operation type
+                    if (
+                      mediaOp.type === "generate" ||
+                      mediaOp.type === "removeBackground"
+                    ) {
+                      processedItem.media = `_videoJobDependency:${mediaJobId}`;
+                    } else if (
+                      mediaOp.type === "generateImage" ||
+                      mediaOp.type === "removeImageBackground"
+                    ) {
+                      processedItem.media = `_imageJobDependency:${mediaJobId}`;
+                    } else if (mediaOp.type === "generateAudio") {
+                      processedItem.media = `_audioJobDependency:${mediaJobId}`;
+                    } else {
+                      processedItem.media = `_videoJobDependency:${mediaJobId}`; // fallback
+                    }
+                  }
+                }
+
+                processedTimeline.push(processedItem);
+              }
+
+              processedLayer.timeline = processedTimeline;
+            }
+
             // Handle nested operations in media
             if (layer.media) {
               // Check if media is an array of operations
@@ -554,9 +616,27 @@ class VideoPipeline implements Pipeline {
                   }
                   // Replace media with dependency markers
                   if (layerMediaJobIds.length > 0) {
-                    processedLayer.media = layerMediaJobIds.map(
-                      (id) => `_mediaJobDependency:${id}`,
-                    );
+                    processedLayer.media = layerMediaJobIds.map((id, index) => {
+                      const mediaOp = layer.media[index] as
+                        | VideoOperation
+                        | ImageOperation
+                        | AudioOperation;
+                      // Determine dependency type based on operation type
+                      if (
+                        mediaOp.type === "generate" ||
+                        mediaOp.type === "removeBackground"
+                      ) {
+                        return `_videoJobDependency:${id}`;
+                      } else if (
+                        mediaOp.type === "generateImage" ||
+                        mediaOp.type === "removeImageBackground"
+                      ) {
+                        return `_imageJobDependency:${id}`;
+                      } else if (mediaOp.type === "generateAudio") {
+                        return `_audioJobDependency:${id}`;
+                      }
+                      return `_videoJobDependency:${id}`; // fallback
+                    });
                   }
                 }
                 // else: array of strings (URLs), keep as-is
@@ -586,8 +666,22 @@ class VideoPipeline implements Pipeline {
                   // Track dependency
                   layerDependencies.push(mediaJobId);
 
-                  // Replace media with dependency marker
-                  processedLayer.media = `_mediaJobDependency:${mediaJobId}`;
+                  // Replace media with dependency marker based on operation type
+                  if (
+                    mediaOp.type === "generate" ||
+                    mediaOp.type === "removeBackground"
+                  ) {
+                    processedLayer.media = `_videoJobDependency:${mediaJobId}`;
+                  } else if (
+                    mediaOp.type === "generateImage" ||
+                    mediaOp.type === "removeImageBackground"
+                  ) {
+                    processedLayer.media = `_imageJobDependency:${mediaJobId}`;
+                  } else if (mediaOp.type === "generateAudio") {
+                    processedLayer.media = `_audioJobDependency:${mediaJobId}`;
+                  } else {
+                    processedLayer.media = `_videoJobDependency:${mediaJobId}`; // fallback
+                  }
                 }
               } else if (typeof layer.media === "string") {
                 // String URL - convert to array for backend compatibility
