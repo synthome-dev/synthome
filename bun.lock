@@ -297,7 +297,7 @@
     },
     "packages/synthome-sdk": {
       "name": "@synthome/sdk",
-      "version": "0.6.0",
+      "version": "0.6.1",
       "dependencies": {
         "zod": "^3.23.8",
       },

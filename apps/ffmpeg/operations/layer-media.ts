@@ -81,6 +81,22 @@ export async function layerMedia(options: LayerMediaOptions): Promise<Buffer> {
       `${bgWidth}x${bgHeight}`,
     );
 
+    // Find the main layer index (for audio mapping)
+    let mainLayerIndex = options.mainLayer ?? 0; // Default to first layer if not specified
+
+    // If mainLayer not explicitly set, find layer with main: true
+    if (options.mainLayer === undefined) {
+      for (let i = 0; i < options.layers.length; i++) {
+        const layer = options.layers[i];
+        if ("main" in layer && layer.main) {
+          mainLayerIndex = i;
+          break;
+        }
+      }
+    }
+
+    console.log("[LayerMedia] Main layer index (for audio):", mainLayerIndex);
+
     // Build FFmpeg command
     let command = ffmpeg();
 
@@ -166,7 +182,7 @@ export async function layerMedia(options: LayerMediaOptions): Promise<Buffer> {
     await new Promise<void>((resolve, reject) => {
       command
         .complexFilter(filterComplex)
-        .outputOptions(["-map", currentOutput, "-map", "0:a?"])
+        .outputOptions(["-map", currentOutput, "-map", `${mainLayerIndex}:a?`])
         .videoCodec("libx264")
         .audioCodec("aac")
         .outputOptions(["-pix_fmt", "yuv420p"])
