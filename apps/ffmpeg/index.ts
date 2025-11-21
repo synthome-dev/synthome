@@ -1,12 +1,12 @@
 import { Hono } from "hono";
 import {
   FFmpegOptions,
-  presets,
-  processMedia,
+  layerMedia,
+  LayerMediaOptions,
   mergeVideos,
   MergeVideosOptions,
-  replaceGreenScreen,
-  ReplaceGreenScreenOptions,
+  presets,
+  processMedia,
 } from "./ffmpeg";
 
 const app = new Hono();
@@ -39,11 +39,11 @@ app.post("/convert", async (c) => {
 
     c.header(
       "Content-Type",
-      `${file.type.split("/")[0]}/${options.outputFormat}`,
+      `${file.type.split("/")[0]}/${options.outputFormat}`
     );
     c.header(
       "Content-Disposition",
-      `attachment; filename="converted-${Date.now()}.${options.outputFormat}"`,
+      `attachment; filename="converted-${Date.now()}.${options.outputFormat}"`
     );
     return c.body(new Uint8Array(outputBuffer));
   } catch (error) {
@@ -66,13 +66,13 @@ app.post("/extract-audio", async (c) => {
     const buffer = Buffer.from(await file.arrayBuffer());
     const outputBuffer = await processMedia(
       buffer,
-      presets.extractAudio(format),
+      presets.extractAudio(format)
     );
 
     c.header("Content-Type", `audio/${format}`);
     c.header(
       "Content-Disposition",
-      `attachment; filename="audio-${Date.now()}.${format}"`,
+      `attachment; filename="audio-${Date.now()}.${format}"`
     );
     return c.body(new Uint8Array(outputBuffer));
   } catch (error) {
@@ -95,13 +95,13 @@ app.post("/compress-video", async (c) => {
     const buffer = Buffer.from(await file.arrayBuffer());
     const outputBuffer = await processMedia(
       buffer,
-      presets.compressVideo(quality),
+      presets.compressVideo(quality)
     );
 
     c.header("Content-Type", "video/mp4");
     c.header(
       "Content-Disposition",
-      `attachment; filename="compressed-${Date.now()}.mp4"`,
+      `attachment; filename="compressed-${Date.now()}.mp4"`
     );
     return c.body(new Uint8Array(outputBuffer));
   } catch (error) {
@@ -126,7 +126,7 @@ app.post("/create-gif", async (c) => {
     c.header("Content-Type", "image/gif");
     c.header(
       "Content-Disposition",
-      `attachment; filename="animation-${Date.now()}.gif"`,
+      `attachment; filename="animation-${Date.now()}.gif"`
     );
     return c.body(new Uint8Array(outputBuffer));
   } catch (error) {
@@ -150,13 +150,13 @@ app.post("/thumbnail", async (c) => {
     const buffer = Buffer.from(await file.arrayBuffer());
     const outputBuffer = await processMedia(
       buffer,
-      presets.thumbnail(time, { width, height }),
+      presets.thumbnail(time, { width, height })
     );
 
     c.header("Content-Type", "image/jpeg");
     c.header(
       "Content-Disposition",
-      `attachment; filename="thumbnail-${Date.now()}.jpg"`,
+      `attachment; filename="thumbnail-${Date.now()}.jpg"`
     );
     return c.body(new Uint8Array(outputBuffer));
   } catch (error) {
@@ -178,7 +178,7 @@ app.post("/merge", async (c) => {
     c.header("Content-Type", "video/mp4");
     c.header(
       "Content-Disposition",
-      `attachment; filename="merged-${Date.now()}.mp4"`,
+      `attachment; filename="merged-${Date.now()}.mp4"`
     );
     return c.body(new Uint8Array(outputBuffer));
   } catch (error) {
@@ -187,42 +187,34 @@ app.post("/merge", async (c) => {
   }
 });
 
-app.post("/replace-green-screen", async (c) => {
+app.post("/layer", async (c) => {
   try {
-    const body = await c.req.json<ReplaceGreenScreenOptions>();
+    const body = await c.req.json<LayerMediaOptions>();
 
-    if (!body.videoUrl) {
-      return c.json({ error: "videoUrl is required" }, 400);
+    if (!body.layers || body.layers.length === 0) {
+      return c.json({ error: "At least 1 layer is required" }, 400);
     }
 
-    if (!body.backgroundUrls || body.backgroundUrls.length === 0) {
-      return c.json({ error: "At least 1 background image is required" }, 400);
-    }
-
-    console.log("[ReplaceGreenScreen API] Processing request:", {
-      videoUrl: body.videoUrl,
-      backgroundCount: body.backgroundUrls.length,
-      chromaKeyColor: body.chromaKeyColor,
-      similarity: body.similarity,
-      blend: body.blend,
+    console.log("[Layer API] Processing request:", {
+      layerCount: body.layers.length,
+      outputDuration: body.outputDuration,
+      outputWidth: body.outputWidth,
+      outputHeight: body.outputHeight,
     });
 
-    const outputBuffer = await replaceGreenScreen(body);
+    const outputBuffer = await layerMedia(body);
 
     c.header("Content-Type", "video/mp4");
     c.header(
       "Content-Disposition",
-      `attachment; filename="replaced-${Date.now()}.mp4"`,
+      `attachment; filename="layered-${Date.now()}.mp4"`
     );
     return c.body(new Uint8Array(outputBuffer));
   } catch (error) {
     console.error("Error:", error);
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error";
-    return c.json(
-      { error: `Failed to replace green screen: ${errorMessage}` },
-      500,
-    );
+    return c.json({ error: `Failed to layer media: ${errorMessage}` }, 500);
   }
 });
 
@@ -236,9 +228,9 @@ app.get("/", (c) =>
       "/create-gif": "Convert video to GIF",
       "/thumbnail": "Generate video thumbnail",
       "/merge": "Merge multiple videos into one",
-      "/replace-green-screen": "Replace green screen with background images",
+      "/layer": "Layer multiple media with placement and effects",
     },
-  }),
+  })
 );
 
 const server = {
