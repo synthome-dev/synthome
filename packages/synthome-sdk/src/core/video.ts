@@ -36,8 +36,8 @@ export type OperationType =
   | "lipSync"
   | "addSubtitles"
   | "removeBackground"
-  | "replaceGreenScreen"
-  | "removeImageBackground";
+  | "removeImageBackground"
+  | "layer";
 
 export interface VideoOperation {
   type: OperationType;
@@ -53,6 +53,46 @@ export interface ImageOperation {
 export interface AudioOperation {
   type: "generateAudio";
   params: Record<string, unknown>;
+}
+
+export interface LayerOperation {
+  type: "layer";
+  params: {
+    layers: Array<{
+      media?: string | string[];
+      placement?:
+        | "full"
+        | "top-left"
+        | "top-center"
+        | "top-right"
+        | "center-left"
+        | "center"
+        | "center-right"
+        | "bottom-left"
+        | "bottom-center"
+        | "bottom-right"
+        | "top-left-quarter"
+        | "top-right-quarter"
+        | "bottom-left-quarter"
+        | "bottom-right-quarter"
+        | "picture-in-picture"
+        | "sequence"
+        | {
+            width?: string;
+            height?: string;
+            position?: { x?: string; y?: string };
+            padding?: number;
+            aspectRatio?: string;
+          };
+      chromaKey?: boolean;
+      chromaKeyColor?: string;
+      similarity?: number;
+      blend?: number;
+    }>;
+    outputDuration?: number;
+    outputWidth?: number;
+    outputHeight?: number;
+  };
 }
 
 export interface ExecutionPlan {

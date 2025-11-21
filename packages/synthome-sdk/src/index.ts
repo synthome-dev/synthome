@@ -1,18 +1,18 @@
 // Unified Model API (Recommended - Type-Safe)
 export {
+  audioModel,
   imageModel,
   videoModel,
-  audioModel,
+  type AudioModelName,
   type ImageModelName,
   type VideoModelName,
-  type AudioModelName,
 } from "./models.js";
 
 // Model Utility Functions
 export {
   getModelInfo,
-  listModelProviders,
   isModelAvailable,
+  listModelProviders,
   type UnifiedModelMapping,
 } from "./model.js";
 
@@ -43,9 +43,9 @@ export type {
 export { executeFromPlan } from "./compose/execute-from-plan.js";
 
 export type {
+  ErrorResponse,
   ExecuteResponse,
   ExecutionStatusResponse,
-  ErrorResponse,
   MediaResult,
 } from "./types/api-types.js";
 
@@ -77,40 +77,32 @@ export type {
 
 export {
   addSubtitles,
+  layers,
   lipSync,
   merge,
   reframe,
   removeBackground,
-  replaceGreenScreen,
 } from "./compose/operations.js";
 export type {
   LipSyncOptions,
   MergeOptions,
   ReframeOptions,
   RemoveBackgroundOptions,
-  ReplaceGreenScreenOptions,
   SubtitlesOptions,
+  LayerItem,
+  TimelineItem,
+  LayersOptions,
+  PlacementPreset,
+  CustomPlacement,
 } from "./compose/operations.js";
 
 export { video } from "./compose/video.js";
 export type { CreateVideoOptions } from "./compose/video.js";
 
-export type {
-  Audio,
-  AudioOperation,
-  ExecutionPlan,
-  Image,
-  ImageOperation,
-  JobNode,
-  MediaResult as MediaOutput,
-  OperationType,
-  Video,
-  VideoNode,
-  VideoOperation,
-} from "./core/video.js";
+export type { Audio, AudioOperation, LayerOperation } from "./core/video.js";
 
 export {
   getSynthomeApiKey,
-  tryGetSynthomeApiKey,
   getSynthomeApiUrl,
+  tryGetSynthomeApiKey,
 } from "./utils/api-key.js";

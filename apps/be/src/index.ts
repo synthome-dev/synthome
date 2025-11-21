@@ -44,7 +44,7 @@ if (isDevelopment) {
     }
   });
 
-  // app.route("/api/test", testRouter);
+  app.route("/api/test", testRouter);
 }
 
 export default {
