@@ -99,7 +99,20 @@ export type {
 export { video } from "./compose/video.js";
 export type { CreateVideoOptions } from "./compose/video.js";
 
-export type { Audio, AudioOperation, LayerOperation } from "./core/video.js";
+export type {
+  Audio,
+  AudioOperation,
+  ExecutionPlan,
+  Image,
+  ImageOperation,
+  JobNode,
+  LayerOperation,
+  MediaResult as CoreMediaResult,
+  OperationType,
+  Video,
+  VideoNode,
+  VideoOperation,
+} from "./core/video.js";
 
 export {
   getSynthomeApiKey,
