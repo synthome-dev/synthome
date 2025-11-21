@@ -64,6 +64,25 @@ export async function processLayers(
 
   console.log("[LayerMedia] Main layer index (for audio):", mainLayerIndex);
 
+  // Probe main layer to get its duration
+  let mainLayerDuration: number | undefined = options.outputDuration;
+
+  if (!mainLayerDuration) {
+    const mainLayerMetadata = await probeDimensions(
+      layerPaths[mainLayerIndex][0],
+    );
+    if (mainLayerMetadata.duration) {
+      mainLayerDuration = mainLayerMetadata.duration;
+      console.log(
+        `[LayerMedia] Main layer (${mainLayerIndex}) duration: ${mainLayerDuration}s`,
+      );
+    }
+  } else {
+    console.log(
+      `[LayerMedia] Using explicit output duration: ${mainLayerDuration}s`,
+    );
+  }
+
   // Get first layer (background) dimensions
   const bgDimensions = await probeDimensions(layerPaths[0][0]);
   const bgWidth = options.outputWidth || bgDimensions.width;
@@ -162,8 +181,9 @@ export async function processLayers(
       .outputOptions(["-pix_fmt", "yuv420p"])
       .toFormat("mp4");
 
-    if (options.outputDuration) {
-      command.outputOptions(["-t", options.outputDuration.toString()]);
+    // Apply duration trimming based on main layer or explicit duration
+    if (mainLayerDuration) {
+      command.outputOptions(["-t", mainLayerDuration.toString()]);
     }
 
     command
