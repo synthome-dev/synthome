@@ -1,5 +1,5 @@
 // import { compose, layers } from "@synthome/sdk";
-import { compose, layers } from "@synthome/sdk";
+// import { compose, layers } from "@synthome/sdk";
 import { Hono } from "hono";
 
 const testRouter = new Hono();
@@ -13,34 +13,34 @@ testRouter.get("/", async (c) => {
   try {
     console.log("Starting execution...");
 
-    const res = await compose(
-      layers([
-        [
-          {
-            media: "https://files.cargocollective.com/c407508/Frame-14590.png",
-          },
-          {
-            media:
-              "https://pub-259ea830f6774f1d991b8a1eed10975c.r2.dev/Video%20(5).mp4",
-          },
-        ],
-        {
-          main: true,
-          media:
-            "https://pub-259ea830f6774f1d991b8a1eed10975c.r2.dev/Video%20(5).mp4",
-          placement: "w-1/2 bottom-left",
-          chromaKey: true,
-        },
-      ])
-    ).execute({
-      apiUrl: `http://localhost:3101/api/execute`,
-      apiKey:
-        "sy_test_61aa4d7e73899492b513bc92ccfadbde67a9425bf1de65474c0d08e7263001c1",
-    });
+    // const res = await compose(
+    //   layers([
+    //     [
+    //       {
+    //         media: "https://files.cargocollective.com/c407508/Frame-14590.png",
+    //       },
+    //       {
+    //         media:
+    //           "https://pub-259ea830f6774f1d991b8a1eed10975c.r2.dev/Video%20(5).mp4",
+    //       },
+    //     ],
+    //     {
+    //       main: true,
+    //       media:
+    //         "https://pub-259ea830f6774f1d991b8a1eed10975c.r2.dev/Video%20(5).mp4",
+    //       placement: "w-1/2 bottom-left",
+    //       chromaKey: true,
+    //     },
+    //   ])
+    // ).execute({
+    //   apiUrl: `http://localhost:3101/api/execute`,
+    //   apiKey:
+    //     "sy_test_61aa4d7e73899492b513bc92ccfadbde67a9425bf1de65474c0d08e7263001c1",
+    // });
 
     return c.json({
       success: true,
-      url: res.result?.url,
+      // url: res.result?.url,
     });
   } catch (error) {
     console.error("Error in /api/test:", error);

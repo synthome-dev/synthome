@@ -1,13 +1,12 @@
 import { Hono } from "hono";
+import { processMedia, type FFmpegOptions } from "./operations/process-media";
 import {
-  FFmpegOptions,
-  layerMedia,
-  LayerMediaOptions,
   mergeVideos,
-  MergeVideosOptions,
-  presets,
-  processMedia,
-} from "./ffmpeg";
+  type MergeVideosOptions,
+} from "./operations/merge-videos";
+import { layerMedia } from "./operations/layer-media";
+import type { LayerMediaOptions } from "./core/types";
+import { presets } from "./core/constants";
 
 const app = new Hono();
 
@@ -39,11 +38,11 @@ app.post("/convert", async (c) => {
 
     c.header(
       "Content-Type",
-      `${file.type.split("/")[0]}/${options.outputFormat}`
+      `${file.type.split("/")[0]}/${options.outputFormat}`,
     );
     c.header(
       "Content-Disposition",
-      `attachment; filename="converted-${Date.now()}.${options.outputFormat}"`
+      `attachment; filename="converted-${Date.now()}.${options.outputFormat}"`,
     );
     return c.body(new Uint8Array(outputBuffer));
   } catch (error) {
@@ -66,13 +65,13 @@ app.post("/extract-audio", async (c) => {
     const buffer = Buffer.from(await file.arrayBuffer());
     const outputBuffer = await processMedia(
       buffer,
-      presets.extractAudio(format)
+      presets.extractAudio(format),
     );
 
     c.header("Content-Type", `audio/${format}`);
     c.header(
       "Content-Disposition",
-      `attachment; filename="audio-${Date.now()}.${format}"`
+      `attachment; filename="audio-${Date.now()}.${format}"`,
     );
     return c.body(new Uint8Array(outputBuffer));
   } catch (error) {
@@ -95,13 +94,13 @@ app.post("/compress-video", async (c) => {
     const buffer = Buffer.from(await file.arrayBuffer());
     const outputBuffer = await processMedia(
       buffer,
-      presets.compressVideo(quality)
+      presets.compressVideo(quality),
     );
 
     c.header("Content-Type", "video/mp4");
     c.header(
       "Content-Disposition",
-      `attachment; filename="compressed-${Date.now()}.mp4"`
+      `attachment; filename="compressed-${Date.now()}.mp4"`,
     );
     return c.body(new Uint8Array(outputBuffer));
   } catch (error) {
@@ -126,7 +125,7 @@ app.post("/create-gif", async (c) => {
     c.header("Content-Type", "image/gif");
     c.header(
       "Content-Disposition",
-      `attachment; filename="animation-${Date.now()}.gif"`
+      `attachment; filename="animation-${Date.now()}.gif"`,
     );
     return c.body(new Uint8Array(outputBuffer));
   } catch (error) {
@@ -150,13 +149,13 @@ app.post("/thumbnail", async (c) => {
     const buffer = Buffer.from(await file.arrayBuffer());
     const outputBuffer = await processMedia(
       buffer,
-      presets.thumbnail(time, { width, height })
+      presets.thumbnail(time, { width, height }),
     );
 
     c.header("Content-Type", "image/jpeg");
     c.header(
       "Content-Disposition",
-      `attachment; filename="thumbnail-${Date.now()}.jpg"`
+      `attachment; filename="thumbnail-${Date.now()}.jpg"`,
     );
     return c.body(new Uint8Array(outputBuffer));
   } catch (error) {
@@ -178,7 +177,7 @@ app.post("/merge", async (c) => {
     c.header("Content-Type", "video/mp4");
     c.header(
       "Content-Disposition",
-      `attachment; filename="merged-${Date.now()}.mp4"`
+      `attachment; filename="merged-${Date.now()}.mp4"`,
     );
     return c.body(new Uint8Array(outputBuffer));
   } catch (error) {
@@ -207,7 +206,7 @@ app.post("/layer", async (c) => {
     c.header("Content-Type", "video/mp4");
     c.header(
       "Content-Disposition",
-      `attachment; filename="layered-${Date.now()}.mp4"`
+      `attachment; filename="layered-${Date.now()}.mp4"`,
     );
     return c.body(new Uint8Array(outputBuffer));
   } catch (error) {
@@ -230,7 +229,7 @@ app.get("/", (c) =>
       "/merge": "Merge multiple videos into one",
       "/layer": "Layer multiple media with placement and effects",
     },
-  })
+  }),
 );
 
 const server = {
