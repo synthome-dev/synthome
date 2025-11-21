@@ -1,6 +1,6 @@
 {
   "name": "@synthome/sdk",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Official SDK for Synthome - AI-powered video generation and manipulation",
   "license": "MIT",
   "type": "module",
