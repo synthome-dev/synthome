@@ -504,6 +504,114 @@ class VideoPipeline implements Pipeline {
           output: `$${id}`,
         });
         mergeInputs.push(id);
+      } else if (op.type === "layer") {
+        // Layer operation - create job with dependencies
+        const jobParams = { ...op.params };
+        const layerDependencies: string[] = [];
+
+        // Handle nested operations in layer media arrays
+        const layerParams = op.params as any;
+        if (layerParams.layers && Array.isArray(layerParams.layers)) {
+          const processedLayers = [];
+
+          for (const layer of layerParams.layers) {
+            const processedLayer = { ...layer };
+
+            // Handle nested operations in media
+            if (layer.media) {
+              // Check if media is an array of operations
+              if (Array.isArray(layer.media)) {
+                const mediaIsOperations = layer.media.every(
+                  (item: any) =>
+                    typeof item === "object" &&
+                    "type" in item &&
+                    "params" in item,
+                );
+
+                if (mediaIsOperations) {
+                  // Array of operations - create jobs for each
+                  const layerMediaJobIds: string[] = [];
+                  for (const mediaOp of layer.media as Array<
+                    VideoOperation | ImageOperation
+                  >) {
+                    if (
+                      mediaOp.type === "generate" ||
+                      mediaOp.type === "generateImage" ||
+                      mediaOp.type === "generateAudio" ||
+                      mediaOp.type === "removeBackground" ||
+                      mediaOp.type === "removeImageBackground"
+                    ) {
+                      const mediaJobId = `job${counter++}`;
+                      jobs.push({
+                        id: mediaJobId,
+                        type: mediaOp.type,
+                        params: mediaOp.params,
+                        output: `$${mediaJobId}`,
+                      });
+                      layerDependencies.push(mediaJobId);
+                      layerMediaJobIds.push(mediaJobId);
+                    }
+                  }
+                  // Replace media with dependency markers
+                  if (layerMediaJobIds.length > 0) {
+                    processedLayer.media = layerMediaJobIds.map(
+                      (id) => `_mediaJobDependency:${id}`,
+                    );
+                  }
+                }
+                // else: array of strings (URLs), keep as-is
+              } else if (
+                typeof layer.media === "object" &&
+                !Array.isArray(layer.media)
+              ) {
+                // Single operation (VideoOperation, ImageOperation, etc.)
+                const mediaOp = layer.media as VideoOperation | ImageOperation;
+
+                if (
+                  mediaOp.type === "generate" ||
+                  mediaOp.type === "generateImage" ||
+                  mediaOp.type === "generateAudio" ||
+                  mediaOp.type === "removeBackground" ||
+                  mediaOp.type === "removeImageBackground"
+                ) {
+                  // Create a job for this nested operation
+                  const mediaJobId = `job${counter++}`;
+                  jobs.push({
+                    id: mediaJobId,
+                    type: mediaOp.type,
+                    params: mediaOp.params,
+                    output: `$${mediaJobId}`,
+                  });
+
+                  // Track dependency
+                  layerDependencies.push(mediaJobId);
+
+                  // Replace media with dependency marker
+                  processedLayer.media = `_mediaJobDependency:${mediaJobId}`;
+                }
+              } else if (typeof layer.media === "string") {
+                // String URL - convert to array for backend compatibility
+                processedLayer.media = [layer.media];
+              }
+              // else: already an array of strings (URLs), keep as-is
+            }
+
+            processedLayers.push(processedLayer);
+          }
+          jobParams.layers = processedLayers;
+        }
+
+        const allDeps = [...depJobIds, ...layerDependencies];
+        if (lastJobId) allDeps.unshift(lastJobId);
+
+        jobs.push({
+          id,
+          type: op.type,
+          params: jobParams,
+          dependsOn: allDeps.length > 0 ? allDeps : undefined,
+          output: `$${id}`,
+        });
+        lastJobId = id;
       } else {
         // Single operation or non-generate - create job with dependencies
         const jobParams = { ...op.params };
