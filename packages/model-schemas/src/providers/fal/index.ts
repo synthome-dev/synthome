@@ -23,6 +23,9 @@ export const falCapabilities: ProviderCapabilities = {
 export * from "./fabric/index.js";
 // Export Nanobanana model
 export * from "./nanobanana/index.js";
+// Export Nanobanana Pro models
+export * from "./nanobanana-pro/index.js";
+export * from "./nanobanana-pro-edit/index.js";
 
 /**
  * Example FAL webhook payload:

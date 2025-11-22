@@ -8,10 +8,18 @@ import {
   fabricMapping,
   nanobananaImageModels,
   nanobananaMapping,
+  nanobananaProImageModels,
+  nanobananaProMapping,
+  nanobananaProEditImageModels,
+  nanobananaProEditMapping,
   type FabricModelId,
   type NanobananaImageModelId,
+  type NanobananaProImageModelId,
+  type NanobananaProEditImageModelId,
   type Fabric1FastRawOptions,
   type NanobananaRawOptions,
+  type NanobananaProRawOptions,
+  type NanobananaProEditRawOptions,
   providerConfigSchema,
 } from "./providers/fal/index.js";
 import type { ProviderCapabilities } from "./webhook-types.js";
@@ -37,13 +45,22 @@ export const falSchemas = {
   "veed/fabric-1.0": fabric1FastOptionsSchema,
   "veed/fabric-1.0/fast": fabric1FastOptionsSchema,
   ...nanobananaImageModels,
+  ...nanobananaProImageModels,
+  ...nanobananaProEditImageModels,
 } as const;
 
-export type FalModelId = FabricModelId | NanobananaImageModelId;
+export type FalModelId =
+  | FabricModelId
+  | NanobananaImageModelId
+  | NanobananaProImageModelId
+  | NanobananaProEditImageModelId;
 
 // Categorize models by media type for type-safe model creation
 export type FalVideoModelId = FabricModelId; // Fabric is a video model
-export type FalImageModelId = NanobananaImageModelId; // Nanobanana is an image model
+export type FalImageModelId =
+  | NanobananaImageModelId
+  | NanobananaProImageModelId
+  | NanobananaProEditImageModelId; // Nanobanana models are image models
 export type FalAudioModelId = never; // No FAL audio models yet
 
 // Export options type for SDK
@@ -51,17 +68,27 @@ export type Fabric1FastOptions = z.infer<typeof fabric1FastOptionsSchema>;
 export type NanobananaOptions = z.infer<
   (typeof nanobananaImageModels)["fal-ai/nano-banana"]
 >;
+export type NanobananaProOptions = z.infer<
+  (typeof nanobananaProImageModels)["fal-ai/nano-banana-pro"]
+>;
+export type NanobananaProEditOptions = z.infer<
+  (typeof nanobananaProEditImageModels)["fal-ai/nano-banana-pro/edit"]
+>;
 
 export interface FalModels {
   "veed/fabric-1.0": Fabric1FastOptions;
   "veed/fabric-1.0/fast": Fabric1FastOptions;
   "fal-ai/nano-banana": NanobananaOptions;
+  "fal-ai/nano-banana-pro": NanobananaProOptions;
+  "fal-ai/nano-banana-pro/edit": NanobananaProEditOptions;
 }
 
 export const falMappings = {
   "veed/fabric-1.0": fabricMapping,
   "veed/fabric-1.0/fast": fabricMapping,
   "fal-ai/nano-banana": nanobananaMapping,
+  "fal-ai/nano-banana-pro": nanobananaProMapping,
+  "fal-ai/nano-banana-pro/edit": nanobananaProEditMapping,
 } as const;
 
 // Model-specific capabilities
@@ -81,8 +108,23 @@ export const falModelCapabilities: Record<FalModelId, ProviderCapabilities> = {
     supportsPolling: true,
     defaultStrategy: "polling",
   },
+  "fal-ai/nano-banana-pro": {
+    supportsWebhooks: false, // Images are fast, use polling
+    supportsPolling: true,
+    defaultStrategy: "polling",
+  },
+  "fal-ai/nano-banana-pro/edit": {
+    supportsWebhooks: false, // Images are fast, use polling
+    supportsPolling: true,
+    defaultStrategy: "polling",
+  },
 };
 
-export type { Fabric1FastRawOptions, NanobananaRawOptions };
+export type {
+  Fabric1FastRawOptions,
+  NanobananaRawOptions,
+  NanobananaProRawOptions,
+  NanobananaProEditRawOptions,
+};
 
 export { falCapabilities, parseFalPolling, parseFalWebhook, parseFalImage };
