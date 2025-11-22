@@ -93,6 +93,14 @@ export const modelRegistry: Record<AllModelIds, ModelRegistryEntry> = {
     pollingParser: parseReplicateImage,
     capabilities: replicateModelCapabilities["google/nano-banana"],
   },
+  "google/nano-banana-pro": {
+    provider: "replicate",
+    mediaType: "image",
+    schema: replicateSchemas["google/nano-banana-pro"],
+    webhookParser: parseReplicateImage,
+    pollingParser: parseReplicateImage,
+    capabilities: replicateModelCapabilities["google/nano-banana-pro"],
+  },
   "arielreplicate/robust_video_matting": {
     provider: "replicate",
     mediaType: "video",
@@ -138,6 +146,22 @@ export const modelRegistry: Record<AllModelIds, ModelRegistryEntry> = {
     webhookParser: parseFalImage,
     pollingParser: parseFalImage,
     capabilities: falModelCapabilities["fal-ai/nano-banana"],
+  },
+  "fal-ai/nano-banana-pro": {
+    provider: "fal",
+    mediaType: "image",
+    schema: falSchemas["fal-ai/nano-banana-pro"],
+    webhookParser: parseFalImage,
+    pollingParser: parseFalImage,
+    capabilities: falModelCapabilities["fal-ai/nano-banana-pro"],
+  },
+  "fal-ai/nano-banana-pro/edit": {
+    provider: "fal",
+    mediaType: "image",
+    schema: falSchemas["fal-ai/nano-banana-pro/edit"],
+    webhookParser: parseFalImage,
+    pollingParser: parseFalImage,
+    capabilities: falModelCapabilities["fal-ai/nano-banana-pro/edit"],
   },
   "codeplugtech/background_remover": {
     provider: "replicate",

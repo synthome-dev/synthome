@@ -25,12 +25,37 @@ export class FalService implements VideoProviderService {
     });
   }
 
+  /**
+   * Get the effective model ID to use for FAL API calls.
+   * For nano-banana-pro, routes to the edit endpoint if image_urls are present.
+   */
+  private getEffectiveModelId(
+    modelId: string,
+    params: Record<string, unknown>,
+  ): string {
+    // If this is nano-banana-pro and we have image_urls, route to the edit endpoint
+    if (
+      modelId === "fal-ai/nano-banana-pro" &&
+      params.image_urls &&
+      Array.isArray(params.image_urls) &&
+      params.image_urls.length > 0
+    ) {
+      return "fal-ai/nano-banana-pro/edit";
+    }
+
+    // Otherwise, use the modelId as-is
+    return modelId;
+  }
+
   async generateVideo(
     modelId: string,
     params: Record<string, unknown>,
   ): Promise<VideoGenerationResult> {
     try {
-      const result: any = await fal.subscribe(modelId, {
+      // Get the effective model ID (applies routing for nano-banana-pro)
+      const effectiveModelId = this.getEffectiveModelId(modelId, params);
+
+      const result: any = await fal.subscribe(effectiveModelId, {
         input: params,
       });
 
@@ -73,13 +98,16 @@ export class FalService implements VideoProviderService {
     webhook?: string,
   ): Promise<AsyncGenerationStart> {
     try {
-      const { request_id } = await fal.queue.submit(modelId, {
+      // Get the effective model ID (applies routing for nano-banana-pro)
+      const effectiveModelId = this.getEffectiveModelId(modelId, params);
+
+      const { request_id } = await fal.queue.submit(effectiveModelId, {
         input: params,
         webhookUrl: webhook,
       });
 
       return {
-        providerJobId: `${modelId}::${request_id}`, // Store modelId with the job ID
+        providerJobId: `${effectiveModelId}::${request_id}`, // Store effectiveModelId with the job ID
         waitingStrategy: "polling", // Changed from "webhook" to "polling"
       };
     } catch (error) {

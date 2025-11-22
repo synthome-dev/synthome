@@ -224,6 +224,7 @@ export * from "./elevenlabs/index.js";
 export * from "./image-background-remover/index.js";
 export * from "./minimax/index.js";
 export * from "./nanobanana/index.js";
+export * from "./nanobanana-pro/index.js";
 export * from "./seedance/index.js";
 export * from "./seedream/index.js";
 export * from "./video-background-remover/index.js";

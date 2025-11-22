@@ -72,6 +72,30 @@ export const unifiedModelRegistry = {
     },
   },
 
+  // Google Gemini 3 Pro Image (Nano Banana Pro)
+  "google/nano-banana-pro": {
+    unifiedName: "google/nano-banana-pro",
+    displayName: "Gemini 3 Pro Image (Nano Banana Pro)",
+    creator: "google",
+    mediaType: "image" as const,
+    providers: {
+      replicate: "google/nano-banana-pro",
+      fal: "fal-ai/nano-banana-pro",
+    },
+    metadata: {
+      description:
+        "Advanced image generation and editing with Gemini 3 Pro, featuring accurate text rendering and advanced reasoning",
+      tags: [
+        "image-generation",
+        "text-to-image",
+        "image-to-image",
+        "advanced",
+        "typography",
+        "high-resolution",
+      ],
+    },
+  },
+
   // ByteDance Seedance (Video)
   "bytedance/seedance-1-pro": {
     unifiedName: "bytedance/seedance-1-pro",

@@ -36,6 +36,7 @@ import { elevenlabs } from "./providers/elevenlabs.js";
 // Explicitly list all image model names for better type inference
 export type ImageModelName =
   | "google/nano-banana"
+  | "google/nano-banana-pro"
   | "bytedance/seedream-4"
   | "codeplugtech/background_remover";
 
