@@ -28,21 +28,37 @@ export async function processLayers(
     }
 
     for (const mediaUrl of layer.media) {
-      console.log(`[LayerMedia] Downloading media ${i}: ${mediaUrl}`);
-      const response = await fetch(mediaUrl);
-      if (!response.ok) {
-        throw new Error(`Failed to download media: ${response.statusText}`);
+      console.log(`[LayerMedia] Processing media ${i}: ${mediaUrl}`);
+
+      // Check if it's a local file path or a URL
+      const isLocalPath =
+        mediaUrl.startsWith("/") ||
+        mediaUrl.startsWith("./") ||
+        mediaUrl.startsWith("../");
+
+      if (isLocalPath) {
+        // It's already a local file path - use it directly
+        console.log(`[LayerMedia] Using local file: ${mediaUrl}`);
+        paths.push(mediaUrl);
+        // Don't add to tempFiles since it's already managed
+      } else {
+        // It's a URL - download it
+        console.log(`[LayerMedia] Downloading from URL: ${mediaUrl}`);
+        const response = await fetch(mediaUrl);
+        if (!response.ok) {
+          throw new Error(`Failed to download media: ${response.statusText}`);
+        }
+        const buffer = Buffer.from(await response.arrayBuffer());
+
+        // Detect file type and use appropriate extension
+        const isVideo = isVideoFile(mediaUrl);
+        const ext = isVideo ? "mp4" : mediaUrl.endsWith(".png") ? "png" : "jpg";
+        const path = join(tmpdir(), `${nanoid()}.${ext}`);
+
+        await Bun.write(path, buffer);
+        paths.push(path);
+        tempFiles.push(path);
       }
-      const buffer = Buffer.from(await response.arrayBuffer());
-
-      // Detect file type and use appropriate extension
-      const isVideo = isVideoFile(mediaUrl);
-      const ext = isVideo ? "mp4" : mediaUrl.endsWith(".png") ? "png" : "jpg";
-      const path = join(tmpdir(), `${nanoid()}.${ext}`);
-
-      await Bun.write(path, buffer);
-      paths.push(path);
-      tempFiles.push(path);
     }
 
     layerPaths.push(paths);
