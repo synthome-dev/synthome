@@ -5,21 +5,28 @@ import type { LayerMediaOptions } from "../core/types";
 import { isVideoFile } from "../core/utils";
 import { probeDimensions } from "../dimensions/probe";
 import { processLayers } from "./layers";
-import { concatenateSegments } from "./concatenator";
+import {
+  stitchBackgrounds,
+  type BackgroundSegment,
+} from "./background-stitcher";
 
 /**
  * Process timeline layers - when backgrounds/overlays change over time
+ * New approach: Stitch backgrounds first, then overlay main video once (no blinking!)
  */
 export async function processTimelineLayers(
   options: LayerMediaOptions,
   tempFiles: string[],
   outputPath: string,
 ): Promise<Buffer> {
-  console.log("[Timeline] Processing timeline layers");
+  console.log(
+    "[Timeline] Processing timeline layers with background stitching",
+  );
 
   // Find the main layer (the layer with main: true, or the first non-timeline video)
   let mainLayerIndex = -1;
   let mainLayerDuration = 0;
+  let mainLayerPath = "";
 
   for (let i = 0; i < options.layers.length; i++) {
     const layer = options.layers[i];
@@ -42,6 +49,7 @@ export async function processTimelineLayers(
       const path = join(tmpdir(), `${nanoid()}.${ext}`);
       await Bun.write(path, buffer);
       tempFiles.push(path);
+      mainLayerPath = path;
 
       const metadata = await probeDimensions(path);
       if (metadata.duration) {
@@ -118,76 +126,59 @@ export async function processTimelineLayers(
     }
   }
 
-  // Calculate timeline segments based on timeline layers
-  const timeSegments: Array<{
-    startTime: number;
-    endTime: number;
-    duration: number;
-  }> = [];
-
-  // Collect all time points where changes occur
-  const timePoints = new Set<number>([0, mainLayerDuration]);
-
-  for (const layer of options.layers) {
-    if ("isTimeline" in layer && layer.isTimeline) {
-      let currentTime = 0;
-      for (const item of layer.timeline) {
-        if (item.duration) {
-          currentTime += item.duration;
-          timePoints.add(currentTime);
-        }
-      }
-    }
-  }
-
-  // Sort time points and create segments
-  const sortedTimePoints = Array.from(timePoints).sort((a, b) => a - b);
-  for (let i = 0; i < sortedTimePoints.length - 1; i++) {
-    timeSegments.push({
-      startTime: sortedTimePoints[i],
-      endTime: sortedTimePoints[i + 1],
-      duration: sortedTimePoints[i + 1] - sortedTimePoints[i],
-    });
-  }
-
-  console.log(
-    `[Timeline] Created ${timeSegments.length} time segments:`,
-    timeSegments,
-  );
-
   // Determine maximum background dimensions across all timeline items
   let maxWidth = 0;
   let maxHeight = 0;
 
   console.log(
-    "[Timeline] Probing all timeline backgrounds to find max dimensions...",
+    "[Timeline] Probing all timeline media to find max dimensions...",
   );
+
+  // Store downloaded media paths for each timeline layer
+  const timelineMediaCache = new Map<
+    string,
+    { path: string; isVideo: boolean; width: number; height: number }
+  >();
 
   for (const layer of options.layers) {
     if ("isTimeline" in layer && layer.isTimeline) {
       for (const item of layer.timeline) {
+        const mediaUrl = item.media[0];
+
+        // Skip if already cached
+        if (timelineMediaCache.has(mediaUrl)) {
+          const cached = timelineMediaCache.get(mediaUrl)!;
+          if (cached.width > maxWidth) maxWidth = cached.width;
+          if (cached.height > maxHeight) maxHeight = cached.height;
+          continue;
+        }
+
         // Download and probe this timeline item
-        const response = await fetch(item.media[0]);
+        const response = await fetch(mediaUrl);
         if (!response.ok) {
           throw new Error(
             `Failed to download timeline media: ${response.statusText}`,
           );
         }
         const buffer = Buffer.from(await response.arrayBuffer());
-        const isVideo = isVideoFile(item.media[0]);
-        const ext = isVideo
-          ? "mp4"
-          : item.media[0].endsWith(".png")
-            ? "png"
-            : "jpg";
+        const isVideo = isVideoFile(mediaUrl);
+        const ext = isVideo ? "mp4" : mediaUrl.endsWith(".png") ? "png" : "jpg";
         const path = join(tmpdir(), `${nanoid()}.${ext}`);
         await Bun.write(path, buffer);
         tempFiles.push(path);
 
         const dims = await probeDimensions(path);
         console.log(
-          `[Timeline] Background dimensions: ${dims.width}x${dims.height}`,
+          `[Timeline] Media dimensions: ${dims.width}x${dims.height}`,
         );
+
+        // Cache it
+        timelineMediaCache.set(mediaUrl, {
+          path,
+          isVideo,
+          width: dims.width,
+          height: dims.height,
+        });
 
         if (dims.width > maxWidth) maxWidth = dims.width;
         if (dims.height > maxHeight) maxHeight = dims.height;
@@ -203,112 +194,100 @@ export async function processTimelineLayers(
     `[Timeline] Using output resolution: ${outputWidth}x${outputHeight} (max from all backgrounds)`,
   );
 
-  // For now, if timeline is detected but we only have simple case (one background timeline),
-  // use a simplified approach
-  if (timeSegments.length === 1) {
-    console.log(
-      "[Timeline] Single segment detected - using simplified processing",
-    );
-    // Just use the first item from each timeline
-    const simplifiedLayers = options.layers.map((layer) => {
-      if ("isTimeline" in layer && layer.isTimeline) {
-        return {
-          media: layer.timeline[0].media,
-          placement: layer.timeline[0].placement || "full",
-          chromaKey: layer.timeline[0].chromaKey,
-          chromaKeyColor: layer.timeline[0].chromaKeyColor,
-          similarity: layer.timeline[0].similarity,
-          blend: layer.timeline[0].blend,
-        };
-      }
-      return layer;
-    });
+  // NEW APPROACH: Identify background timeline layers and stitch them
+  // Then use processLayers() once with the stitched background
+  const stitchedLayers: Array<{
+    media: string[];
+    placement?: string;
+    chromaKey?: boolean;
+    chromaKeyColor?: string;
+    similarity?: number;
+    blend?: number;
+    main?: boolean;
+  }> = [];
 
-    return await processLayers(
-      { ...options, layers: simplifiedLayers, outputWidth, outputHeight },
-      tempFiles,
-      outputPath,
-    );
-  }
+  for (let layerIdx = 0; layerIdx < options.layers.length; layerIdx++) {
+    const layer = options.layers[layerIdx];
 
-  // Multi-segment timeline processing
-  console.log(`[Timeline] Processing ${timeSegments.length} segments`);
+    if ("isTimeline" in layer && layer.isTimeline) {
+      // This is a timeline layer - need to stitch it
+      console.log(
+        `[Timeline] Stitching timeline layer ${layerIdx} with ${layer.timeline.length} segments`,
+      );
 
-  const segmentPaths: string[] = [];
-
-  for (let segIdx = 0; segIdx < timeSegments.length; segIdx++) {
-    const segment = timeSegments[segIdx];
-    console.log(
-      `[Timeline] Processing segment ${segIdx + 1}/${timeSegments.length}: ${segment.startTime}s-${segment.endTime}s (${segment.duration}s)`,
-    );
-
-    // For this time segment, determine which timeline item is active for each layer
-    const segmentLayers: Array<{
-      media: string[];
-      placement?: string;
-      chromaKey?: boolean;
-      chromaKeyColor?: string;
-      similarity?: number;
-      blend?: number;
-      main?: boolean;
-    }> = [];
-
-    for (const layer of options.layers) {
-      if ("isTimeline" in layer && layer.isTimeline) {
-        // Find which timeline item is active at this segment's start time
-        let currentTime = 0;
-        let activeItem = layer.timeline[0]; // Default to first
-
-        for (const item of layer.timeline) {
-          const itemDuration = item.duration || 0;
-          if (
-            segment.startTime >= currentTime &&
-            segment.startTime < currentTime + itemDuration
-          ) {
-            activeItem = item;
-            break;
-          }
-          currentTime += itemDuration;
+      // Build background segments
+      const segments: BackgroundSegment[] = [];
+      for (const item of layer.timeline) {
+        const mediaUrl = item.media[0];
+        const cached = timelineMediaCache.get(mediaUrl);
+        if (!cached) {
+          throw new Error(`Media not in cache: ${mediaUrl}`);
         }
 
-        segmentLayers.push({
-          media: activeItem.media,
-          placement: activeItem.placement || "full",
-          chromaKey: activeItem.chromaKey,
-          chromaKeyColor: activeItem.chromaKeyColor,
-          similarity: activeItem.similarity,
-          blend: activeItem.blend,
+        segments.push({
+          mediaPath: cached.path,
+          duration: item.duration || 0,
+          isVideo: cached.isVideo,
+        });
+      }
+
+      // Stitch this timeline layer into a single video
+      const stitchedPath = join(
+        tmpdir(),
+        `${nanoid()}_stitched_layer_${layerIdx}.mp4`,
+      );
+      tempFiles.push(stitchedPath);
+
+      await stitchBackgrounds(
+        segments,
+        outputWidth,
+        outputHeight,
+        stitchedPath,
+        tempFiles,
+      );
+
+      console.log(
+        `[Timeline] Layer ${layerIdx} stitched successfully: ${stitchedPath}`,
+      );
+
+      // Use the first item's properties (placement, chromaKey, etc.)
+      // since they should be consistent across the timeline
+      const firstItem = layer.timeline[0];
+      stitchedLayers.push({
+        media: [stitchedPath],
+        placement: firstItem.placement || "full",
+        chromaKey: firstItem.chromaKey,
+        chromaKeyColor: firstItem.chromaKeyColor,
+        similarity: firstItem.similarity,
+        blend: firstItem.blend,
+      });
+    } else {
+      // Regular layer - use the already downloaded path
+      if (layerIdx === mainLayerIndex) {
+        stitchedLayers.push({
+          ...layer,
+          media: [mainLayerPath],
         });
       } else {
-        // Regular layer - use as-is but trim to segment duration
-        segmentLayers.push(layer);
+        stitchedLayers.push(layer);
       }
     }
-
-    // Create segment output path
-    const segmentPath = join(tmpdir(), `${nanoid()}_seg${segIdx}.mp4`);
-    tempFiles.push(segmentPath);
-
-    // Process this segment
-    const { processSegment } = await import("./segment-processor");
-    await processSegment(
-      segmentLayers,
-      segment,
-      segmentPath,
-      tempFiles,
-      options,
-      mainLayerIndex,
-      outputWidth,
-      outputHeight,
-    );
-
-    segmentPaths.push(segmentPath);
-    console.log(`[Timeline] Segment ${segIdx + 1} completed: ${segmentPath}`);
   }
 
-  // Concatenate all segments
-  console.log(`[Timeline] Concatenating ${segmentPaths.length} segments`);
-  await concatenateSegments(segmentPaths, outputPath);
-
-  return Buffer.from(await Bun.file(outputPath).arrayBuffer());
+  // Now process all layers together in a single pass!
+  console.log(
+    "[Timeline] Processing all layers in single pass (no segmentation)",
+  );
+  return await processLayers(
+    {
+      ...options,
+      layers: stitchedLayers,
+      outputWidth,
+      outputHeight,
+      outputDuration: mainLayerDuration,
+      mainLayer: mainLayerIndex,
+    },
+    tempFiles,
+    outputPath,
+  );
 }
