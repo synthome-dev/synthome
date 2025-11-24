@@ -30,14 +30,22 @@ export type UnifiedBackgroundRemovalOptions = z.infer<
   typeof unifiedBackgroundRemovalOptionsSchema
 >;
 
-// Image Generation unified schema
-export const unifiedImageOptionsSchema = z.object({
-  prompt: z.string(),
-  imageInputs: z.array(z.string().url()).optional(), // Input images for image-to-image generation
+// Image Generation unified schema (base schema without refinement for merging)
+export const unifiedImageOptionsBaseSchema = z.object({
+  prompt: z.string().optional(),
+  image: z.union([z.string().url(), z.array(z.string().url())]).optional(), // Single or multiple input images
   aspectRatio: z.string().optional(), // Aspect ratio (e.g., "16:9", "1:1", etc.)
   outputFormat: z.enum(["jpg", "png", "webp"]).optional(), // Output format
   seed: z.number().int().optional(),
 });
+
+// Refined schema with validation for API usage
+export const unifiedImageOptionsSchema = unifiedImageOptionsBaseSchema.refine(
+  (data) => data.prompt || data.image,
+  {
+    message: "Either prompt or image must be provided",
+  },
+);
 
 export type UnifiedImageOptions = z.infer<typeof unifiedImageOptionsSchema>;
 
