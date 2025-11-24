@@ -54,6 +54,8 @@ export interface UnifiedModelMapping {
 
 /**
  * Registry of unified model mappings
+ * Note: We intentionally don't type this with UnifiedModelMapping to preserve
+ * exact provider inference for TypeScript autocomplete
  */
 export const unifiedModelRegistry = {
   // Google Gemini 2.5 Flash Image (Nano Banana)
@@ -213,6 +215,46 @@ export const unifiedModelRegistry = {
     metadata: {
       description: "Emotionally expressive text-to-speech",
       tags: ["text-to-speech", "audio-generation", "voice", "emotional"],
+    },
+  },
+
+  // OpenAI Whisper (Speech-to-Text)
+  "openai/whisper": {
+    unifiedName: "openai/whisper",
+    displayName: "OpenAI Whisper",
+    creator: "openai",
+    mediaType: "audio" as const,
+    providers: {
+      replicate:
+        "openai/whisper:8099696689d249cf8b122d833c36ac3f75505c666a395ca40ef26f68e7d3d16e",
+    },
+    metadata: {
+      description:
+        "Speech-to-text transcription with sentence-level timestamps",
+      tags: ["speech-to-text", "transcription", "audio-processing"],
+    },
+  },
+
+  // Incredibly Fast Whisper (Speech-to-Text with Word Timestamps)
+  "vaibhavs10/incredibly-fast-whisper": {
+    unifiedName: "vaibhavs10/incredibly-fast-whisper",
+    displayName: "Incredibly Fast Whisper",
+    creator: "vaibhavs10",
+    mediaType: "audio" as const,
+    providers: {
+      replicate:
+        "vaibhavs10/incredibly-fast-whisper:3ab86df6c8f54c11309d4d1f930ac292bad43ace52d10c80d87eb258b3c9f79c",
+    },
+    metadata: {
+      description:
+        "Optimized Whisper with word-level timestamps for caption generation",
+      tags: [
+        "speech-to-text",
+        "transcription",
+        "audio-processing",
+        "word-timestamps",
+        "fast",
+      ],
     },
   },
 } as const;

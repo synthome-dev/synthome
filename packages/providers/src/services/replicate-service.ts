@@ -35,16 +35,16 @@ export class ReplicateService implements VideoProviderService {
       input: params,
     });
 
-    let url: string;
     if (Array.isArray(output)) {
-      url = output[0] as string;
+      return { url: output[0] as string };
     } else if (typeof output === "string") {
-      url = output;
+      return { url: output };
+    } else if (typeof output === "object" && output !== null) {
+      // Handle structured output (e.g. transcript)
+      return { data: output };
     } else {
       throw new Error(`Unexpected output format from Replicate: ${output}`);
     }
-
-    return { url };
   }
 
   async startGeneration(
@@ -76,8 +76,17 @@ export class ReplicateService implements VideoProviderService {
       console.log(`[ReplicateService] Using version hash: ${providerModelId}`);
       createOptions.version = providerModelId;
     } else {
-      console.log(`[ReplicateService] Using model identifier: ${modelId}`);
-      createOptions.model = modelId;
+      // Check if modelId contains a version (format: "owner/name:version")
+      const [modelPath, version] = modelId.split(":");
+      if (version) {
+        console.log(
+          `[ReplicateService] Splitting model ${modelPath} and version ${version}`,
+        );
+        createOptions.version = version;
+      } else {
+        console.log(`[ReplicateService] Using model identifier: ${modelId}`);
+        createOptions.model = modelId;
+      }
     }
 
     // Only include webhook options if webhook URL is provided
@@ -172,22 +181,30 @@ export class ReplicateService implements VideoProviderService {
     }
 
     if (prediction.status === "succeeded") {
-      let url: string;
       if (Array.isArray(prediction.output)) {
-        url = prediction.output[0] as string;
+        return {
+          status: "completed",
+          result: { url: prediction.output[0] as string },
+        };
       } else if (typeof prediction.output === "string") {
-        url = prediction.output;
+        return {
+          status: "completed",
+          result: { url: prediction.output },
+        };
+      } else if (
+        typeof prediction.output === "object" &&
+        prediction.output !== null
+      ) {
+        return {
+          status: "completed",
+          result: { data: prediction.output },
+        };
       } else {
         return {
           status: "failed",
           error: "Unexpected output format",
         };
       }
-
-      return {
-        status: "completed",
-        result: { url },
-      };
     }
 
     return {

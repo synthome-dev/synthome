@@ -4,7 +4,8 @@ import type {
 } from "@repo/model-schemas";
 
 export interface VideoGenerationResult {
-  url: string;
+  url?: string; // Optional for non-media results
+  data?: any; // Structured data (e.g. transcript)
   metadata?: Record<string, unknown>;
 }
 

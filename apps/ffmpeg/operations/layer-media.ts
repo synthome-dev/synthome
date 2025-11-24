@@ -2,6 +2,7 @@ import { nanoid } from "nanoid";
 import ffmpeg from "fluent-ffmpeg";
 import { tmpdir } from "os";
 import { join } from "path";
+import { unlink } from "fs/promises";
 import type { LayerMediaOptions } from "../core/types";
 import { isVideoFile } from "../core/utils";
 import { probeDimensions } from "../dimensions/probe";
@@ -219,7 +220,26 @@ export async function layerMedia(options: LayerMediaOptions): Promise<Buffer> {
         .on("progress", (progress: { percent: number }) =>
           console.log("[LayerMedia] Progress:", progress.percent, "% done"),
         )
-        .on("error", reject)
+        .on("error", (err: Error) => {
+          console.error("[LayerMedia] FFmpeg error:", err.message);
+          console.error(
+            "[LayerMedia] Filter complex used:",
+            filterComplex.join("; "),
+          );
+          console.error("[LayerMedia] Configuration:", {
+            bgWidth,
+            bgHeight,
+            mainLayerIndex,
+            mainLayerDuration,
+            layerCount: options.layers.length,
+            outputPath,
+          });
+          reject(
+            new Error(
+              `FFmpeg failed during layer-media processing: ${err.message}`,
+            ),
+          );
+        })
         .save(outputPath)
         .on("end", resolve);
     });
@@ -229,8 +249,8 @@ export async function layerMedia(options: LayerMediaOptions): Promise<Buffer> {
     // Cleanup all temp files
     try {
       await Promise.all([
-        ...tempFiles.map((file) => Bun.file(file).delete()),
-        Bun.file(outputPath).delete(),
+        ...tempFiles.map((file) => unlink(file).catch(() => {})),
+        unlink(outputPath).catch(() => {}),
       ]);
     } catch (e) {
       console.error("[LayerMedia] Cleanup error:", e);

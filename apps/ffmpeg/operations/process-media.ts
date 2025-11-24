@@ -2,6 +2,7 @@ import { nanoid } from "nanoid";
 import ffmpeg from "fluent-ffmpeg";
 import { tmpdir } from "os";
 import { join } from "path";
+import { unlink } from "fs/promises";
 
 export interface FFmpegOptions {
   inputFormat?: string;
@@ -88,8 +89,8 @@ export async function processMedia(
     // Cleanup
     try {
       await Promise.all([
-        Bun.file(inputPath).delete(),
-        Bun.file(outputPath).delete(),
+        unlink(inputPath).catch(() => {}),
+        unlink(outputPath).catch(() => {}),
       ]);
     } catch (e) {
       console.error("Cleanup error:", e);

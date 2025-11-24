@@ -7,6 +7,11 @@ import {
 import { layerMedia } from "./operations/layer-media";
 import type { LayerMediaOptions } from "./core/types";
 import { presets } from "./core/constants";
+import {
+  burnSubtitles,
+  type BurnSubtitlesOptions,
+} from "./operations/burn-subtitles";
+import { CaptionService, type TranscriptWord } from "./captions";
 
 const app = new Hono();
 
@@ -217,6 +222,61 @@ app.post("/layer", async (c) => {
   }
 });
 
+app.post("/burn-subtitles", async (c) => {
+  try {
+    const body = await c.req.json<BurnSubtitlesOptions>();
+
+    if (!body.videoUrl) {
+      return c.json({ error: "videoUrl is required" }, 400);
+    }
+    if (!body.subtitleContent) {
+      return c.json({ error: "subtitleContent is required" }, 400);
+    }
+
+    const outputBuffer = await burnSubtitles(body);
+
+    c.header("Content-Type", "video/mp4");
+    c.header(
+      "Content-Disposition",
+      `attachment; filename="captioned-${Date.now()}.mp4"`,
+    );
+    return c.body(new Uint8Array(outputBuffer));
+  } catch (error) {
+    console.error("Error:", error);
+    return c.json({ error: "Failed to burn subtitles" }, 500);
+  }
+});
+
+app.post("/generate-subtitles", async (c) => {
+  try {
+    const body = await c.req.json<{
+      words: TranscriptWord[];
+      preset?: string;
+      overrides?: any;
+      videoWidth?: number;
+      videoHeight?: number;
+    }>();
+
+    if (!body.words || !Array.isArray(body.words)) {
+      return c.json({ error: "words array is required" }, 400);
+    }
+
+    const captionService = new CaptionService();
+    const subtitleContent = captionService.generateSubtitleContent({
+      words: body.words,
+      preset: body.preset,
+      overrides: body.overrides,
+      videoWidth: body.videoWidth,
+      videoHeight: body.videoHeight,
+    });
+
+    return c.json({ subtitleContent });
+  } catch (error) {
+    console.error("Error:", error);
+    return c.json({ error: "Failed to generate subtitles" }, 500);
+  }
+});
+
 app.get("/", (c) =>
   c.json({
     status: "ok",
@@ -228,6 +288,8 @@ app.get("/", (c) =>
       "/thumbnail": "Generate video thumbnail",
       "/merge": "Merge multiple videos into one",
       "/layer": "Layer multiple media with placement and effects",
+      "/burn-subtitles": "Burn subtitles into video",
+      "/generate-subtitles": "Generate ASS subtitle content from transcript",
     },
   }),
 );

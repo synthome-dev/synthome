@@ -96,6 +96,13 @@ export type {
   CustomPlacement,
 } from "./compose/operations.js";
 
+export { captions } from "./compose/captions.js";
+export type {
+  CaptionsOptions,
+  CaptionStyle,
+  CaptionWord,
+} from "./compose/captions.js";
+
 export { video } from "./compose/video.js";
 export type { CreateVideoOptions } from "./compose/video.js";
 
