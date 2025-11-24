@@ -9,9 +9,73 @@ A flexible and powerful media processing service built with Bun, Hono, and FFmpe
 - Video compression with quality presets
 - GIF creation from videos
 - Thumbnail generation
+- Video merging and layering
+- Subtitle generation and burning (ASS format)
 - Progress tracking and error handling
 
+## Caption Service
+
+This application includes a built-in caption/subtitle generation service located in `./captions`. The caption service supports:
+
+- Multiple caption presets (TikTok, YouTube, Story, Minimal, Cinematic)
+- ASS (Advanced SubStation Alpha) subtitle format
+- Word-by-word highlighting with customizable colors and scaling
+- Configurable caption behavior (words per caption, duration, animation style)
+
+The caption functionality was moved from `packages/caption-service` to this application on Nov 24, 2024, as it's primarily used for FFmpeg operations. The old `@repo/caption-service` package can be safely deleted.
+
 ## API Endpoints
+
+### Generate Subtitles (`/generate-subtitles`)
+
+Generate ASS subtitle content from a transcript.
+
+```bash
+curl -X POST http://localhost:3200/generate-subtitles \
+  -H "Content-Type: application/json" \
+  -d '{
+    "words": [
+      {"word": "Hello", "start": 0.0, "end": 0.5},
+      {"word": "World", "start": 0.5, "end": 1.0}
+    ],
+    "preset": "tiktok",
+    "videoWidth": 1080,
+    "videoHeight": 1920
+  }'
+```
+
+Parameters:
+
+- `words` - Array of transcript words with timing (required)
+  - Each word should have: `word` (string), `start` (number), `end` (number)
+- `preset` - Caption style preset: "tiktok", "youtube", "story", "minimal", "cinematic" (optional, default: "tiktok")
+- `overrides` - Custom style overrides (optional)
+- `videoWidth` - Video width in pixels (optional, default: 1080)
+- `videoHeight` - Video height in pixels (optional, default: 1920)
+
+Returns JSON with `subtitleContent` containing ASS format subtitle data.
+
+### Burn Subtitles (`/burn-subtitles`)
+
+Burn subtitle content into a video.
+
+```bash
+curl -X POST http://localhost:3200/burn-subtitles \
+  -H "Content-Type: application/json" \
+  -d '{
+    "videoUrl": "https://example.com/video.mp4",
+    "subtitleContent": "... ASS subtitle content ...",
+    "subtitleFormat": "ass"
+  }'
+```
+
+Parameters:
+
+- `videoUrl` - URL of the video to add subtitles to (required)
+- `subtitleContent` - ASS format subtitle content (required)
+- `subtitleFormat` - Subtitle format, currently only "ass" is supported (required)
+
+Returns the video file with burned-in subtitles.
 
 ### Generic Conversion (`/convert`)
 
@@ -29,6 +93,7 @@ curl -X POST \
 ```
 
 Available options:
+
 - `inputFormat` - Input format (optional, defaults to mp4)
 - `outputFormat` - Output format (required)
 - `videoCodec` - Video codec
@@ -77,6 +142,7 @@ curl -X POST -F "file=@video.mp4" -F "quality=high" http://localhost:3000/compre
 ```
 
 Quality presets:
+
 - `low`: 500k video bitrate, 64k audio bitrate
 - `medium`: 1000k video bitrate, 128k audio bitrate
 - `high`: 2000k video bitrate, 192k audio bitrate

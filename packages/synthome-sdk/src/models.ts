@@ -50,9 +50,14 @@ export type VideoModelName =
   | "nateraw/video-background-remover";
 
 // Explicitly list all audio model names
-export type AudioModelName = "elevenlabs/turbo-v2.5" | "hume/tts";
+export type AudioModelName =
+  | "elevenlabs/turbo-v2.5"
+  | "hume/tts"
+  | "openai/whisper"
+  | "vaibhavs10/incredibly-fast-whisper";
 
 // Get available providers for a specific model
+// Extract the actual provider keys from the registry using keyof
 type ProvidersForModel<T extends string> =
   T extends keyof typeof unifiedModelRegistry
     ? keyof (typeof unifiedModelRegistry)[T]["providers"]

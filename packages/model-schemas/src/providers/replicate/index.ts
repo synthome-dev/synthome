@@ -220,8 +220,60 @@ export const parseReplicateAudio: PollingParser = (response: unknown) => {
   };
 };
 
+/**
+ * Replicate Transcript Polling Parser
+ */
+export const parseReplicateTranscript: PollingParser = (response: unknown) => {
+  const data = response as any;
+
+  if (data.status === "failed" || data.status === "canceled") {
+    return {
+      status: "failed",
+      error: data.error || "Transcription failed",
+    };
+  }
+
+  if (
+    data.status === "starting" ||
+    data.status === "processing" ||
+    data.status === "queued"
+  ) {
+    return {
+      status: "processing",
+    };
+  }
+
+  if (data.status === "succeeded") {
+    // Replicate Whisper returns structured JSON object
+    if (typeof data.output === "object" && data.output !== null) {
+      return {
+        status: "completed",
+        outputs: [
+          {
+            type: "transcript",
+            data: data.output, // The full transcript object
+          },
+        ],
+        metadata: {
+          predictionId: data.id,
+        },
+      };
+    }
+
+    return {
+      status: "failed",
+      error: "No structured output in completed response",
+    };
+  }
+
+  return {
+    status: "processing",
+  };
+};
+
 export * from "./elevenlabs/index.js";
 export * from "./image-background-remover/index.js";
+export * from "./incredibly-fast-whisper/index.js";
 export * from "./minimax/index.js";
 export * from "./nanobanana/index.js";
 export * from "./nanobanana-pro/index.js";
@@ -229,3 +281,4 @@ export * from "./seedance/index.js";
 export * from "./seedream/index.js";
 export * from "./video-background-remover/index.js";
 export * from "./video-matting/index.js";
+export * from "./whisper/index.js";

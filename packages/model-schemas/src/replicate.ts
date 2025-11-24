@@ -4,6 +4,7 @@ import {
   parseReplicateImage,
   parseReplicatePolling,
   parseReplicateWebhook,
+  parseReplicateTranscript,
   providerConfigSchema,
   replicateCapabilities,
   seedance1ProRawOptionsSchema,
@@ -22,6 +23,10 @@ import {
   nanobananaMapping,
   nanobananaProImageModels,
   nanobananaProMapping,
+  whisperModels,
+  whisperMapping,
+  incrediblyFastWhisperModels,
+  incrediblyFastWhisperMapping,
   type SeedanceModelId,
   type SeedreamImageModelId,
   type NanobananaImageModelId,
@@ -30,10 +35,14 @@ import {
   type VideoMattingModelId,
   type VideoBackgroundRemoverModelId,
   type ImageBackgroundRemoverModelId,
+  type WhisperModelId,
+  type IncrediblyFastWhisperModelId,
   type RobustVideoMattingRawOptions,
   type NaterawVideoBackgroundRemoverRawOptions,
   type NanobananaRawOptions,
   type NanobananaProRawOptions,
+  type WhisperRawOptions,
+  type IncrediblyFastWhisperRawOptions,
 } from "./providers/replicate/index.js";
 import {
   minimaxMapping,
@@ -55,6 +64,8 @@ export const replicateSchemas = {
   ...videoMattingModels,
   ...videoBackgroundRemoverModels,
   ...imageBackgroundRemoverModels,
+  ...whisperModels,
+  ...incrediblyFastWhisperModels,
 } as const;
 
 export type Seedance1ProOptions = z.infer<typeof seedance1ProOptionsSchema>;
@@ -67,6 +78,8 @@ export type {
   NaterawVideoBackgroundRemoverRawOptions,
   NanobananaRawOptions,
   NanobananaProRawOptions,
+  WhisperRawOptions,
+  IncrediblyFastWhisperRawOptions,
 };
 
 export type ReplicateModelId =
@@ -78,7 +91,9 @@ export type ReplicateModelId =
   | ElevenLabsAudioModelId
   | VideoMattingModelId
   | VideoBackgroundRemoverModelId
-  | ImageBackgroundRemoverModelId;
+  | ImageBackgroundRemoverModelId
+  | WhisperModelId
+  | IncrediblyFastWhisperModelId;
 
 // Categorize models by media type for type-safe model creation
 export type ReplicateVideoModelId = SeedanceModelId | MinimaxModelId;
@@ -87,7 +102,10 @@ export type ReplicateImageModelId =
   | NanobananaImageModelId
   | NanobananaProImageModelId
   | ImageBackgroundRemoverModelId;
-export type ReplicateAudioModelId = ElevenLabsAudioModelId;
+export type ReplicateAudioModelId = ElevenLabsAudioModelId | WhisperModelId;
+export type ReplicateTranscriptModelId =
+  | WhisperModelId
+  | IncrediblyFastWhisperModelId;
 
 export interface ReplicateModels {
   "bytedance/seedance-1-pro": Seedance1ProOptions;
@@ -109,6 +127,12 @@ export interface ReplicateModels {
   "codeplugtech/background_remover": z.infer<
     (typeof imageBackgroundRemoverModels)["codeplugtech/background_remover"]
   >;
+  "openai/whisper:8099696689d249cf8b122d833c36ac3f75505c666a395ca40ef26f68e7d3d16e": z.infer<
+    (typeof whisperModels)["openai/whisper:8099696689d249cf8b122d833c36ac3f75505c666a395ca40ef26f68e7d3d16e"]
+  >;
+  "vaibhavs10/incredibly-fast-whisper:3ab86df6c8f54c11309d4d1f930ac292bad43ace52d10c80d87eb258b3c9f79c": z.infer<
+    (typeof incrediblyFastWhisperModels)["vaibhavs10/incredibly-fast-whisper:3ab86df6c8f54c11309d4d1f930ac292bad43ace52d10c80d87eb258b3c9f79c"]
+  >;
 }
 
 export const replicateMappings = {
@@ -119,6 +143,10 @@ export const replicateMappings = {
   "google/nano-banana-pro": nanobananaProMapping,
   "arielreplicate/robust_video_matting": videoMattingMapping,
   "nateraw/video-background-remover": naterawVideoBackgroundRemoverMapping,
+  "openai/whisper:8099696689d249cf8b122d833c36ac3f75505c666a395ca40ef26f68e7d3d16e":
+    whisperMapping,
+  "vaibhavs10/incredibly-fast-whisper:3ab86df6c8f54c11309d4d1f930ac292bad43ace52d10c80d87eb258b3c9f79c":
+    incrediblyFastWhisperMapping,
 } as const;
 
 // Model-specific capabilities
@@ -171,12 +199,25 @@ export const replicateModelCapabilities: Record<
     supportsPolling: true,
     defaultStrategy: "polling",
   },
+  "openai/whisper:8099696689d249cf8b122d833c36ac3f75505c666a395ca40ef26f68e7d3d16e":
+    {
+      supportsWebhooks: false,
+      supportsPolling: true,
+      defaultStrategy: "polling",
+    },
+  "vaibhavs10/incredibly-fast-whisper:3ab86df6c8f54c11309d4d1f930ac292bad43ace52d10c80d87eb258b3c9f79c":
+    {
+      supportsWebhooks: false,
+      supportsPolling: true,
+      defaultStrategy: "polling",
+    },
 };
 
 export {
   parseReplicateAudio,
   parseReplicateImage,
   parseReplicatePolling,
+  parseReplicateTranscript,
   parseReplicateWebhook,
   replicateCapabilities,
 };

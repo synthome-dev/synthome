@@ -31,6 +31,7 @@ export type OperationType =
   | "generate"
   | "generateImage"
   | "generateAudio"
+  | "transcribe"
   | "merge"
   | "reframe"
   | "lipSync"
@@ -52,6 +53,11 @@ export interface ImageOperation {
 
 export interface AudioOperation {
   type: "generateAudio";
+  params: Record<string, unknown>;
+}
+
+export interface TranscribeOperation {
+  type: "transcribe";
   params: Record<string, unknown>;
 }
 

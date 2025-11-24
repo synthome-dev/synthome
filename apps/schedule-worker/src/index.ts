@@ -9,7 +9,10 @@ import {
   RemoveBackgroundJob,
   RemoveImageBackgroundJob,
   WebhookDeliveryJob,
+  AddSubtitlesJob,
+  TranscribeJob,
 } from "@repo/jobs";
+
 import { Scheduler } from "@repo/scheduler";
 import "dotenv/config";
 import { PollingWorker } from "./polling-worker";
@@ -22,6 +25,8 @@ jobManager.register(MergeVideosJob);
 jobManager.register(RemoveBackgroundJob);
 jobManager.register(RemoveImageBackgroundJob);
 jobManager.register(LayerJob);
+jobManager.register(AddSubtitlesJob);
+jobManager.register(TranscribeJob);
 jobManager.register(WebhookDeliveryJob);
 
 const pollingWorker = new PollingWorker({
@@ -42,7 +47,7 @@ scheduler.register({
     console.log("[Scheduler] Running monthly usage reset...");
     const result = await resetMonthlyUsage();
     console.log(
-      `[Scheduler] Monthly usage reset completed: ${result.resetCount} organizations reset, ${result.errors.length} errors`
+      `[Scheduler] Monthly usage reset completed: ${result.resetCount} organizations reset, ${result.errors.length} errors`,
     );
     if (result.errors.length > 0) {
       console.error("[Scheduler] Errors during reset:", result.errors);

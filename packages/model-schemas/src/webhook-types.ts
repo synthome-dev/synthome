@@ -2,13 +2,14 @@
  * Shared types for webhook and polling response parsing
  */
 
-export type MediaType = "video" | "audio" | "image";
+export type MediaType = "video" | "audio" | "image" | "transcript";
 
 export type WaitingStrategy = "webhook" | "polling";
 
 export interface MediaOutput {
   type: MediaType;
-  url: string;
+  url?: string; // Optional for transcript/data outputs
+  data?: any; // For structured data outputs like transcripts
   mimeType?: string;
   duration?: number; // For video/audio
   width?: number; // For video/image
