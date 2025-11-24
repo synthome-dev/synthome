@@ -1,4 +1,4 @@
-import { compose, layers } from "@synthome/sdk";
+// import { compose, layers } from "@synthome/sdk";
 import { Hono } from "hono";
 
 const testRouter = new Hono();
@@ -7,18 +7,18 @@ testRouter.get("/", async (c) => {
   try {
     console.log("Starting execution...");
 
-    const res = await compose(
-      layers([
-        {
-          placement: "picture-in-picture",
-          media: "https://cdn.proom.ai/captions/EDhDFPExD0Ia3FhHzjQQd.mp4",
-        },
-        {
-          media: "https://cdn.proom.ai/captions/EDhDFPExD0Ia3FhHzjQQd.mp4",
-          main: true,
-        },
-      ])
-    ).execute();
+    // const res = await compose(
+    //   layers([
+    //     {
+    //       placement: "picture-in-picture",
+    //       media: "https://cdn.proom.ai/captions/EDhDFPExD0Ia3FhHzjQQd.mp4",
+    //     },
+    //     {
+    //       media: "https://cdn.proom.ai/captions/EDhDFPExD0Ia3FhHzjQQd.mp4",
+    //       main: true,
+    //     },
+    //   ])
+    // ).execute();
 
     return c.json({
       message: "Test endpoint is working!",
