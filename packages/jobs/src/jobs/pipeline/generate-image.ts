@@ -47,7 +47,7 @@ export class GenerateImageJob extends BasePipelineJob {
       // If mapping exists and params contain unified parameters, convert them
       if (
         mapping &&
-        (providerParams.imageInputs ||
+        (providerParams.image ||
           providerParams.aspectRatio ||
           providerParams.outputFormat ||
           providerParams.seed)

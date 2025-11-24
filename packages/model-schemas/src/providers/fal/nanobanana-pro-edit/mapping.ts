@@ -9,15 +9,26 @@ export const nanobananaProEditMapping: ImageGenerationMapping<NanobananaProEditR
       unified: UnifiedImageOptions,
     ): NanobananaProEditRawOptions => {
       // Edit endpoint requires image_urls
-      if (!unified.imageInputs || unified.imageInputs.length === 0) {
+      if (!unified.image) {
         throw new Error(
-          "image_urls is required for fal-ai/nano-banana-pro/edit endpoint",
+          "image is required for fal-ai/nano-banana-pro/edit endpoint",
+        );
+      }
+
+      // Ensure image is always an array for the edit endpoint
+      const imageArray = Array.isArray(unified.image)
+        ? unified.image
+        : [unified.image];
+
+      if (imageArray.length === 0) {
+        throw new Error(
+          "At least one image is required for fal-ai/nano-banana-pro/edit endpoint",
         );
       }
 
       return {
-        prompt: unified.prompt,
-        image_urls: unified.imageInputs,
+        prompt: unified.prompt || "",
+        image_urls: imageArray,
         aspect_ratio: unified.aspectRatio as any,
         output_format: unified.outputFormat as
           | "jpeg"
@@ -32,7 +43,7 @@ export const nanobananaProEditMapping: ImageGenerationMapping<NanobananaProEditR
       provider: NanobananaProEditRawOptions,
     ): Partial<UnifiedImageOptions> => ({
       prompt: provider.prompt,
-      imageInputs: provider.image_urls,
+      image: provider.image_urls,
       aspectRatio:
         provider.aspect_ratio === "auto" ? undefined : provider.aspect_ratio,
       outputFormat: provider.output_format as

@@ -8,8 +8,12 @@ export const nanobananaProMapping: ImageGenerationMapping<NanobananaProRawOption
     toProviderOptions: (
       unified: UnifiedImageOptions,
     ): NanobananaProRawOptions => ({
-      prompt: unified.prompt,
-      image_input: unified.imageInputs,
+      prompt: unified.prompt || "",
+      image_input: Array.isArray(unified.image)
+        ? unified.image
+        : unified.image
+          ? [unified.image]
+          : undefined,
       aspect_ratio: unified.aspectRatio,
       output_format: unified.outputFormat,
       // Note: resolution and safety_filter_level are provider-specific
@@ -21,7 +25,7 @@ export const nanobananaProMapping: ImageGenerationMapping<NanobananaProRawOption
       provider: NanobananaProRawOptions,
     ): Partial<UnifiedImageOptions> => ({
       prompt: provider.prompt,
-      imageInputs: provider.image_input,
+      image: provider.image_input,
       aspectRatio: provider.aspect_ratio,
       outputFormat: provider.output_format as
         | "jpg"
