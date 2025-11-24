@@ -86,7 +86,7 @@
         "@repo/db": "workspace:*",
         "@repo/jobs": "workspace:*",
         "@repo/model-schemas": "workspace:*",
-        "@synthome/sdk": "../../packages/synthome-sdk",
+        "@synthome/sdk": "workspace:*",
         "drizzle-orm": "0.38.3",
         "hono": "^4.9.10",
         "nanoid": "^5.0.8",
