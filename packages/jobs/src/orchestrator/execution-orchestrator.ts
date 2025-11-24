@@ -337,6 +337,61 @@ export class ExecutionOrchestrator {
       }
     }
 
+    // Resolve transcript job dependencies in params
+    if (params.transcript && typeof params.transcript === "string") {
+      const transcriptDepMarker = params.transcript as string;
+      if (transcriptDepMarker.startsWith("_transcriptJobDependency:")) {
+        const transcriptJobId = transcriptDepMarker.replace(
+          "_transcriptJobDependency:",
+          "",
+        );
+        const transcriptJob = allJobs.find((j) => j.jobId === transcriptJobId);
+
+        if (transcriptJob?.result) {
+          const result = transcriptJob.result;
+          // Transcript job returns a JSON file URL
+          // Try outputs array first, then fall back to direct url
+          if (
+            result.outputs &&
+            Array.isArray(result.outputs) &&
+            result.outputs.length > 0
+          ) {
+            const transcriptUrl = result.outputs[0].url;
+            if (transcriptUrl) {
+              params = { ...params, transcript: transcriptUrl };
+              console.log(
+                `[Orchestrator] Resolved transcript dependency ${transcriptJobId} to URL: ${transcriptUrl}`,
+              );
+            } else {
+              throw new Error(
+                `Transcript job ${transcriptJobId} output has no URL`,
+              );
+            }
+          } else if (result.url) {
+            params = { ...params, transcript: result.url };
+            console.log(
+              `[Orchestrator] Resolved transcript dependency ${transcriptJobId} to URL: ${result.url}`,
+            );
+          } else {
+            console.error(
+              `[Orchestrator] Transcript job ${transcriptJobId} has invalid result format:`,
+              transcriptJob.result,
+            );
+            throw new Error(
+              `Transcript job ${transcriptJobId} output has no URL`,
+            );
+          }
+        } else {
+          console.error(
+            `[Orchestrator] Transcript job ${transcriptJobId} not found or has no result`,
+          );
+          throw new Error(
+            `Transcript job dependency ${transcriptJobId} not found`,
+          );
+        }
+      }
+    }
+
     // Resolve background job dependencies in params (can be string or array)
     if (params.background) {
       const backgrounds = Array.isArray(params.background)

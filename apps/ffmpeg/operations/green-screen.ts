@@ -2,6 +2,7 @@ import { nanoid } from "nanoid";
 import ffmpeg from "fluent-ffmpeg";
 import { tmpdir } from "os";
 import { join } from "path";
+import { unlink } from "fs/promises";
 import { getVideoMetadata, getMediaMetadata } from "../metadata/video-metadata";
 import { isVideoFile } from "../core/utils";
 
@@ -300,8 +301,8 @@ export async function replaceGreenScreen(
     // Cleanup all temp files
     try {
       await Promise.all([
-        ...tempFiles.map((file) => Bun.file(file).delete()),
-        Bun.file(outputPath).delete(),
+        ...tempFiles.map((file) => unlink(file).catch(() => {})),
+        unlink(outputPath).catch(() => {}),
       ]);
     } catch (e) {
       console.error("Cleanup error:", e);

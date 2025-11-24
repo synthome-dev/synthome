@@ -13,6 +13,7 @@ import {
   parseReplicateImage,
   parseReplicatePolling,
   parseReplicateWebhook,
+  parseReplicateTranscript,
   replicateModelCapabilities,
   replicateSchemas,
   type ReplicateModelId,
@@ -187,6 +188,36 @@ export const modelRegistry: Record<AllModelIds, ModelRegistryEntry> = {
     pollingParser: parseElevenLabsAudio,
     capabilities: elevenLabsModelCapabilities["elevenlabs/turbo-v2.5"],
   },
+  "openai/whisper:8099696689d249cf8b122d833c36ac3f75505c666a395ca40ef26f68e7d3d16e":
+    {
+      provider: "replicate",
+      mediaType: "transcript", // Use the new media type
+      schema:
+        replicateSchemas[
+          "openai/whisper:8099696689d249cf8b122d833c36ac3f75505c666a395ca40ef26f68e7d3d16e"
+        ],
+      webhookParser: parseReplicateTranscript,
+      pollingParser: parseReplicateTranscript,
+      capabilities:
+        replicateModelCapabilities[
+          "openai/whisper:8099696689d249cf8b122d833c36ac3f75505c666a395ca40ef26f68e7d3d16e"
+        ],
+    },
+  "vaibhavs10/incredibly-fast-whisper:3ab86df6c8f54c11309d4d1f930ac292bad43ace52d10c80d87eb258b3c9f79c":
+    {
+      provider: "replicate",
+      mediaType: "transcript",
+      schema:
+        replicateSchemas[
+          "vaibhavs10/incredibly-fast-whisper:3ab86df6c8f54c11309d4d1f930ac292bad43ace52d10c80d87eb258b3c9f79c"
+        ],
+      webhookParser: parseReplicateTranscript,
+      pollingParser: parseReplicateTranscript,
+      capabilities:
+        replicateModelCapabilities[
+          "vaibhavs10/incredibly-fast-whisper:3ab86df6c8f54c11309d4d1f930ac292bad43ace52d10c80d87eb258b3c9f79c"
+        ],
+    },
 };
 
 export function getModelInfo(modelId: string): ModelRegistryEntry | undefined {

@@ -13,6 +13,7 @@
     "@repo/storage": "workspace:*",
     "@repo/providers": "workspace:*",
     "@repo/model-schemas": "workspace:*",
+    "@repo/tools": "workspace:*",
     "nanoid": "^5.0.8",
     "pg-boss": "^9.0.3",
     "zod": "^3.22.4"

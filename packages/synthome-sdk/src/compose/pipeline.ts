@@ -439,10 +439,37 @@ class VideoPipeline implements Pipeline {
         }
       }
 
+      // Check if this operation has a nested TranscribeOperation in params.transcript
+      let transcriptJobId: string | undefined;
+      if (op.params.transcript && typeof op.params.transcript === "object") {
+        const transcriptOp = op.params.transcript as any;
+        if (transcriptOp.type === "transcribe") {
+          // Create a transcription job
+          const transcriptId = `job${counter++}`;
+
+          // Pass videoUrl to transcribe job
+          const transcribeParams = { ...transcriptOp.params };
+          if (op.params.videoUrl) {
+            transcribeParams.videoUrl = op.params.videoUrl;
+          }
+
+          jobs.push({
+            id: transcriptId,
+            type: "transcribe",
+            params: transcribeParams,
+            output: `$${transcriptId}`,
+          });
+          transcriptJobId = transcriptId;
+        }
+      }
+
       // Collect all dependency job IDs
-      const depJobIds = [imageJobId, audioJobId, videoJobId].filter(
-        (id): id is string => id !== undefined,
-      );
+      const depJobIds = [
+        imageJobId,
+        audioJobId,
+        videoJobId,
+        transcriptJobId,
+      ].filter((id): id is string => id !== undefined);
 
       if (op.type === "merge") {
         jobs.push({
@@ -474,6 +501,9 @@ class VideoPipeline implements Pipeline {
         if (videoJobId) {
           jobParams.video = `_videoJobDependency:${videoJobId}`;
         }
+        if (transcriptJobId) {
+          jobParams.transcript = `_transcriptJobDependency:${transcriptJobId}`;
+        }
 
         jobs.push({
           id,
@@ -494,6 +524,9 @@ class VideoPipeline implements Pipeline {
         }
         if (videoJobId) {
           jobParams.video = `_videoJobDependency:${videoJobId}`;
+        }
+        if (transcriptJobId) {
+          jobParams.transcript = `_transcriptJobDependency:${transcriptJobId}`;
         }
 
         jobs.push({
@@ -717,6 +750,9 @@ class VideoPipeline implements Pipeline {
         }
         if (videoJobId) {
           jobParams.video = `_videoJobDependency:${videoJobId}`;
+        }
+        if (transcriptJobId) {
+          jobParams.transcript = `_transcriptJobDependency:${transcriptJobId}`;
         }
 
         const allDeps = [...depJobIds];

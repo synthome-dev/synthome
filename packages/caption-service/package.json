@@ -1,0 +1,15 @@
+{
+  "name": "@repo/caption-service",
+  "version": "0.0.0",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "fs-extra": "^11.2.0"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "*",
+    "@types/fs-extra": "^11.0.4",
+    "@types/node": "^20.11.19",
+    "typescript": "^5.3.3"
+  }
+}
