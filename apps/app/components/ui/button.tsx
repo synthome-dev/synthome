@@ -51,14 +51,14 @@ const buttonVariants = cva(
         primary: [
           [
             "[--button-color-border:--button-color-bg]",
-            "[--button-color-bg:theme(colors.purple.500)]",
+            "[--button-color-bg:theme(colors.blue.500)]",
             "[--button-color-icon:theme(colors.white/0.8)]",
             "[--button-color-icon-hover:currentColor]",
-            "[--button-color-ring:theme(colors.purple.500/0.2)]",
+            "[--button-color-ring:theme(colors.blue.500/0.2)]",
             "[--button-color-text:theme(colors.white)]",
-            "[--button-text-shadow:0px_1px_1px_theme(colors.purple.700)]",
+            "[--button-text-shadow:0px_1px_1px_theme(colors.blue.700)]",
           ],
-          "hover:before:opacity-25 active:[--button-color-bg:theme(colors.purple.600)] relative shadow-[inset_0px_1px_0px_theme(colors.white/8%),inset_0px_-1px_0px_theme(colors.white/4%),0px_0px_0px_1px_theme(colors.purple.500),0px_2px_2px_-1px_theme(colors.purple.900/24%),0px_4px_4px_-2px_theme(colors.purple.900/12%)]",
+          "hover:before:opacity-25 active:[--button-color-bg:theme(colors.blue.600)] relative shadow-[inset_0px_1px_0px_theme(colors.white/8%),inset_0px_-1px_0px_theme(colors.white/4%),0px_0px_0px_1px_theme(colors.blue.500),0px_2px_2px_-1px_theme(colors.blue.900/24%),0px_4px_4px_-2px_theme(colors.blue.900/12%)]",
           "before:absolute before:inset-0 before:rounded-inherit before:transition-opacity",
         ],
         blue: [
