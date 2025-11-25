@@ -49,18 +49,22 @@ export async function getMonthlyUsageStats(): Promise<{
 
     const planType = userLimits?.planType || "free";
 
-    // Get current month boundaries
+    // Get current month boundaries (in UTC)
     const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
-    const firstDayOfMonth = new Date(year, month, 1);
-    const lastDayOfMonth = new Date(year, month + 1, 0);
-    const today = new Date(year, month, now.getDate());
+    const year = now.getUTCFullYear();
+    const month = now.getUTCMonth();
+    const firstDayOfMonth = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0));
+    const lastDayOfMonth = new Date(
+      Date.UTC(year, month + 1, 0, 23, 59, 59, 999),
+    );
+    const today = new Date(
+      Date.UTC(year, month, now.getUTCDate(), 23, 59, 59, 999),
+    );
 
-    // Query execution jobs grouped by day
+    // Query execution jobs grouped by day (using UTC date)
     const results = await db
       .select({
-        date: sql<string>`DATE(${executionJobs.createdAt})`,
+        date: sql<string>`DATE(${executionJobs.createdAt} AT TIME ZONE 'UTC')`,
         count: sql<number>`COUNT(*)::int`,
       })
       .from(executionJobs)
@@ -71,8 +75,8 @@ export async function getMonthlyUsageStats(): Promise<{
           lte(executionJobs.createdAt, today),
         ),
       )
-      .groupBy(sql`DATE(${executionJobs.createdAt})`)
-      .orderBy(sql`DATE(${executionJobs.createdAt})`);
+      .groupBy(sql`DATE(${executionJobs.createdAt} AT TIME ZONE 'UTC')`)
+      .orderBy(sql`DATE(${executionJobs.createdAt} AT TIME ZONE 'UTC')`);
 
     // Create a map for quick lookup
     const dataMap = new Map<string, number>();
@@ -80,15 +84,15 @@ export async function getMonthlyUsageStats(): Promise<{
       dataMap.set(row.date, Number(row.count));
     });
 
-    // Generate array with all days of the month
-    const daysInMonth = lastDayOfMonth.getDate();
+    // Generate array with all days of the month (in UTC)
+    const daysInMonth = lastDayOfMonth.getUTCDate();
     const dailyData: DailyUsageData[] = [];
     let monthlyTotal = 0;
     let todayTotal = 0;
     let maxDailyCount = 0;
 
     for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(year, month, day);
+      const date = new Date(Date.UTC(year, month, day));
       const dateStr = date.toISOString().split("T")[0];
       const count = dataMap.get(dateStr) || 0;
       const cost = planType === "free" ? 0 : count * COST_PER_ACTION;
@@ -105,11 +109,11 @@ export async function getMonthlyUsageStats(): Promise<{
         maxDailyCount = Math.max(maxDailyCount, count);
       }
 
-      // Check if this is today
+      // Check if this is today (in UTC)
       if (
-        date.getDate() === now.getDate() &&
-        date.getMonth() === now.getMonth() &&
-        date.getFullYear() === now.getFullYear()
+        date.getUTCDate() === now.getUTCDate() &&
+        date.getUTCMonth() === now.getUTCMonth() &&
+        date.getUTCFullYear() === now.getUTCFullYear()
       ) {
         todayTotal = count;
       }
