@@ -2,6 +2,11 @@ import { PageWrapper } from "@/components/page-wrapper";
 import { IntegrationsContent } from "@/features/integrations";
 import { auth } from "@clerk/nextjs/server";
 import { providerKeyService } from "@repo/api-keys";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Integrations",
+};
 
 export default async function IntegrationsPage() {
   const { orgId } = await auth();
