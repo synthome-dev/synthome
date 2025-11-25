@@ -137,7 +137,7 @@ const CardFooter = React.forwardRef<
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
   <React.Fragment>
-    <CardDivider />
+    {/* <CardDivider /> */}
     <div
       ref={ref}
       className={cn("flex items-center p-4", className)}
