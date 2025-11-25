@@ -1,3 +1,5 @@
+"use client";
+
 import { TypingLoader } from "@/components/ui/loader";
 import { cn } from "@/lib/utils";
 import { Slot } from "@radix-ui/react-slot";
