@@ -2,6 +2,11 @@ import { PageWrapper } from "@/components/page-wrapper";
 import { PageTitle } from "@/components/page-title";
 import { getExecutions } from "@/features/logs/actions";
 import { LogsTableWrapper } from "@/features/logs/logs-table-wrapper";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Logs",
+};
 
 interface LogsPageProps {
   searchParams: Promise<{

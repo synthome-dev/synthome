@@ -7,6 +7,11 @@ import {
 } from "@/features/logs/executions-table";
 import { getMonthlyUsageStats } from "@/features/usage/actions";
 import { UsageOverview } from "@/features/usage/usage-overview";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Overview",
+};
 
 export default async function OverviewPage() {
   const result = await getRecentExecutions(10);
