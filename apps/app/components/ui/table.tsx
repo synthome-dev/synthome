@@ -59,8 +59,8 @@ const TableBody = React.forwardRef<
     ref={ref}
     className={cn(
       "[&_tr:last-child]:border-0",
-      "[&_tr:first-child_td:first-child]:rounded-tl-xl [&_tr:first-child_td:last-child]:rounded-tr-xl",
-      "[&_tr:last-child_td:first-child]:rounded-bl-xl [&_tr:last-child_td:last-child]:rounded-br-xl",
+      "[&_tr:first-child_td:first-child]:rounded-tl-md [&_tr:first-child_td:last-child]:rounded-tr-md",
+      "[&_tr:last-child_td:first-child]:rounded-bl-md [&_tr:last-child_td:last-child]:rounded-br-md",
       className
     )}
     {...props}
@@ -87,12 +87,14 @@ TableFooter.displayName = "TableFooter";
 
 const TableRow = React.forwardRef<
   HTMLTableRowElement,
-  React.HTMLAttributes<HTMLTableRowElement>
+  React.HTMLAttributes<HTMLTableRowElement> & {
+    isExpanded?: boolean;
+  }
 >(({ className, ...props }, ref) => (
   <tr
     ref={ref}
     className={cn(
-      "border-black/5 bg-white hover:bg-surface-100 data-[state=selected]:bg-gray-50",
+      "border-black/5 bg-white hover:bg-surface-100 data-[state=selected]:bg-surface-100 data-[state=expanded]:bg-surface-100 data-[state=expanded]:hover:bg-surface-50",
       "dark:bg-surface-100 dark:hover:bg-[#1f1f23] dark:data-[state=selected]:bg-[#1f1f23] dark:border-[#232328]",
       "border-b",
       // "[&_td:first-child]:rounded-tl-xl [&_td:last-child]:rounded-tr-xl",
@@ -227,7 +229,7 @@ const TableResultsPerPage = React.forwardRef<
       Results per page
       <Select value={value} onValueChange={onValueChange}>
         <SelectTrigger variant="secondary" size="sm">
-          <SelectValue placeholder="Theme" />
+          <SelectValue />
         </SelectTrigger>
         <SelectContent>
           {options.map((option) => (
@@ -291,8 +293,8 @@ const TablePagination = React.forwardRef<
         variant="secondary"
         size="sm"
         asChild={!!nextPageUrl}
-        disabled={!hasPreviousPage}
-        onClick={onPreviousPage}
+        disabled={!hasNextPage}
+        onClick={onNextPage}
       >
         {nextPageUrl ? (
           <Link href={nextPageUrl}>
