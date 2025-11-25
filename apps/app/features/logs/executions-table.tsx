@@ -53,7 +53,7 @@ export const ShowAllExecutionsHeader = () => {
           buttonVariants({
             variant: "secondary",
             size: "sm",
-          })
+          }),
         )}
         href="/logs"
       >
@@ -70,7 +70,7 @@ export function ExecutionsTable({
 }: ExecutionsTableProps) {
   console.log(executions);
   const [expandedExecutionId, setExpandedExecutionId] = useState<string | null>(
-    null
+    null,
   );
   const [selectedJob, setSelectedJob] = useState<ExecutionJob | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -92,7 +92,7 @@ export function ExecutionsTable({
 
   const toggleExpand = (executionId: string) => {
     setExpandedExecutionId(
-      expandedExecutionId === executionId ? null : executionId
+      expandedExecutionId === executionId ? null : executionId,
     );
   };
 
@@ -161,7 +161,12 @@ export function ExecutionsTable({
                           <StatusBadge status={execution.status} />
                         </TableCell>
                         <TableCell className="text-sm text-secondary">
-                          {execution.jobs.length}{" "}
+                          {
+                            execution.jobs.filter(
+                              (job) => job.status === "completed",
+                            ).length
+                          }{" "}
+                          / {execution.jobs.length}{" "}
                           {execution.jobs.length === 1 ? "job" : "jobs"}
                         </TableCell>
                         <TableCell className="font-mono text-sm">
