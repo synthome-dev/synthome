@@ -16,7 +16,7 @@ const Card = React.forwardRef<
       ref={ref}
       {...props}
       className={cn(
-        "rounded-xl overflow-hidden w-full relative",
+        "rounded-md overflow-hidden w-full relative",
         "ring-1 ring-gray-900/5",
         "bg-white shadow-[0_1px_5px_-4px_rgba(19,19,22,0.7),0_4px_8px_rgba(32,42,54,0.05)]",
         "dark:bg-surface-100 dark:shadow-[0_-1px_rgba(255,255,255,0.06),0_4px_8px_rgba(0,0,0,0.05),0_0_0_1px_rgba(255,255,255,0.1),0_1px_6px_-4px_#000]",
@@ -154,7 +154,7 @@ export const rootVariants = cva(
     "px-[--card-body-px]",
     "isolate",
     "overflow-hidden",
-    "rounded-xl",
+    "rounded-md",
     "relative",
     "pb-0.5",
   ],
