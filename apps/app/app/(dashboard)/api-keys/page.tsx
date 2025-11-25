@@ -2,6 +2,11 @@ import { PageWrapper } from "@/components/page-wrapper";
 import { ApiKeysContent } from "@/features/api-keys";
 import { auth } from "@clerk/nextjs/server";
 import { apiKeyService } from "@repo/api-keys";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "API Keys",
+};
 
 export default async function ApiKeysPage() {
   const { orgId } = await auth();
