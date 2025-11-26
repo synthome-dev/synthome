@@ -1,26 +1,26 @@
-import {
-  audioModel,
-  captions,
-  compose
-} from "@synthome/sdk";
+// import {
+//   audioModel,
+//   captions,
+//   compose
+// } from "@synthome/sdk";
 import { Hono } from "hono";
 
 const testRouter = new Hono();
 
 testRouter.get("/", async (c) => {
   try {
-    console.log("Starting execution...");
+    // console.log("Starting execution...");
 
-    const res = await compose(
-      captions({
-        model: audioModel("vaibhavs10/incredibly-fast-whisper", "replicate"),
-        video: '',
-      })
-    );
+    // const res = await compose(
+    //   captions({
+    //     model: audioModel("vaibhavs10/incredibly-fast-whisper", "replicate"),
+    //     video: '',
+    //   })
+    // );
 
     return c.json({
       message: "Test endpoint is working!",
-      result: res.toJSON(),
+      // result: res.toJSON(),
     });
   } catch (error) {
     console.error("Error in /api/test:", error);
