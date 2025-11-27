@@ -1,15 +1,21 @@
 "use client";
 
 import { TableCell, TableRow } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 import { StatusBadge } from "./status-badge";
 import { ExecutionJob } from "./types";
 
 interface ExecutionJobRowProps {
   job: ExecutionJob;
   onJobClick: (job: ExecutionJob) => void;
+  isHighlighted?: boolean;
 }
 
-export function ExecutionJobRow({ job, onJobClick }: ExecutionJobRowProps) {
+export function ExecutionJobRow({
+  job,
+  onJobClick,
+  isHighlighted = false,
+}: ExecutionJobRowProps) {
   const formatDate = (date: Date | null) => {
     if (!date) return "N/A";
     return new Date(date).toLocaleDateString("en-US", {
@@ -36,7 +42,10 @@ export function ExecutionJobRow({ job, onJobClick }: ExecutionJobRowProps) {
     <TableRow
       data-state="expanded"
       onClick={() => onJobClick(job)}
-      className="cursor-pointer [&]:!bg-surface-100 dark:[&]:!bg-[#1f1f23] [&:hover]:!bg-surface-200 dark:[&:hover]:!bg-[#18181b] transition-colors"
+      className={cn(
+        "cursor-pointer [&]:!bg-surface-100 dark:[&]:!bg-[#1f1f23] [&:hover]:!bg-surface-200 dark:[&:hover]:!bg-[#18181b] transition-colors",
+        isHighlighted && "animate-row-highlight",
+      )}
     >
       <TableCell className="pl-8">
         <div className="flex flex-col gap-1">

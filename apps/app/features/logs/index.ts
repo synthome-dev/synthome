@@ -9,7 +9,14 @@ export type {
   Execution,
   ExecutionJob,
   ExecutionStatus,
-  JobStatus
+  JobStatus,
 } from "./types";
 
 export { getExecutions, getRecentExecutions } from "./actions";
+
+// Hooks
+export { useExecutions } from "./hooks/use-executions";
+
+// Utils
+export { diffExecutions, mergeExecutions } from "./utils/diff-executions";
+export type { ChangedIds } from "./utils/diff-executions";
