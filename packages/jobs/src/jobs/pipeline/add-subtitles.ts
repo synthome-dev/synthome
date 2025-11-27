@@ -1,7 +1,7 @@
-import { BasePipelineJob, PipelineJobData } from "./base-pipeline-job";
-import type PgBoss from "pg-boss";
 import { storage } from "@repo/storage";
 import { generateId } from "@repo/tools";
+import type PgBoss from "pg-boss";
+import { BasePipelineJob, PipelineJobData } from "./base-pipeline-job";
 
 interface AddSubtitlesParams {
   videoUrl: string;
@@ -21,7 +21,7 @@ export class AddSubtitlesJob extends BasePipelineJob {
 
     await this.updateJobProgress(jobRecordId, "processing", 10);
 
-    const ffmpegUrl = process.env.FFMPEG_URL || "http://localhost:3200";
+    const ffmpegUrl = process.env.FFMPEG_API_URL;
 
     try {
       // 1. Get Transcript (either from params or fetch from URL)
@@ -54,7 +54,7 @@ export class AddSubtitlesJob extends BasePipelineJob {
       await this.updateJobProgress(jobRecordId, "rendering_subtitles", 50);
 
       // 2. Generate Subtitle File Content (ASS format) via FFmpeg service
-      const ffmpegUrl = process.env.FFMPEG_URL || "http://localhost:3200";
+      const ffmpegUrl = process.env.FFMPEG_API_URL;
       console.log(
         `[AddSubtitlesJob] Calling FFmpeg service at ${ffmpegUrl}/generate-subtitles`,
       );

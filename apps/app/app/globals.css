@@ -306,3 +306,35 @@
 .no-scrollbar::-webkit-scrollbar {
   display: none; /* Chrome, Safari, Opera */
 }
+
+/* Row highlight animation for real-time updates */
+@keyframes rowHighlight {
+  0% {
+    background-color: rgba(34, 197, 94, 0.25); /* green-500 with opacity */
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+@keyframes rowHighlightDark {
+  0% {
+    background-color: rgba(
+      34,
+      197,
+      94,
+      0.15
+    ); /* green-500 with lower opacity for dark mode */
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.animate-row-highlight {
+  animation: rowHighlight 1s ease-out forwards;
+}
+
+.dark .animate-row-highlight {
+  animation: rowHighlightDark 1s ease-out forwards;
+}
