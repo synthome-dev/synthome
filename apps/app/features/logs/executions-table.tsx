@@ -1,5 +1,6 @@
 "use client";
 
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardRoot } from "@/components/ui/card";
 import {
   TableBody,
@@ -16,18 +17,19 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 import { ChevronRight } from "lucide-react";
+import Link from "next/link";
 import { Fragment, useState } from "react";
 import { ExecutionJobRow } from "./execution-job-row";
 import { ExecutionJobSheet } from "./execution-job-sheet";
 import { StatusBadge } from "./status-badge";
 import { Execution, ExecutionJob } from "./types";
-import Link from "next/link";
-import { cn } from "@/lib/utils";
-import { buttonVariants } from "@/components/ui/button";
+import { ChangedIds } from "./utils/diff-executions";
 
 interface ExecutionsTableProps {
   executions: Execution[];
+  highlightedIds?: ChangedIds;
   showPagination?: boolean;
   paginationProps?: {
     perPage: string;
@@ -53,7 +55,7 @@ export const ShowAllExecutionsHeader = () => {
           buttonVariants({
             variant: "secondary",
             size: "sm",
-          }),
+          })
         )}
         href="/logs"
       >
@@ -65,12 +67,12 @@ export const ShowAllExecutionsHeader = () => {
 
 export function ExecutionsTable({
   executions,
+  highlightedIds,
   showPagination = false,
   paginationProps,
 }: ExecutionsTableProps) {
-  console.log(executions);
   const [expandedExecutionId, setExpandedExecutionId] = useState<string | null>(
-    null,
+    null
   );
   const [selectedJob, setSelectedJob] = useState<ExecutionJob | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -92,7 +94,7 @@ export function ExecutionsTable({
 
   const toggleExpand = (executionId: string) => {
     setExpandedExecutionId(
-      expandedExecutionId === executionId ? null : executionId,
+      expandedExecutionId === executionId ? null : executionId
     );
   };
 
@@ -134,17 +136,20 @@ export function ExecutionsTable({
               ) : (
                 executions.map((execution) => {
                   const isExpanded = expandedExecutionId === execution.id;
+                  const isExecutionHighlighted =
+                    highlightedIds?.executions.has(execution.id) ?? false;
 
                   return (
                     <Fragment key={execution.id}>
                       {/* Main Execution Row */}
                       <TableRow
                         data-state={isExpanded ? "selected" : "collapsed"}
-                        className={
-                          isExpanded
-                            ? "group/row relative cursor-pointer transition-colors [&]:bg-surface-100 dark:[&]:!bg-[#1f1f23] [&:hover]:bg-surface-200 dark:[&:hover]:bg-[#18181b]"
-                            : "group/row relative cursor-pointer transition-colors"
-                        }
+                        className={cn(
+                          "group/row relative cursor-pointer transition-colors",
+                          isExpanded &&
+                            "[&]:bg-surface-100 dark:[&]:!bg-[#1f1f23] [&:hover]:bg-surface-200 dark:[&:hover]:bg-[#18181b]",
+                          isExecutionHighlighted && "animate-row-highlight"
+                        )}
                         onClick={() => toggleExpand(execution.id)}
                       >
                         <TableCell className="text-sm text-secondary">
@@ -163,7 +168,7 @@ export function ExecutionsTable({
                         <TableCell className="text-sm text-secondary">
                           {
                             execution.jobs.filter(
-                              (job) => job.status === "completed",
+                              (job) => job.status === "completed"
                             ).length
                           }{" "}
                           / {execution.jobs.length}{" "}
@@ -190,6 +195,9 @@ export function ExecutionsTable({
                             key={job.id}
                             job={job}
                             onJobClick={handleJobClick}
+                            isHighlighted={
+                              highlightedIds?.jobs.has(job.id) ?? false
+                            }
                           />
                         ))}
                     </Fragment>

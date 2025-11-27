@@ -3,6 +3,7 @@
 import { ExecutionsTable } from "@/features/logs/executions-table";
 import { Execution } from "@/features/logs/types";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useExecutions } from "./hooks/use-executions";
 
 interface LogsTableWrapperProps {
   initialExecutions: Execution[];
@@ -23,6 +24,21 @@ export function LogsTableWrapper({
   const currentPage = initialPage;
   const perPage = initialLimit.toString();
 
+  // Use SWR hook with polling for real-time updates
+  const {
+    executions,
+    total: updatedTotal,
+    highlightedIds,
+  } = useExecutions({
+    page: currentPage,
+    limit: initialLimit,
+    initialData: {
+      executions: initialExecutions,
+      total,
+    },
+    refreshInterval: 5000, // Poll every 5 seconds
+  });
+
   const handlePerPageChange = (value: string) => {
     const params = new URLSearchParams(searchParams);
     params.set("limit", value);
@@ -42,16 +58,17 @@ export function LogsTableWrapper({
     router.push(`/logs?${params.toString()}`);
   };
 
-  const hasNextPage = currentPage * initialLimit < total;
+  const hasNextPage = currentPage * initialLimit < updatedTotal;
   const hasPreviousPage = currentPage > 1;
 
   return (
     <ExecutionsTable
-      executions={initialExecutions}
+      executions={executions}
+      highlightedIds={highlightedIds}
       showPagination={true}
       paginationProps={{
         perPage,
-        total,
+        total: updatedTotal,
         currentPage,
         onValueChange: handlePerPageChange,
         hasNextPage,
