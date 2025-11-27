@@ -1,9 +1,7 @@
 import { Hono } from "hono";
 import { processMedia, type FFmpegOptions } from "./operations/process-media";
-import {
-  mergeVideos,
-  type MergeVideosOptions,
-} from "./operations/merge-videos";
+import { mergeVideos, mergeMedia } from "./operations/merge-videos";
+import type { MergeVideosOptions, MergeMediaOptions } from "./core/types";
 import { layerMedia } from "./operations/layer-media";
 import type { LayerMediaOptions } from "./core/types";
 import { presets } from "./core/constants";
@@ -171,23 +169,57 @@ app.post("/thumbnail", async (c) => {
 
 app.post("/merge", async (c) => {
   try {
-    const body = await c.req.json<MergeVideosOptions>();
+    const body = await c.req.json<MergeVideosOptions | MergeMediaOptions>();
 
-    if (!body.videos || body.videos.length < 2) {
-      return c.json({ error: "At least 2 videos required for merging" }, 400);
+    // Check if this is the new format (has 'items' array) or legacy format (has 'videos' array)
+    if ("items" in body && Array.isArray(body.items)) {
+      // New MergeMediaOptions format
+      if (body.items.length === 0) {
+        return c.json({ error: "At least 1 item required for merging" }, 400);
+      }
+
+      console.log("[Merge API] Processing new format request:", {
+        itemCount: body.items.length,
+        audioCount: body.audio?.length || 0,
+      });
+
+      const outputBuffer = await mergeMedia(body as MergeMediaOptions);
+
+      c.header("Content-Type", "video/mp4");
+      c.header(
+        "Content-Disposition",
+        `attachment; filename="merged-${Date.now()}.mp4"`,
+      );
+      return c.body(new Uint8Array(outputBuffer));
+    } else if ("videos" in body && Array.isArray(body.videos)) {
+      // Legacy MergeVideosOptions format
+      if (body.videos.length < 2) {
+        return c.json({ error: "At least 2 videos required for merging" }, 400);
+      }
+
+      console.log("[Merge API] Processing legacy format request:", {
+        videoCount: body.videos.length,
+      });
+
+      const outputBuffer = await mergeVideos(body as MergeVideosOptions);
+
+      c.header("Content-Type", "video/mp4");
+      c.header(
+        "Content-Disposition",
+        `attachment; filename="merged-${Date.now()}.mp4"`,
+      );
+      return c.body(new Uint8Array(outputBuffer));
+    } else {
+      return c.json(
+        { error: "Invalid request format. Expected 'items' or 'videos' array" },
+        400,
+      );
     }
-
-    const outputBuffer = await mergeVideos(body);
-
-    c.header("Content-Type", "video/mp4");
-    c.header(
-      "Content-Disposition",
-      `attachment; filename="merged-${Date.now()}.mp4"`,
-    );
-    return c.body(new Uint8Array(outputBuffer));
   } catch (error) {
     console.error("Error:", error);
-    return c.json({ error: "Failed to merge videos" }, 500);
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    return c.json({ error: `Failed to merge media: ${errorMessage}` }, 500);
   }
 });
 

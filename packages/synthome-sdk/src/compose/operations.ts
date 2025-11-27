@@ -1,16 +1,222 @@
-import type { ImageOperation, VideoOperation } from "../core/video.js";
+import type {
+  AudioOperation,
+  ImageOperation,
+  VideoOperation,
+} from "../core/video.js";
 
-export interface MergeOptions {
-  transition?: "crossfade" | "cut" | "dissolve";
+// =============================================================================
+// Merge Types
+// =============================================================================
+
+/** Media type for merge items */
+export type MergeMediaType = "video" | "image" | "audio";
+
+/** Any supported operation type */
+export type MergeOperation = VideoOperation | ImageOperation | AudioOperation;
+
+/** Merge item with options */
+export interface MergeItemWithOptions {
+  /** URL string or operation */
+  url: string | MergeOperation;
+  /** Media type - auto-detected if not provided */
+  type?: MergeMediaType;
+  /** For video: optional trim duration. For image: display duration (default 1s) */
+  duration?: number;
+  /** For audio only: start position in timeline in seconds (default: 0) */
+  offset?: number;
+  /** Volume level from 0 to 1 (default: 1). Works for audio items and video items (affects their audio track) */
+  volume?: number;
 }
 
-export function merge(options?: MergeOptions): VideoOperation {
+/**
+ * Union type for all supported merge item formats:
+ * - string: Simple URL (type auto-detected from extension)
+ * - MergeOperation: Direct operation (type auto-detected)
+ * - MergeItemWithOptions: URL or operation with explicit options
+ */
+export type MergeItem = string | MergeOperation | MergeItemWithOptions;
+
+/**
+ * Merge multiple media items (videos, images, audio) into a single video.
+ *
+ * @param items - Array of media items to merge
+ * @returns VideoOperation for the merge
+ *
+ * @example
+ * // Simple video merge with URLs
+ * merge([
+ *   "https://example.com/video1.mp4",
+ *   "https://example.com/video2.mp4",
+ * ])
+ *
+ * @example
+ * // Slideshow from images with custom duration
+ * merge([
+ *   { url: "https://example.com/img1.jpg", duration: 3 },
+ *   { url: "https://example.com/img2.jpg", duration: 2 },
+ * ])
+ *
+ * @example
+ * // Mixed media with audio
+ * merge([
+ *   "https://example.com/intro.mp4",
+ *   { url: "https://example.com/title.png", duration: 2 },
+ *   "https://example.com/main.mp4",
+ *   { url: "https://example.com/music.mp3", offset: 0 },
+ * ])
+ *
+ * @example
+ * // With generated content
+ * merge([
+ *   generateVideo({ model: videoModel("minimax", "replicate"), prompt: "Scene 1" }),
+ *   generateVideo({ model: videoModel("minimax", "replicate"), prompt: "Scene 2" }),
+ * ])
+ *
+ * @example
+ * // Generated content with options
+ * merge([
+ *   { url: generateVideo({ ... }), duration: 5 },
+ *   { url: generateImage({ ... }), duration: 3 },
+ *   { url: generateAudio({ ... }), offset: 2 },
+ * ])
+ */
+export function merge(items: MergeItem[]): VideoOperation {
+  // Process items to normalize them for the execution plan
+  const processedItems = items.map((item) => processeMergeItem(item));
+
   return {
     type: "merge",
     params: {
-      transition: options?.transition || "cut",
+      items: processedItems,
     },
   };
+}
+
+/** Detect media type from URL extension */
+function detectMediaType(url: string): MergeMediaType {
+  const lowerUrl = url.toLowerCase();
+
+  // Audio extensions
+  if (
+    lowerUrl.endsWith(".mp3") ||
+    lowerUrl.endsWith(".wav") ||
+    lowerUrl.endsWith(".aac") ||
+    lowerUrl.endsWith(".ogg") ||
+    lowerUrl.endsWith(".m4a") ||
+    lowerUrl.endsWith(".flac")
+  ) {
+    return "audio";
+  }
+
+  // Image extensions
+  if (
+    lowerUrl.endsWith(".jpg") ||
+    lowerUrl.endsWith(".jpeg") ||
+    lowerUrl.endsWith(".png") ||
+    lowerUrl.endsWith(".gif") ||
+    lowerUrl.endsWith(".webp") ||
+    lowerUrl.endsWith(".bmp")
+  ) {
+    return "image";
+  }
+
+  // Default to video
+  return "video";
+}
+
+/** Check if an object is an operation (has type and params) */
+function isOperation(obj: unknown): obj is MergeOperation {
+  return (
+    typeof obj === "object" && obj !== null && "type" in obj && "params" in obj
+  );
+}
+
+/** Check if an object is a MergeItemWithOptions (has url property) */
+function isMergeItemWithOptions(obj: unknown): obj is MergeItemWithOptions {
+  return typeof obj === "object" && obj !== null && "url" in obj;
+}
+
+/** Detect media type from an operation */
+function detectOperationType(op: MergeOperation): MergeMediaType {
+  if (op.type === "generate" || op.type === "removeBackground") {
+    return "video";
+  }
+  if (op.type === "generateImage" || op.type === "removeImageBackground") {
+    return "image";
+  }
+  if (op.type === "generateAudio") {
+    return "audio";
+  }
+  // Default to video for unknown operation types
+  return "video";
+}
+
+/** Processed merge item for execution plan */
+export interface ProcessedMergeItem {
+  url?: string;
+  type: MergeMediaType;
+  duration?: number;
+  offset?: number;
+  volume?: number;
+  // For job dependencies, store the operation
+  operation?: MergeOperation;
+}
+
+/** Process a merge item into normalized format */
+function processeMergeItem(item: MergeItem): ProcessedMergeItem {
+  // Simple string URL
+  if (typeof item === "string") {
+    const type = detectMediaType(item);
+    return {
+      url: item,
+      type,
+      duration: type === "image" ? 1 : undefined,
+      offset: type === "audio" ? 0 : undefined,
+    };
+  }
+
+  // Direct operation (no options)
+  if (isOperation(item)) {
+    const type = detectOperationType(item);
+    return {
+      type,
+      operation: item,
+      duration: type === "image" ? 1 : undefined,
+      offset: type === "audio" ? 0 : undefined,
+    };
+  }
+
+  // MergeItemWithOptions (has url property)
+  if (isMergeItemWithOptions(item)) {
+    const { url, duration, offset, volume } = item;
+
+    // url is a string
+    if (typeof url === "string") {
+      const type = item.type ?? detectMediaType(url);
+      return {
+        url,
+        type,
+        duration: duration ?? (type === "image" ? 1 : undefined),
+        offset: offset ?? (type === "audio" ? 0 : undefined),
+        volume,
+      };
+    }
+
+    // url is an operation
+    if (isOperation(url)) {
+      const type = item.type ?? detectOperationType(url);
+      return {
+        type,
+        operation: url,
+        duration: duration ?? (type === "image" ? 1 : undefined),
+        offset: offset ?? (type === "audio" ? 0 : undefined),
+        volume,
+      };
+    }
+  }
+
+  // Fallback - shouldn't reach here
+  throw new Error(`Invalid merge item: ${JSON.stringify(item)}`);
 }
 
 export interface ReframeOptions {
@@ -138,7 +344,7 @@ export function layers(
   options?: LayersOptions,
 ): VideoOperation {
   // Process items to detect timeline arrays and calculate durations
-  const processedLayers = items.map((item, index) => {
+  const processedLayers = items.map((item) => {
     // Check if this is a timeline array
     if (Array.isArray(item)) {
       // Check if any timeline items lack duration (need auto-fill)

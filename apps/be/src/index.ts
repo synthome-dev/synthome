@@ -2,7 +2,6 @@ import { Hono } from "hono";
 import { adminRouter } from "./routes/admin";
 import { clerkWebhooksRouter } from "./routes/clerk-webhooks";
 import { executeRouter } from "./routes/execute";
-import { testRouter } from "./routes/test";
 import { webhooksRouter } from "./routes/webhooks";
 import { getOrchestrator } from "./services/execution-orchestrator";
 
@@ -39,12 +38,10 @@ if (isDevelopment) {
     } catch (error) {
       return c.json(
         { error: error instanceof Error ? error.message : "Unknown error" },
-        500,
+        500
       );
     }
   });
-
-  app.route("/api/test", testRouter);
 }
 
 export default {

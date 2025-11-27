@@ -337,6 +337,59 @@ export class ExecutionOrchestrator {
       }
     }
 
+    // Resolve videoUrl job dependencies in params (for transcribe jobs)
+    if (params.videoUrl && typeof params.videoUrl === "string") {
+      const videoUrlDepMarker = params.videoUrl as string;
+      if (videoUrlDepMarker.startsWith("_videoJobDependency:")) {
+        const videoJobId = videoUrlDepMarker.replace(
+          "_videoJobDependency:",
+          "",
+        );
+        const videoJob = allJobs.find((j) => j.jobId === videoJobId);
+
+        if (videoJob?.result) {
+          // Extract video URL from the result
+          // The result format is:
+          // { status: "completed", outputs: [{ type: "video", url: "...", mimeType: "..." }], metadata: {...} }
+          const result = videoJob.result;
+          if (
+            result.outputs &&
+            Array.isArray(result.outputs) &&
+            result.outputs.length > 0
+          ) {
+            const videoUrl = result.outputs[0].url;
+            if (videoUrl) {
+              params = { ...params, videoUrl: videoUrl };
+              console.log(
+                `[Orchestrator] Resolved videoUrl dependency ${videoJobId} to URL: ${videoUrl}`,
+              );
+            } else {
+              throw new Error(`Video job ${videoJobId} output has no URL`);
+            }
+          } else if (result.url) {
+            // Fallback for direct URL format
+            params = { ...params, videoUrl: result.url };
+            console.log(
+              `[Orchestrator] Resolved videoUrl dependency ${videoJobId} to URL: ${result.url}`,
+            );
+          } else {
+            console.error(
+              `[Orchestrator] Video job ${videoJobId} has invalid result format:`,
+              videoJob.result,
+            );
+            throw new Error(
+              `Video job ${videoJobId} did not produce a valid video URL`,
+            );
+          }
+        } else {
+          console.error(
+            `[Orchestrator] Video job ${videoJobId} not found or has no result`,
+          );
+          throw new Error(`Video job dependency ${videoJobId} not found`);
+        }
+      }
+    }
+
     // Resolve transcript job dependencies in params
     if (params.transcript && typeof params.transcript === "string") {
       const transcriptDepMarker = params.transcript as string;
