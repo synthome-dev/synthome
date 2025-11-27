@@ -13,12 +13,21 @@ const humeTtsBaseSchema = z.object({
     .min(1)
     .describe("The input text to be synthesized into speech"),
 
-  // Optional: voice specification
+  // Optional: voice specification - pass through directly to Hume API
   voice: z
-    .string()
+    .union([
+      z.object({
+        id: z.string(),
+        provider: z.enum(["HUME_AI", "CUSTOM_VOICE"]).optional(),
+      }),
+      z.object({
+        name: z.string(),
+        provider: z.enum(["HUME_AI", "CUSTOM_VOICE"]).optional(),
+      }),
+    ])
     .optional()
     .describe(
-      "The name or id of a voice from the Voice Library. If not specified, a voice will be generated based on the description",
+      "Voice specification - either { id: 'uuid' } for voice IDs or { name: 'Voice Name' } for voice names, with optional provider ('HUME_AI' for library voices, 'CUSTOM_VOICE' for custom voices)",
     ),
 
   // Optional: natural language description of how speech should sound

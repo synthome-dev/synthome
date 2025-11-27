@@ -441,6 +441,120 @@ class VideoPipeline implements Pipeline {
 
       // Check if this operation has a nested TranscribeOperation in params.transcript
       let transcriptJobId: string | undefined;
+      // Track video input job ID for operations that need it (transcribe, addSubtitles)
+      let videoInputJobId: string | undefined;
+
+      // First, process video inputs if they exist (needed for both transcribe and the main operation)
+      if (!op.params.videoUrl && op.inputs && op.inputs.length > 0) {
+        const videoInput = op.inputs[0];
+        if (
+          videoInput &&
+          typeof videoInput === "object" &&
+          "type" in videoInput
+        ) {
+          const videoInputOp = videoInput as VideoOperation;
+
+          // Check if this operation has nested operations that need jobs
+          // For merge operations, we need to handle nested items
+          if (videoInputOp.type === "merge") {
+            const mergeParams = videoInputOp.params as {
+              items?: Array<{
+                url?: string;
+                type: "video" | "image" | "audio";
+                duration?: number;
+                offset?: number;
+                volume?: number;
+                operation?: VideoOperation | ImageOperation | AudioOperation;
+              }>;
+            };
+
+            const mergeDependencies: string[] = [];
+            const processedItems: Array<{
+              url?: string;
+              type: "video" | "image" | "audio";
+              duration?: number;
+              offset?: number;
+              volume?: number;
+            }> = [];
+
+            if (mergeParams.items && Array.isArray(mergeParams.items)) {
+              for (const item of mergeParams.items) {
+                if (item.operation) {
+                  // Create a job for this nested operation
+                  const opJobId = `job${counter++}`;
+                  jobs.push({
+                    id: opJobId,
+                    type: item.operation.type,
+                    params: item.operation.params,
+                    output: `$${opJobId}`,
+                  });
+                  mergeDependencies.push(opJobId);
+
+                  // Determine dependency marker type
+                  let dependencyMarker: string;
+                  if (
+                    item.operation.type === "generate" ||
+                    item.operation.type === "removeBackground"
+                  ) {
+                    dependencyMarker = `_videoJobDependency:${opJobId}`;
+                  } else if (
+                    item.operation.type === "generateImage" ||
+                    item.operation.type === "removeImageBackground"
+                  ) {
+                    dependencyMarker = `_imageJobDependency:${opJobId}`;
+                  } else if (item.operation.type === "generateAudio") {
+                    dependencyMarker = `_audioJobDependency:${opJobId}`;
+                  } else {
+                    dependencyMarker = `_videoJobDependency:${opJobId}`;
+                  }
+
+                  processedItems.push({
+                    url: dependencyMarker,
+                    type: item.type,
+                    duration: item.duration,
+                    offset: item.offset,
+                    volume: item.volume,
+                  });
+                } else {
+                  processedItems.push({
+                    url: item.url,
+                    type: item.type,
+                    duration: item.duration,
+                    offset: item.offset,
+                    volume: item.volume,
+                  });
+                }
+              }
+            }
+
+            // Create the merge job
+            const mergeJobId = `job${counter++}`;
+            jobs.push({
+              id: mergeJobId,
+              type: "merge",
+              params: { items: processedItems },
+              dependsOn:
+                mergeDependencies.length > 0 ? mergeDependencies : undefined,
+              output: `$${mergeJobId}`,
+            });
+
+            videoInputJobId = mergeJobId;
+          } else {
+            // For other video operations (generate, removeBackground, etc.)
+            const videoOpJobId = `job${counter++}`;
+            jobs.push({
+              id: videoOpJobId,
+              type: videoInputOp.type,
+              params: videoInputOp.params,
+              output: `$${videoOpJobId}`,
+            });
+
+            videoInputJobId = videoOpJobId;
+          }
+        }
+      }
+
+      // Now handle transcribe operation if present
       if (op.params.transcript && typeof op.params.transcript === "object") {
         const transcriptOp = op.params.transcript as any;
         if (transcriptOp.type === "transcribe") {
@@ -449,14 +563,25 @@ class VideoPipeline implements Pipeline {
 
           // Pass videoUrl to transcribe job
           const transcribeParams = { ...transcriptOp.params };
+          const transcribeDependencies: string[] = [];
+
           if (op.params.videoUrl) {
+            // videoUrl is a direct URL string
             transcribeParams.videoUrl = op.params.videoUrl;
+          } else if (videoInputJobId) {
+            // Use the video input job we created above
+            transcribeParams.videoUrl = `_videoJobDependency:${videoInputJobId}`;
+            transcribeDependencies.push(videoInputJobId);
           }
 
           jobs.push({
             id: transcriptId,
             type: "transcribe",
             params: transcribeParams,
+            dependsOn:
+              transcribeDependencies.length > 0
+                ? transcribeDependencies
+                : undefined,
             output: `$${transcriptId}`,
           });
           transcriptJobId = transcriptId;
@@ -472,16 +597,89 @@ class VideoPipeline implements Pipeline {
       ].filter((id): id is string => id !== undefined);
 
       if (op.type === "merge") {
+        // New merge operation - process items with potential nested operations
+        const mergeParams = op.params as {
+          items?: Array<{
+            url?: string;
+            type: "video" | "image" | "audio";
+            duration?: number;
+            offset?: number;
+            volume?: number;
+            operation?: VideoOperation | ImageOperation | AudioOperation;
+          }>;
+        };
+
+        const mergeDependencies: string[] = [];
+        const processedItems: Array<{
+          url?: string;
+          type: "video" | "image" | "audio";
+          duration?: number;
+          offset?: number;
+          volume?: number;
+        }> = [];
+
+        if (mergeParams.items && Array.isArray(mergeParams.items)) {
+          for (const item of mergeParams.items) {
+            if (item.operation) {
+              // Create a job for this nested operation
+              const opJobId = `job${counter++}`;
+              jobs.push({
+                id: opJobId,
+                type: item.operation.type,
+                params: item.operation.params,
+                output: `$${opJobId}`,
+              });
+              mergeDependencies.push(opJobId);
+
+              // Determine dependency marker type
+              let dependencyMarker: string;
+              if (
+                item.operation.type === "generate" ||
+                item.operation.type === "removeBackground"
+              ) {
+                dependencyMarker = `_videoJobDependency:${opJobId}`;
+              } else if (
+                item.operation.type === "generateImage" ||
+                item.operation.type === "removeImageBackground"
+              ) {
+                dependencyMarker = `_imageJobDependency:${opJobId}`;
+              } else if (item.operation.type === "generateAudio") {
+                dependencyMarker = `_audioJobDependency:${opJobId}`;
+              } else {
+                dependencyMarker = `_videoJobDependency:${opJobId}`;
+              }
+
+              processedItems.push({
+                url: dependencyMarker,
+                type: item.type,
+                duration: item.duration,
+                offset: item.offset,
+                volume: item.volume,
+              });
+            } else {
+              // URL-based item, pass through as-is
+              processedItems.push({
+                url: item.url,
+                type: item.type,
+                duration: item.duration,
+                offset: item.offset,
+                volume: item.volume,
+              });
+            }
+          }
+        }
+
+        // Combine all dependencies
+        const allMergeDeps = [...mergeDependencies];
+        if (lastJobId) allMergeDeps.unshift(lastJobId);
+
         jobs.push({
           id,
           type: op.type,
-          params: op.params,
-          dependsOn:
-            mergeInputs.length > 0
-              ? mergeInputs
-              : lastJobId
-                ? [lastJobId]
-                : undefined,
+          params: {
+            items: processedItems,
+          },
+          dependsOn: allMergeDeps.length > 0 ? allMergeDeps : undefined,
           output: `$${id}`,
         });
         mergeInputs = [];
@@ -754,8 +952,16 @@ class VideoPipeline implements Pipeline {
         if (transcriptJobId) {
           jobParams.transcript = `_transcriptJobDependency:${transcriptJobId}`;
         }
+        // For operations that need videoUrl from input (like addSubtitles)
+        if (videoInputJobId && !jobParams.videoUrl) {
+          jobParams.videoUrl = `_videoJobDependency:${videoInputJobId}`;
+        }
 
         const allDeps = [...depJobIds];
+        // Add videoInputJobId to dependencies if it exists and not already included
+        if (videoInputJobId && !allDeps.includes(videoInputJobId)) {
+          allDeps.push(videoInputJobId);
+        }
         if (lastJobId) allDeps.unshift(lastJobId);
 
         jobs.push({

@@ -85,7 +85,11 @@ export {
 } from "./compose/operations.js";
 export type {
   LipSyncOptions,
-  MergeOptions,
+  MergeItem,
+  MergeItemWithOptions,
+  MergeMediaType,
+  MergeOperation,
+  ProcessedMergeItem,
   ReframeOptions,
   RemoveBackgroundOptions,
   SubtitlesOptions,

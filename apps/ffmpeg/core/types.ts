@@ -29,6 +29,32 @@ export interface MergeVideosOptions {
   };
 }
 
+/**
+ * New merge media options supporting videos, images, and audio
+ */
+export interface MergeMediaOptions {
+  /** Visual track items (videos and images) - concatenated in order */
+  items: Array<{
+    url: string;
+    type: "video" | "image";
+    /** For images: display duration (required). For videos: optional trim duration */
+    duration?: number;
+    /** Volume level from 0 to 1 (default: 1). Affects the video's audio track */
+    volume?: number;
+  }>;
+
+  /** Audio overlay items - mixed on timeline */
+  audio?: Array<{
+    url: string;
+    /** Start position in seconds (default: 0) */
+    offset?: number;
+    /** Optional: limit audio duration */
+    duration?: number;
+    /** Volume level from 0 to 1 (default: 1) */
+    volume?: number;
+  }>;
+}
+
 export interface VideoMetadata {
   duration: number; // Duration in seconds
   width: number;

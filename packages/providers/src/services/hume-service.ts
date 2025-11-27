@@ -46,7 +46,10 @@ export class HumeService implements VideoProviderService {
         utterances: [
           {
             text: params.text as string,
-            voice: params.voice ? { name: params.voice as string } : undefined,
+            voice: params.voice as
+              | { id: string; provider?: string }
+              | { name: string; provider?: string }
+              | undefined,
             description: params.description as string | undefined,
             speed: params.speed as number | undefined,
             trailingSilence: params.trailingSilence as number | undefined,
