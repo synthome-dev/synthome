@@ -101,6 +101,18 @@ export interface LayerOperation {
   };
 }
 
+export interface MergeOperation {
+  type: "merge";
+  params: {
+    items: Array<{
+      url?: string;
+      type: "video" | "image" | "audio";
+      duration?: number;
+      offset?: number;
+    }>;
+  };
+}
+
 export interface ExecutionPlan {
   jobs: JobNode[];
   baseExecutionId?: string;
