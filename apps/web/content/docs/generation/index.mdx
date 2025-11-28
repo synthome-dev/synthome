@@ -1,0 +1,117 @@
+---
+title: Overview
+description: Generate videos, images, and audio with AI models
+---
+
+# Media Generation
+
+Synthome provides three generation functions for creating AI-generated media:
+
+| Function          | Output | Use Case                      |
+| ----------------- | ------ | ----------------------------- |
+| `generateVideo()` | Video  | Text-to-video, image-to-video |
+| `generateImage()` | Image  | Text-to-image, image editing  |
+| `generateAudio()` | Audio  | Text-to-speech                |
+
+## Quick Examples
+
+### Generate a Video
+
+```typescript
+import { compose, generateVideo, videoModel } from "@synthome/sdk";
+
+const execution = await compose(
+  generateVideo({
+    model: videoModel("bytedance/seedance-1-pro", "replicate"),
+    prompt: "A serene mountain landscape at sunrise",
+    duration: 5,
+  }),
+).execute();
+
+console.log(execution.result?.url);
+```
+
+### Generate an Image
+
+```typescript
+import { compose, generateImage, imageModel } from "@synthome/sdk";
+
+const execution = await compose(
+  generateImage({
+    model: imageModel("google/nano-banana", "fal"),
+    prompt: "A futuristic city skyline at night",
+  }),
+).execute();
+
+console.log(execution.result?.url);
+```
+
+### Generate Audio
+
+```typescript
+import { compose, generateAudio, audioModel } from "@synthome/sdk";
+
+const execution = await compose(
+  generateAudio({
+    model: audioModel("elevenlabs/turbo-v2.5", "elevenlabs"),
+    text: "Welcome to Synthome, the composable AI media toolkit.",
+    voiceId: "EXAVITQu4vr4xnSDxMaL",
+  }),
+).execute();
+
+console.log(execution.result?.url);
+```
+
+## Nested Generation
+
+Generation functions can be nested inside each other. For example, generate an image and use it as input for video generation:
+
+```typescript
+const execution = await compose(
+  generateVideo({
+    model: videoModel("bytedance/seedance-1-pro", "replicate"),
+    prompt: "Make this scene come alive with gentle movement",
+    image: generateImage({
+      model: imageModel("google/nano-banana", "fal"),
+      prompt: "A peaceful Japanese garden with cherry blossoms",
+    }),
+  }),
+).execute();
+```
+
+The image is generated first, then passed to the video model automatically.
+
+## Using URLs
+
+All generation functions that accept media inputs also accept direct URLs:
+
+```typescript
+// Use an existing image URL for video generation
+generateVideo({
+  model: videoModel("bytedance/seedance-1-pro", "replicate"),
+  prompt: "Animate this image",
+  image: "https://example.com/my-image.jpg",
+});
+
+// Use an existing audio URL
+generateVideo({
+  model: videoModel("veed/fabric-1.0", "fal"),
+  prompt: "Lip sync to this audio",
+  image: "https://example.com/portrait.jpg",
+  audio: "https://example.com/speech.mp3",
+});
+```
+
+## Next Steps
+
+<Cards>
+  <Card href="/docs/generation/video" title="Video Generation">
+    Deep dive into generateVideo() options
+  </Card>
+  <Card href="/docs/generation/image" title="Image Generation">
+    Deep dive into generateImage() options
+  </Card>
+  <Card href="/docs/generation/audio" title="Audio Generation">
+    Deep dive into generateAudio() options
+  </Card>
+</Cards>

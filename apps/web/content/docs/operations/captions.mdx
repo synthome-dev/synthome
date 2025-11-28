@@ -1,0 +1,272 @@
+---
+title: Captions
+description: Add auto-generated or custom subtitles to videos
+---
+
+# captions()
+
+Add captions to videos with automatic transcription or custom timing.
+
+```typescript
+import { compose, captions, audioModel } from "@synthome/sdk";
+
+const execution = await compose(
+  captions({
+    video: "https://example.com/video.mp4",
+    model: audioModel("vaibhavs10/incredibly-fast-whisper", "replicate"),
+  }),
+).execute();
+```
+
+## Auto-Generated Captions
+
+Use a transcription model to automatically generate captions:
+
+```typescript
+captions({
+  video: "https://example.com/video.mp4",
+  model: audioModel("vaibhavs10/incredibly-fast-whisper", "replicate"),
+});
+```
+
+### Available Transcription Models
+
+| Model                                | Provider  | Speed     | Notes                  |
+| ------------------------------------ | --------- | --------- | ---------------------- |
+| `vaibhavs10/incredibly-fast-whisper` | replicate | Very fast | Recommended for most   |
+| `openai/whisper`                     | replicate | Standard  | Original Whisper model |
+
+```typescript
+// Fast transcription
+captions({
+  video: "https://example.com/video.mp4",
+  model: audioModel("vaibhavs10/incredibly-fast-whisper", "replicate"),
+});
+
+// Standard Whisper
+captions({
+  video: "https://example.com/video.mp4",
+  model: audioModel("openai/whisper", "replicate"),
+});
+```
+
+## Custom Captions
+
+Provide your own word-level timing:
+
+```typescript
+captions({
+  video: "https://example.com/video.mp4",
+  captions: [
+    { word: "Hello", start: 0.0, end: 0.5 },
+    { word: "world", start: 0.5, end: 1.0 },
+    { word: "this", start: 1.2, end: 1.4 },
+    { word: "is", start: 1.4, end: 1.6 },
+    { word: "a", start: 1.6, end: 1.7 },
+    { word: "video", start: 1.7, end: 2.2 },
+  ],
+});
+```
+
+## Caption Styles
+
+### Style Presets
+
+Use built-in presets for popular platforms:
+
+```typescript
+captions({
+  video: "https://example.com/video.mp4",
+  model: audioModel("vaibhavs10/incredibly-fast-whisper", "replicate"),
+  style: { preset: "tiktok" },
+});
+```
+
+| Preset      | Description                      |
+| ----------- | -------------------------------- |
+| `tiktok`    | Bold, centered, mobile-optimized |
+| `youtube`   | Clean, bottom-positioned         |
+| `story`     | Vertical video friendly          |
+| `minimal`   | Subtle, unobtrusive              |
+| `cinematic` | Film-style subtitles             |
+
+### Custom Font Styling
+
+```typescript
+captions({
+  video: "https://example.com/video.mp4",
+  model: audioModel("vaibhavs10/incredibly-fast-whisper", "replicate"),
+  style: {
+    fontFamily: "Arial",
+    fontSize: 48,
+    fontWeight: "bold",
+    color: "#FFFFFF",
+    outlineColor: "#000000",
+    outlineWidth: 2,
+  },
+});
+```
+
+### Positioning
+
+```typescript
+captions({
+  video: "https://example.com/video.mp4",
+  model: audioModel("vaibhavs10/incredibly-fast-whisper", "replicate"),
+  style: {
+    alignment: "center",
+    marginV: 50, // Vertical margin from bottom
+    marginL: 20, // Left margin
+    marginR: 20, // Right margin
+  },
+});
+```
+
+## Word Highlighting
+
+Highlight the currently spoken word:
+
+```typescript
+captions({
+  video: "https://example.com/video.mp4",
+  model: audioModel("vaibhavs10/incredibly-fast-whisper", "replicate"),
+  style: {
+    highlightActiveWord: true,
+    activeWordColor: "#FFFF00", // Yellow highlight
+    inactiveWordColor: "#FFFFFF", // White for other words
+  },
+});
+```
+
+### Animation Styles
+
+```typescript
+style: {
+  highlightActiveWord: true,
+  animationStyle: "color",  // Options: "none", "color", "scale", "glow"
+  activeWordScale: 1.2,     // Scale up active word
+}
+```
+
+## Caption Behavior
+
+Control how captions are grouped and displayed:
+
+```typescript
+captions({
+  video: "https://example.com/video.mp4",
+  model: audioModel("vaibhavs10/incredibly-fast-whisper", "replicate"),
+  style: {
+    wordsPerCaption: 5, // Show 5 words at a time
+    maxCaptionDuration: 3, // Max 3 seconds per caption
+    maxCaptionChars: 40, // Max 40 characters per line
+  },
+});
+```
+
+## With Generated Videos
+
+### Caption a Generated Video
+
+```typescript
+import {
+  compose,
+  captions,
+  generateVideo,
+  videoModel,
+  audioModel,
+} from "@synthome/sdk";
+
+const execution = await compose(
+  captions({
+    video: generateVideo({
+      model: videoModel("bytedance/seedance-1-pro", "replicate"),
+      prompt: "Person giving a presentation",
+    }),
+    model: audioModel("vaibhavs10/incredibly-fast-whisper", "replicate"),
+    style: { preset: "youtube" },
+  }),
+).execute();
+```
+
+### Caption After Merge
+
+```typescript
+const execution = await compose(
+  captions({
+    video: merge([
+      generateVideo({
+        model: videoModel("bytedance/seedance-1-pro", "replicate"),
+        prompt: "Scene 1",
+      }),
+      generateVideo({
+        model: videoModel("bytedance/seedance-1-pro", "replicate"),
+        prompt: "Scene 2",
+      }),
+    ]),
+    model: audioModel("vaibhavs10/incredibly-fast-whisper", "replicate"),
+  }),
+).execute();
+```
+
+This pipeline:
+
+1. Generates two videos in parallel
+2. Merges them into one
+3. Transcribes and adds captions
+
+## Full Style Reference
+
+### CaptionStyle
+
+| Property              | Type               | Description                          |
+| --------------------- | ------------------ | ------------------------------------ |
+| `preset`              | `string`           | Style preset (tiktok, youtube, etc.) |
+| `fontFamily`          | `string`           | Font name                            |
+| `fontSize`            | `number`           | Font size in pixels                  |
+| `fontWeight`          | `string \| number` | Font weight (bold, 700, etc.)        |
+| `color`               | `string`           | Text color (hex)                     |
+| `outlineColor`        | `string`           | Outline color (hex)                  |
+| `backColor`           | `string`           | Background color (hex)               |
+| `borderStyle`         | `number`           | Border style                         |
+| `outlineWidth`        | `number`           | Outline width in pixels              |
+| `shadowDistance`      | `number`           | Shadow offset                        |
+| `alignment`           | `string`           | Text alignment                       |
+| `marginV`             | `number`           | Vertical margin                      |
+| `marginL`             | `number`           | Left margin                          |
+| `marginR`             | `number`           | Right margin                         |
+| `wordsPerCaption`     | `number`           | Words shown at once                  |
+| `maxCaptionDuration`  | `number`           | Max seconds per caption              |
+| `maxCaptionChars`     | `number`           | Max characters per caption           |
+| `highlightActiveWord` | `boolean`          | Enable word highlighting             |
+| `activeWordColor`     | `string`           | Color for active word                |
+| `inactiveWordColor`   | `string`           | Color for inactive words             |
+| `activeWordScale`     | `number`           | Scale multiplier for active word     |
+| `animationStyle`      | `string`           | Animation: none, color, scale, glow  |
+
+## API Reference
+
+### captions(options)
+
+| Parameter | Type              | Description           |
+| --------- | ----------------- | --------------------- |
+| `options` | `CaptionsOptions` | Caption configuration |
+
+### CaptionsOptions
+
+| Property   | Type                       | Required | Description                  |
+| ---------- | -------------------------- | -------- | ---------------------------- |
+| `video`    | `string \| VideoOperation` | Yes      | Video URL or generated video |
+| `model`    | `AudioModel`               | \*       | Transcription model          |
+| `captions` | `CaptionWord[]`            | \*       | Custom word-level captions   |
+| `style`    | `CaptionStyle`             | No       | Styling options              |
+
+\* Either `model` or `captions` is required.
+
+### CaptionWord
+
+| Property | Type     | Description           |
+| -------- | -------- | --------------------- |
+| `word`   | `string` | The word text         |
+| `start`  | `number` | Start time in seconds |
+| `end`    | `number` | End time in seconds   |

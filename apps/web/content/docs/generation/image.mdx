@@ -1,0 +1,150 @@
+---
+title: Image Generation
+description: Generate images with AI models using generateImage()
+---
+
+# Image Generation
+
+Use `generateImage()` to create AI-generated images from text prompts or transform existing images.
+
+## Basic Usage
+
+```typescript
+import { compose, generateImage, imageModel } from "@synthome/sdk";
+
+const execution = await compose(
+  generateImage({
+    model: imageModel("google/nano-banana", "fal"),
+    prompt: "A futuristic city skyline at night, neon lights",
+  }),
+).execute();
+
+console.log(execution.result?.url);
+```
+
+## Options
+
+### Required
+
+| Option  | Type         | Description            |
+| ------- | ------------ | ---------------------- |
+| `model` | `ImageModel` | The image model to use |
+
+### Optional
+
+| Option         | Type                           | Description                                      |
+| -------------- | ------------------------------ | ------------------------------------------------ |
+| `prompt`       | `string`                       | Text description of the image to generate        |
+| `image`        | `string` \| `string[]`         | Input image URL(s) for image-to-image            |
+| `aspectRatio`  | `string`                       | Aspect ratio (e.g., `"16:9"`, `"1:1"`, `"9:16"`) |
+| `outputFormat` | `"jpg"` \| `"png"` \| `"webp"` | Output format                                    |
+| `seed`         | `number`                       | Random seed for reproducibility                  |
+
+<Callout type="info">Either `prompt` or `image` must be provided.</Callout>
+
+## Text-to-Image
+
+Generate an image from a text prompt:
+
+```typescript
+const execution = await compose(
+  generateImage({
+    model: imageModel("google/nano-banana", "fal"),
+    prompt: "A serene Japanese garden with cherry blossoms and a wooden bridge",
+    aspectRatio: "16:9",
+  }),
+).execute();
+```
+
+## Image-to-Image
+
+Transform an existing image:
+
+```typescript
+const execution = await compose(
+  generateImage({
+    model: imageModel("google/nano-banana", "fal"),
+    prompt: "Make this photo look like a watercolor painting",
+    image: "https://example.com/photo.jpg",
+  }),
+).execute();
+```
+
+## Background Removal
+
+Remove backgrounds from images using the background remover model:
+
+```typescript
+const execution = await compose(
+  generateImage({
+    model: imageModel("codeplugtech/background_remover", "replicate"),
+    image: "https://example.com/portrait.jpg",
+  }),
+).execute();
+```
+
+## Using with Video Generation
+
+Generate an image and use it as input for video:
+
+```typescript
+const execution = await compose(
+  generateVideo({
+    model: videoModel("bytedance/seedance-1-pro", "replicate"),
+    prompt: "Gentle waves lapping on the shore",
+    image: generateImage({
+      model: imageModel("google/nano-banana", "fal"),
+      prompt: "A peaceful tropical beach at sunset",
+    }),
+  }),
+).execute();
+```
+
+## Using with Merge
+
+Mix generated and existing images in a slideshow:
+
+```typescript
+const execution = await compose(
+  merge([
+    { url: "https://example.com/intro.jpg", duration: 3 },
+    {
+      url: generateImage({
+        model: imageModel("google/nano-banana", "fal"),
+        prompt: "Scene 1: A mountain landscape",
+      }),
+      duration: 4,
+    },
+    {
+      url: generateImage({
+        model: imageModel("google/nano-banana", "fal"),
+        prompt: "Scene 2: A forest path",
+      }),
+      duration: 4,
+    },
+  ]),
+).execute();
+```
+
+## Available Models
+
+| Model                             | Provider       | Features                      |
+| --------------------------------- | -------------- | ----------------------------- |
+| `google/nano-banana`              | replicate, fal | Text-to-image, image-to-image |
+| `google/nano-banana-pro`          | replicate, fal | Advanced, typography support  |
+| `bytedance/seedream-4`            | replicate      | High-resolution               |
+| `codeplugtech/background_remover` | replicate      | Background removal            |
+
+## Next Steps
+
+<Cards>
+  <Card href="/docs/generation/video" title="Video Generation">
+    Generate videos with generateVideo()
+  </Card>
+  <Card href="/docs/generation/audio" title="Audio Generation">
+    Generate audio with generateAudio()
+  </Card>
+  <Card href="/docs/operations/layers" title="Layers Operation">
+    Composite images and videos
+  </Card>
+</Cards>

@@ -1,0 +1,155 @@
+---
+title: Fabric 1.0
+description: VEED's lip-sync video generation model
+---
+
+# Fabric 1.0
+
+VEED's image-to-video lip-sync model for creating talking head videos.
+
+| Property   | Value                  |
+| ---------- | ---------------------- |
+| Model ID   | `veed/fabric-1.0`      |
+| Fast Model | `veed/fabric-1.0/fast` |
+| Provider   | Fal                    |
+| Type       | Lip-sync video         |
+
+## Basic Usage
+
+```typescript
+import { compose, generateVideo, videoModel } from "@synthome/sdk";
+
+const execution = await compose(
+  generateVideo({
+    model: videoModel("veed/fabric-1.0", "fal"),
+    image: "https://example.com/portrait.jpg",
+    audio: "https://example.com/speech.mp3",
+  }),
+).execute();
+```
+
+## How It Works
+
+Fabric takes a portrait image and audio file, then generates a video where the person in the image appears to speak the audio.
+
+1. **Input image**: A clear portrait photo (face visible)
+2. **Input audio**: Speech audio file (MP3, WAV)
+3. **Output**: Video with synchronized lip movements
+
+## Fast vs Standard
+
+| Model                  | Speed    | Quality        |
+| ---------------------- | -------- | -------------- |
+| `veed/fabric-1.0`      | Standard | Higher quality |
+| `veed/fabric-1.0/fast` | Faster   | Good quality   |
+
+```typescript
+// Standard quality
+generateVideo({
+  model: videoModel("veed/fabric-1.0", "fal"),
+  image: "https://example.com/portrait.jpg",
+  audio: "https://example.com/audio.mp3",
+});
+
+// Faster generation
+generateVideo({
+  model: videoModel("veed/fabric-1.0/fast", "fal"),
+  image: "https://example.com/portrait.jpg",
+  audio: "https://example.com/audio.mp3",
+});
+```
+
+## Options
+
+| Option       | Type               | Default  | Description        |
+| ------------ | ------------------ | -------- | ------------------ |
+| `image`      | `string`           | required | Portrait image URL |
+| `audio`      | `string`           | required | Speech audio URL   |
+| `resolution` | `"720p" \| "480p"` | `720p`   | Output resolution  |
+
+## With Generated Audio
+
+Combine with text-to-speech for fully generated talking videos:
+
+```typescript
+import {
+  compose,
+  generateVideo,
+  generateAudio,
+  videoModel,
+  audioModel,
+} from "@synthome/sdk";
+
+const execution = await compose(
+  generateVideo({
+    model: videoModel("veed/fabric-1.0", "fal"),
+    image: "https://example.com/portrait.jpg",
+    audio: generateAudio({
+      model: audioModel("elevenlabs/turbo-v2.5", "elevenlabs"),
+      text: "Hello! Welcome to our channel.",
+      voiceId: "21m00Tcm4TlvDq8ikWAM",
+    }),
+  }),
+).execute();
+```
+
+This pipeline:
+
+1. Generates speech audio from text
+2. Creates lip-synced video from the portrait
+
+## Image Requirements
+
+For best results:
+
+- **Clear face**: Face should be clearly visible, front-facing preferred
+- **Good lighting**: Even, well-lit photos work best
+- **Neutral expression**: Start with a neutral or slight smile
+- **Resolution**: Higher resolution images produce better results
+
+## Examples
+
+### AI Spokesperson
+
+```typescript
+const execution = await compose(
+  generateVideo({
+    model: videoModel("veed/fabric-1.0", "fal"),
+    image: "https://example.com/spokesperson.jpg",
+    audio: generateAudio({
+      model: audioModel("elevenlabs/turbo-v2.5", "elevenlabs"),
+      text: "Our new product launches next week. Here's what you need to know.",
+      voiceId: "21m00Tcm4TlvDq8ikWAM",
+    }),
+  }),
+).execute();
+```
+
+### Multi-Language Content
+
+Generate the same video in multiple languages:
+
+```typescript
+// English version
+const englishVideo = generateVideo({
+  model: videoModel("veed/fabric-1.0", "fal"),
+  image: "https://example.com/speaker.jpg",
+  audio: generateAudio({
+    model: audioModel("elevenlabs/turbo-v2.5", "elevenlabs"),
+    text: "Welcome to our tutorial.",
+    voiceId: "21m00Tcm4TlvDq8ikWAM",
+  }),
+});
+
+// Spanish version (same image, different audio)
+const spanishVideo = generateVideo({
+  model: videoModel("veed/fabric-1.0", "fal"),
+  image: "https://example.com/speaker.jpg",
+  audio: generateAudio({
+    model: audioModel("elevenlabs/turbo-v2.5", "elevenlabs"),
+    text: "Bienvenido a nuestro tutorial.",
+    voiceId: "21m00Tcm4TlvDq8ikWAM",
+    languageCode: "es",
+  }),
+});
+```

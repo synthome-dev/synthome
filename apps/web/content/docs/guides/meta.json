@@ -1,0 +1,10 @@
+{
+  "title": "Guides",
+  "pages": [
+    "index",
+    "ai-agents",
+    "multi-scene-videos",
+    "webhooks",
+    "error-handling"
+  ]
+}

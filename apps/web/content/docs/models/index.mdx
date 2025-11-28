@@ -1,0 +1,91 @@
+---
+title: Overview
+description: All supported AI models for video, image, and audio generation
+---
+
+# Supported Models
+
+Synthome provides a unified interface to multiple AI models across providers. Use the same code pattern regardless of which model or provider you choose.
+
+## Video Models
+
+| Model                                    | ID                         | Providers | Use Case                      |
+| ---------------------------------------- | -------------------------- | --------- | ----------------------------- |
+| [Seedance 1 Pro](/docs/models/seedance)  | `bytedance/seedance-1-pro` | Replicate | Text-to-video, Image-to-video |
+| [Minimax Video 01](/docs/models/minimax) | `minimax/video-01`         | Replicate | Text-to-video                 |
+| [Fabric 1.0](/docs/models/fabric)        | `veed/fabric-1.0`          | Fal       | Lip-sync (talking head)       |
+
+```typescript
+import { videoModel, generateVideo } from "@synthome/sdk";
+
+generateVideo({
+  model: videoModel("bytedance/seedance-1-pro", "replicate"),
+  prompt: "A sunset over the ocean",
+});
+```
+
+## Image Models
+
+| Model                                                 | ID                                | Providers      | Use Case                        |
+| ----------------------------------------------------- | --------------------------------- | -------------- | ------------------------------- |
+| [Nano Banana](/docs/models/nano-banana)               | `google/nano-banana`              | Replicate, Fal | Text-to-image, Image-to-image   |
+| [Nano Banana Pro](/docs/models/nano-banana-pro)       | `google/nano-banana-pro`          | Replicate, Fal | Advanced generation, Typography |
+| [Seedream 4](/docs/models/seedream)                   | `bytedance/seedream-4`            | Replicate      | High-resolution images          |
+| [Background Remover](/docs/models/background-remover) | `codeplugtech/background_remover` | Replicate      | Remove backgrounds              |
+
+```typescript
+import { imageModel, generateImage } from "@synthome/sdk";
+
+generateImage({
+  model: imageModel("google/nano-banana", "replicate"),
+  prompt: "A mountain landscape at dawn",
+});
+```
+
+## Audio Models
+
+| Model                                       | ID                                   | Providers             | Use Case                 |
+| ------------------------------------------- | ------------------------------------ | --------------------- | ------------------------ |
+| [ElevenLabs Turbo](/docs/models/elevenlabs) | `elevenlabs/turbo-v2.5`              | ElevenLabs, Replicate | Text-to-speech           |
+| [Hume TTS](/docs/models/hume)               | `hume/tts`                           | Hume                  | Emotional text-to-speech |
+| [Whisper](/docs/models/whisper)             | `openai/whisper`                     | Replicate             | Speech-to-text           |
+| [Fast Whisper](/docs/models/fast-whisper)   | `vaibhavs10/incredibly-fast-whisper` | Replicate             | Fast transcription       |
+
+```typescript
+import { audioModel, generateAudio } from "@synthome/sdk";
+
+generateAudio({
+  model: audioModel("elevenlabs/turbo-v2.5", "elevenlabs"),
+  text: "Hello, welcome to our video.",
+  voiceId: "21m00Tcm4TlvDq8ikWAM",
+});
+```
+
+## Model Selection Pattern
+
+All models follow the same pattern:
+
+```typescript
+// Video
+videoModel("model-id", "provider");
+
+// Image
+imageModel("model-id", "provider");
+
+// Audio
+audioModel("model-id", "provider");
+```
+
+## Provider Fallback
+
+Some models are available on multiple providers. Choose based on:
+
+- **Cost**: Pricing varies between providers
+- **Speed**: Some providers are faster for certain models
+- **API Keys**: Use providers where you already have accounts
+
+```typescript
+// Same model, different providers
+imageModel("google/nano-banana", "replicate");
+imageModel("google/nano-banana", "fal");
+```

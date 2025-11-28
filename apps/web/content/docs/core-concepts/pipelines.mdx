@@ -1,0 +1,274 @@
+---
+title: Pipelines
+description: Build composable media workflows with compose()
+---
+
+# Pipelines
+
+Pipelines are the core abstraction in Synthome. They let you compose multiple operations into a single workflow that executes as one unit.
+
+## The compose() Function
+
+Use `compose()` to create a pipeline:
+
+```typescript
+import { compose, generateVideo, videoModel } from "@synthome/sdk";
+
+const pipeline = compose(
+  generateVideo({
+    model: videoModel("bytedance/seedance-1-pro", "replicate"),
+    prompt: "A beautiful sunset",
+  }),
+);
+```
+
+Pipelines are **lazy** - nothing executes until you call `.execute()`.
+
+## Executing Pipelines
+
+Call `.execute()` to run the pipeline:
+
+```typescript
+const execution = await pipeline.execute();
+
+console.log(execution.id); // Execution ID
+console.log(execution.status); // "completed" | "failed" | "pending" | "processing"
+console.log(execution.result?.url); // URL to the generated media
+```
+
+By default, `.execute()` waits for the pipeline to complete and returns the result.
+
+## Composing Operations
+
+Pipelines can contain multiple operations. Operations run in parallel when possible, but automatically wait for dependencies when one operation needs the output of another.
+
+### Using URLs and Generated Media
+
+Operations accept both **direct URLs** and **generated media**. You can mix them freely:
+
+```typescript
+import { compose, generateVideo, merge, videoModel } from "@synthome/sdk";
+
+const execution = await compose(
+  merge([
+    // Direct URL - no generation needed
+    "https://example.com/intro.mp4",
+    // Generated video - runs in parallel with other generations
+    generateVideo({
+      model: videoModel("bytedance/seedance-1-pro", "replicate"),
+      prompt: "Scene 1: A rocket launching",
+    }),
+    // Another generated video - runs in parallel
+    generateVideo({
+      model: videoModel("bytedance/seedance-1-pro", "replicate"),
+      prompt: "Scene 2: Earth from orbit",
+    }),
+    // Another direct URL
+    "https://example.com/outro.mp4",
+  ]),
+).execute();
+```
+
+This works the same way for images and audio:
+
+```typescript
+// Mix URLs and generated images
+merge([
+  "https://example.com/photo.jpg",
+  generateImage({ ... }),
+])
+
+// Mix URLs and generated audio
+merge([
+  "https://example.com/music.mp3",
+  generateAudio({ ... }),
+])
+```
+
+### Parallel Execution
+
+Independent operations run in parallel automatically. In the example above:
+
+- Both `generateVideo()` calls run at the same time
+- The `merge()` waits for all inputs to complete before combining them
+
+### Dependencies
+
+When an operation depends on another's output, Synthome handles the sequencing automatically:
+
+```typescript
+const execution = await compose(
+  captions(
+    merge([
+      generateVideo({ ... }),
+      generateVideo({ ... }),
+    ]),
+  ),
+).execute();
+```
+
+Execution order:
+
+1. Both `generateVideo()` calls run **in parallel**
+2. `merge()` waits for both videos, then combines them
+3. `captions()` waits for the merged video, then adds subtitles
+
+## Async Execution with Webhooks
+
+For long-running pipelines, use webhooks instead of waiting:
+
+```typescript
+const execution = await compose(
+  generateVideo({ ... }),
+).execute({
+  webhook: "https://your-server.com/webhook",
+  webhookSecret: "optional-secret-for-verification",
+});
+
+// Returns immediately with execution ID
+console.log(execution.id);
+```
+
+Your webhook receives a POST request when the pipeline completes:
+
+```json
+{
+  "executionId": "exec_abc123",
+  "status": "completed",
+  "result": {
+    "url": "https://cdn.example.com/video.mp4",
+    "type": "video"
+  }
+}
+```
+
+## Checking Execution Status
+
+For async executions, check status manually:
+
+```typescript
+import { getExecutionStatus } from "@synthome/sdk";
+
+const status = await getExecutionStatus(execution.id);
+
+console.log(status.status); // "processing" | "completed" | "failed"
+console.log(status.progress); // 0-100
+console.log(status.currentJob); // Current job name
+console.log(status.completedJobs); // Number of completed jobs
+console.log(status.totalJobs); // Total number of jobs
+```
+
+## Error Handling
+
+Handle errors with try/catch or the `.onError()` callback:
+
+```typescript
+// Option 1: try/catch
+try {
+  const execution = await compose(
+    generateVideo({ ... }),
+  ).execute();
+} catch (error) {
+  console.error("Pipeline failed:", error.message);
+}
+
+// Option 2: onError callback
+const execution = await compose(
+  generateVideo({ ... }),
+)
+  .onError((error) => {
+    console.error("Pipeline failed:", error.message);
+  })
+  .execute();
+```
+
+## Execution Options
+
+The `.execute()` method accepts configuration options:
+
+```typescript
+await pipeline.execute({
+  // Webhook for async execution
+  webhook: "https://your-server.com/webhook",
+  webhookSecret: "your-secret",
+
+  // Override API URL (for self-hosted)
+  apiUrl: "https://custom-api.example.com",
+
+  // Override API key
+  apiKey: "your-synthome-api-key",
+
+  // Provide provider API keys directly
+  providerApiKeys: {
+    replicate: "your-replicate-key",
+    fal: "your-fal-key",
+  },
+});
+```
+
+## Execution Plans
+
+Pipelines are converted to an **execution plan** (JSON) before running. This design enables powerful integrations:
+
+- **AI agents** can generate execution plans directly
+- **Store and replay** pipelines without code
+- **Debug and inspect** what will execute
+
+### Inspecting the Plan
+
+```typescript
+const pipeline = compose(
+  merge([
+    "https://example.com/intro.mp4",
+    generateVideo({ ... }),
+  ]),
+);
+
+// Get the execution plan without executing
+const plan = pipeline.toJSON();
+console.log(JSON.stringify(plan, null, 2));
+```
+
+### Executing from JSON
+
+Use `executeFromPlan()` to run a plan directly - no SDK pipeline code needed:
+
+```typescript
+import { executeFromPlan } from "@synthome/sdk";
+
+// Plan generated by AI, loaded from database, or built manually
+const plan = {
+  jobs: [
+    {
+      id: "job1",
+      type: "generate",
+      params: {
+        modelId: "bytedance/seedance-1-pro",
+        prompt: "A beautiful sunset",
+      },
+      output: "$job1",
+    },
+  ],
+};
+
+const execution = await executeFromPlan(plan);
+console.log(execution.result?.url);
+```
+
+This is particularly useful for **AI agents** that generate video workflows dynamically.
+
+[Learn more about AI Agents](/docs/guides/ai-agents)
+
+## Next Steps
+
+<Cards>
+  <Card href="/docs/core-concepts/models" title="Models">
+    Learn how to specify AI models
+  </Card>
+  <Card href="/docs/generation/video" title="Video Generation">
+    Deep dive into generateVideo()
+  </Card>
+  <Card href="/docs/operations/merge" title="Merge Operation">
+    Combine multiple media into one
+  </Card>
+</Cards>

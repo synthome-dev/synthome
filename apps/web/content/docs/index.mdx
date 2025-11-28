@@ -1,0 +1,98 @@
+---
+title: Introduction
+description: Synthome SDK - Composable AI Media Pipelines for Developers
+---
+
+# Synthome SDK
+
+Synthome is a TypeScript SDK for building composable AI media pipelines. Generate videos, images, and audio, then combine them with powerful operations like merging, layering, captioning, and more.
+
+## Why Synthome?
+
+Building AI-powered media applications typically requires:
+
+- Managing multiple AI provider APIs (Replicate, Fal, ElevenLabs, etc.)
+- Handling async job polling and status tracking
+- Orchestrating complex multi-step pipelines
+- Converting between different media formats
+- Uploading results to your CDN
+
+Synthome abstracts all of this into a simple, composable API:
+
+```typescript
+import {
+  compose,
+  generateVideo,
+  merge,
+  captions,
+  videoModel,
+  audioModel,
+} from "@synthome/sdk";
+
+const result = await compose(
+  captions({
+    video: merge([
+      generateVideo({
+        model: videoModel("bytedance/seedance-1-pro", "replicate"),
+        prompt: "A sunrise over mountains",
+      }),
+      generateVideo({
+        model: videoModel("bytedance/seedance-1-pro", "replicate"),
+        prompt: "A peaceful lake at dawn",
+      }),
+    ]),
+    model: audioModel("vaibhavs10/incredibly-fast-whisper", "replicate"),
+  }),
+).execute();
+
+console.log("Video URL:", result.result?.url);
+```
+
+## Key Features
+
+### Multi-Provider Support
+
+Use models from Replicate, Fal, ElevenLabs, Hume, and Google Cloud through a unified API. Switch providers without changing your code.
+
+### Composable Pipelines
+
+Chain operations together with `compose()`. Generate media, transform it, merge multiple sources, add effects - all in a single pipeline.
+
+### Type-Safe
+
+Full TypeScript support with autocomplete for model names, providers, and options.
+
+### Unified Model API
+
+Reference models by canonical names like `"bytedance/seedance-1-pro"` instead of provider-specific IDs.
+
+### Built-in Operations
+
+- `generateVideo()` - Text-to-video, image-to-video
+- `generateImage()` - Text-to-image, image-to-image, background removal
+- `generateAudio()` - Text-to-speech, transcription
+- `merge()` - Combine videos, images, and audio
+- `layers()` - Composite media with positioning and effects
+- `captions()` - Auto-generate and burn subtitles
+
+### Async-First
+
+Built for production with webhook support, progress tracking, and robust error handling.
+
+### Direct CDN Upload
+
+Results are automatically uploaded to your own S3-compatible storage. Connect Cloudflare R2, Amazon S3, or any S3-compatible CDN and get direct URLs to your media files - no temporary links or manual downloads.
+
+## Next Steps
+
+<Cards>
+  <Card title="Quickstart" href="/docs/quickstart">
+    Get up and running in 5 minutes
+  </Card>
+  <Card title="Core Concepts" href="/docs/core-concepts">
+    Understand pipelines, models, and providers
+  </Card>
+  <Card title="Examples" href="/docs/guides">
+    See real-world usage patterns
+  </Card>
+</Cards>

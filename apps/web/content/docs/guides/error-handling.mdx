@@ -1,0 +1,71 @@
+---
+title: Error Handling
+description: Handle errors gracefully and implement retry strategies
+---
+
+# Error Handling
+
+Learn how to handle errors in Synthome pipelines, implement retry logic, and build resilient applications.
+
+## Error Types
+
+Synthome errors fall into these categories:
+
+| Error Type     | Description                        | Retryable          |
+| -------------- | ---------------------------------- | ------------------ |
+| Validation     | Invalid parameters, missing fields | No                 |
+| Authentication | Invalid API key                    | No                 |
+| Rate Limit     | Too many requests                  | Yes (with backoff) |
+| Provider       | Model provider failure             | Yes                |
+| Timeout        | Operation took too long            | Yes                |
+| Network        | Connection issues                  | Yes                |
+
+## Basic Error Handling
+
+Wrap pipeline execution in try/catch:
+
+```typescript
+import { compose, generateVideo, videoModel } from "@synthome/sdk";
+
+try {
+  const execution = await compose(
+    generateVideo({
+      model: videoModel("bytedance/seedance-1-pro", "replicate"),
+      prompt: "A cinematic scene",
+    }),
+  ).execute();
+
+  console.log("Video URL:", execution.result?.url);
+} catch (error) {
+  console.error("Pipeline failed:", error.message);
+}
+```
+
+## Using Callbacks
+
+Use `onError` callback for non-blocking error handling:
+
+```typescript
+const pipeline = compose(
+  generateVideo({
+    model: videoModel("bytedance/seedance-1-pro", "replicate"),
+    prompt: "A cinematic scene",
+  }),
+);
+
+pipeline.onError((error) => {
+  console.error("Pipeline error:", error.message);
+  // Log to monitoring service
+  logToSentry(error);
+});
+
+const execution = await pipeline.execute({
+  webhook: "https://your-server.com/webhook",
+});
+```
+
+## Next Steps
+
+- [Webhooks](/docs/guides/webhooks) - Async execution with webhooks
+- [AI Agents](/docs/guides/ai-agents) - Dynamic pipeline generation
+- [API Reference](/docs/api-reference) - Detailed API documentation

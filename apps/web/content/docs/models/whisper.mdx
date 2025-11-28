@@ -1,0 +1,103 @@
+---
+title: OpenAI Whisper
+description: Speech-to-text transcription model
+---
+
+# OpenAI Whisper
+
+OpenAI's speech recognition model for transcribing audio to text.
+
+| Property | Value            |
+| -------- | ---------------- |
+| Model ID | `openai/whisper` |
+| Provider | Replicate        |
+| Type     | Speech-to-text   |
+
+## Basic Usage
+
+Used primarily with the `captions()` function for automatic subtitle generation:
+
+```typescript
+import { compose, captions, audioModel } from "@synthome/sdk";
+
+const execution = await compose(
+  captions({
+    video: "https://example.com/video.mp4",
+    model: audioModel("openai/whisper", "replicate"),
+  }),
+).execute();
+```
+
+## How It Works
+
+Whisper analyzes the audio track of a video and produces:
+
+- Full text transcription
+- Sentence-level timestamps
+- Language detection
+
+## Use Cases
+
+### Auto-Captioning
+
+```typescript
+captions({
+  video: "https://example.com/video.mp4",
+  model: audioModel("openai/whisper", "replicate"),
+  style: { preset: "youtube" },
+});
+```
+
+### Transcription Pipeline
+
+```typescript
+const execution = await compose(
+  captions({
+    video: merge([
+      "https://example.com/clip1.mp4",
+      "https://example.com/clip2.mp4",
+    ]),
+    model: audioModel("openai/whisper", "replicate"),
+  }),
+).execute();
+```
+
+## Language Support
+
+Whisper automatically detects and transcribes:
+
+- English
+- Spanish
+- French
+- German
+- Italian
+- Portuguese
+- And 90+ other languages
+
+## Example
+
+### Subtitle Generation
+
+```typescript
+import {
+  compose,
+  captions,
+  audioModel,
+  videoModel,
+  generateVideo,
+} from "@synthome/sdk";
+
+const execution = await compose(
+  captions({
+    video: generateVideo({
+      model: videoModel("bytedance/seedance-1-pro", "replicate"),
+      prompt: "A person giving a presentation",
+    }),
+    model: audioModel("openai/whisper", "replicate"),
+    style: {
+      preset: "minimal",
+      marginV: 30,
+    },
+  }),
+).execute();
+```

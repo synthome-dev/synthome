@@ -1,6 +1,7 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { RootProvider } from "fumadocs-ui/provider/next";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -25,7 +26,7 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="en" data-theme="quartz">
+      <html lang="en" className="dark" suppressHydrationWarning>
         <head>
           <link
             rel="icon"
@@ -78,10 +79,9 @@ export default function RootLayout({
           />
         </head>
         <body
-          data-theme="dark"
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
-          {children}
+          <RootProvider>{children}</RootProvider>
         </body>
       </html>
     </ClerkProvider>

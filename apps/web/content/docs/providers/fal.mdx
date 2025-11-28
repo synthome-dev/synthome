@@ -1,0 +1,78 @@
+---
+title: Fal
+description: Setup and configuration for Fal
+---
+
+# Fal
+
+Fal provides fast inference for AI models.
+
+## Setup
+
+### 1. Get API Key
+
+1. Create an account at [fal.ai](https://fal.ai)
+2. Go to [Dashboard > Keys](https://fal.ai/dashboard/keys)
+3. Create a new API key
+
+### 2. Configure Environment
+
+```bash
+# .env or .env.local
+FAL_KEY=your_fal_key_here
+```
+
+## Available Models
+
+### Video
+
+| Model           | ID                     |
+| --------------- | ---------------------- |
+| Fabric 1.0      | `veed/fabric-1.0`      |
+| Fabric 1.0 Fast | `veed/fabric-1.0/fast` |
+
+```typescript
+import { generateVideo, videoModel } from "@synthome/sdk";
+
+// Lip-sync video generation
+generateVideo({
+  model: videoModel("veed/fabric-1.0", "fal"),
+  image: "https://example.com/portrait.jpg",
+  audio: "https://example.com/speech.mp3",
+});
+```
+
+### Image
+
+| Model           | ID                       |
+| --------------- | ------------------------ |
+| Nano Banana     | `google/nano-banana`     |
+| Nano Banana Pro | `google/nano-banana-pro` |
+
+```typescript
+import { generateImage, imageModel } from "@synthome/sdk";
+
+generateImage({
+  model: imageModel("google/nano-banana", "fal"),
+  prompt: "A serene landscape",
+});
+```
+
+## Per-Request API Key
+
+Override the environment variable for specific requests:
+
+```typescript
+generateVideo({
+  model: videoModel("veed/fabric-1.0", "fal"),
+  image: "https://example.com/portrait.jpg",
+  audio: "https://example.com/audio.mp3",
+  apiKey: "different_fal_key",
+});
+```
+
+## Resources
+
+- [Fal Documentation](https://fal.ai/docs)
+- [Pricing](https://fal.ai/pricing)
+- [Dashboard](https://fal.ai/dashboard)
