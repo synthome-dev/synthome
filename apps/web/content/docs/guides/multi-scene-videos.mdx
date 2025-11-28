@@ -1,0 +1,525 @@
+---
+title: Multi-Scene Videos
+description: Create complex videos with multiple scenes, transitions, and media types
+---
+
+# Multi-Scene Videos
+
+Learn how to create professional multi-scene videos by combining generated content, existing media, and various operations.
+
+## Basic Multi-Scene Video
+
+Use `merge()` to combine multiple scenes sequentially:
+
+```typescript
+import { compose, generateVideo, merge, videoModel } from "@synthome/sdk";
+
+const execution = await compose(
+  merge([
+    generateVideo({
+      model: videoModel("bytedance/seedance-1-pro", "replicate"),
+      prompt: "Scene 1: A sunrise over mountains, golden light",
+      duration: 5,
+    }),
+    generateVideo({
+      model: videoModel("bytedance/seedance-1-pro", "replicate"),
+      prompt: "Scene 2: Birds flying across the sky",
+      duration: 5,
+    }),
+    generateVideo({
+      model: videoModel("bytedance/seedance-1-pro", "replicate"),
+      prompt: "Scene 3: A peaceful lake reflecting mountains",
+      duration: 5,
+    }),
+  ]),
+).execute();
+
+console.log("Multi-scene video:", execution.result?.url);
+```
+
+All scenes generate in parallel, then merge sequentially. Total video: 15 seconds.
+
+## Mixed Media Scenes
+
+Combine generated videos with existing media:
+
+```typescript
+import {
+  compose,
+  generateVideo,
+  generateImage,
+  merge,
+  videoModel,
+  imageModel,
+} from "@synthome/sdk";
+
+const execution = await compose(
+  merge([
+    // Existing intro video
+    "https://your-cdn.com/intro.mp4",
+
+    // Generated scene
+    generateVideo({
+      model: videoModel("bytedance/seedance-1-pro", "replicate"),
+      prompt: "Product showcase, sleek design, rotating view",
+      duration: 5,
+    }),
+
+    // Image as a scene (displayed for specified duration)
+    {
+      media: generateImage({
+        model: imageModel("google/nano-banana", "fal"),
+        prompt: "Product features infographic",
+      }),
+      duration: 3,
+    },
+
+    // Existing outro
+    "https://your-cdn.com/outro.mp4",
+  ]),
+).execute();
+```
+
+## Adding Audio to Scenes
+
+### Background Music
+
+Add background music by including an audio file in your merge. The audio plays from the start across the entire video duration:
+
+```typescript
+import { compose, generateVideo, merge, videoModel } from "@synthome/sdk";
+
+const execution = await compose(
+  merge([
+    // Video scenes
+    generateVideo({
+      model: videoModel("bytedance/seedance-1-pro", "replicate"),
+      prompt: "Scene 1: Ocean waves",
+      duration: 5,
+    }),
+    generateVideo({
+      model: videoModel("bytedance/seedance-1-pro", "replicate"),
+      prompt: "Scene 2: Beach sunset",
+      duration: 5,
+    }),
+    // Background music - plays from start across full duration
+    "https://your-cdn.com/background-music.mp3",
+  ]),
+).execute();
+```
+
+### Generated Voiceover
+
+Add AI-generated narration the same way:
+
+```typescript
+import {
+  compose,
+  generateVideo,
+  generateAudio,
+  merge,
+  videoModel,
+  audioModel,
+} from "@synthome/sdk";
+
+const execution = await compose(
+  merge([
+    // Video scenes
+    generateVideo({
+      model: videoModel("bytedance/seedance-1-pro", "replicate"),
+      prompt: "Mountain landscape, cinematic",
+      duration: 5,
+    }),
+    generateVideo({
+      model: videoModel("bytedance/seedance-1-pro", "replicate"),
+      prompt: "Forest trail, morning mist",
+      duration: 5,
+    }),
+    // AI voiceover - plays from start
+    generateAudio({
+      model: audioModel("elevenlabs/turbo-v2.5", "elevenlabs"),
+      text: "Discover the beauty of nature. From majestic mountains to serene forest trails, adventure awaits.",
+      voiceId: "EXAVITQu4vr4xnSDxMaL",
+    }),
+  ]),
+).execute();
+```
+
+## Scene with Captions
+
+Add auto-generated captions to your video:
+
+```typescript
+import {
+  compose,
+  generateVideo,
+  generateAudio,
+  merge,
+  captions,
+  videoModel,
+  audioModel,
+} from "@synthome/sdk";
+
+// First, create the video with audio
+const videoWithAudio = merge([
+  generateVideo({
+    model: videoModel("bytedance/seedance-1-pro", "replicate"),
+    prompt: "Scene 1: Product introduction",
+    duration: 5,
+  }),
+  generateVideo({
+    model: videoModel("bytedance/seedance-1-pro", "replicate"),
+    prompt: "Scene 2: Product features",
+    duration: 5,
+  }),
+  // Voiceover
+  generateAudio({
+    model: audioModel("elevenlabs/turbo-v2.5", "elevenlabs"),
+    text: "Introducing our new product. It features cutting-edge technology and sleek design.",
+    voiceId: "EXAVITQu4vr4xnSDxMaL",
+  }),
+]);
+
+// Then add auto-generated captions
+const execution = await compose(
+  captions({
+    video: videoWithAudio,
+    transcribe: {
+      model: "openai/whisper",
+      provider: "replicate",
+    },
+    style: {
+      position: "bottom",
+      fontSize: 24,
+      fontColor: "#FFFFFF",
+      backgroundColor: "rgba(0,0,0,0.7)",
+    },
+  }),
+).execute();
+```
+
+## Picture-in-Picture Scenes
+
+Create videos with overlay content:
+
+```typescript
+import { compose, generateVideo, layers, videoModel } from "@synthome/sdk";
+
+const execution = await compose(
+  layers({
+    layers: [
+      // Main video (full screen)
+      {
+        media: generateVideo({
+          model: videoModel("bytedance/seedance-1-pro", "replicate"),
+          prompt: "Conference presentation, speaker on stage",
+          duration: 10,
+        }),
+        placement: "full",
+      },
+      // Picture-in-picture (slide content)
+      {
+        media: "https://your-cdn.com/slides.mp4",
+        placement: "picture-in-picture",
+      },
+    ],
+  }),
+).execute();
+```
+
+## Speaking Head with Custom Background
+
+Create a fully AI-generated talking head video with a custom background. This example:
+
+1. Generates a portrait image on a green screen
+2. Generates speech audio from text
+3. Creates a lip-synced video using Fabric
+4. Removes the green screen and composites onto a custom background
+
+```typescript
+import {
+  compose,
+  generateVideo,
+  generateImage,
+  generateAudio,
+  layers,
+  videoModel,
+  imageModel,
+  audioModel,
+} from "@synthome/sdk";
+
+const execution = await compose(
+  layers({
+    layers: [
+      // Background layer
+      {
+        media: generateImage({
+          model: imageModel("google/nano-banana", "fal"),
+          prompt: "Modern office interior, blurred background, professional",
+        }),
+        placement: "full",
+      },
+      // Speaking head with green screen removed
+      {
+        media: generateVideo({
+          model: videoModel("veed/fabric-1.0", "fal"),
+          // Portrait on green screen
+          image: generateImage({
+            model: imageModel("google/nano-banana", "fal"),
+            prompt:
+              "Professional woman, business attire, neutral expression, green screen background",
+          }),
+          // Generated speech
+          audio: generateAudio({
+            model: audioModel("elevenlabs/turbo-v2.5", "elevenlabs"),
+            text: "Welcome to our company. Let me tell you about our latest innovations.",
+            voiceId: "EXAVITQu4vr4xnSDxMaL",
+          }),
+        }),
+        placement: "full",
+        chromaKey: true,
+        chromaKeyColor: "#00FF00",
+      },
+    ],
+  }),
+).execute();
+```
+
+This pipeline runs in parallel where possible:
+
+- The background image and portrait image generate simultaneously
+- The speech audio generates in parallel
+- Fabric creates the lip-synced video once the portrait and audio are ready
+- Finally, the green screen is removed and composited onto the background
+
+### Variations
+
+**With existing portrait:**
+
+```typescript
+generateVideo({
+  model: videoModel("veed/fabric-1.0", "fal"),
+  image: "https://your-cdn.com/spokesperson-greenscreen.png",
+  audio: generateAudio({
+    model: audioModel("elevenlabs/turbo-v2.5", "elevenlabs"),
+    text: "Your message here.",
+    voiceId: "EXAVITQu4vr4xnSDxMaL",
+  }),
+});
+```
+
+**With existing background:**
+
+```typescript
+layers({
+  layers: [
+    {
+      media: "https://your-cdn.com/office-background.jpg",
+      placement: "full",
+    },
+    {
+      media: generateVideo({ ... }),
+      placement: "full",
+      chromaKey: true,
+      chromaKeyColor: "#00FF00",
+    },
+  ],
+});
+```
+
+## Dynamic Scene Generation
+
+Generate scenes programmatically from data:
+
+```typescript
+import { compose, generateVideo, merge, videoModel } from "@synthome/sdk";
+
+interface SceneConfig {
+  prompt: string;
+  duration: number;
+}
+
+const scenes: SceneConfig[] = [
+  { prompt: "Dawn breaking over a city skyline", duration: 4 },
+  { prompt: "Morning commuters in a busy street", duration: 3 },
+  { prompt: "Coffee shop interior, cozy atmosphere", duration: 3 },
+  { prompt: "Sunset over the same city skyline", duration: 4 },
+];
+
+const execution = await compose(
+  merge(
+    scenes.map((scene) =>
+      generateVideo({
+        model: videoModel("bytedance/seedance-1-pro", "replicate"),
+        prompt: scene.prompt,
+        duration: scene.duration,
+      }),
+    ),
+  ),
+).execute();
+```
+
+## Parallel Scene Generation
+
+Synthome automatically parallelizes independent operations. In this example, all three scenes generate simultaneously:
+
+```typescript
+const execution = await compose(
+  merge([
+    // These run in parallel
+    generateVideo({ ... }),  // Scene 1
+    generateVideo({ ... }),  // Scene 2
+    generateVideo({ ... }),  // Scene 3
+  ])
+).execute();
+
+// Total time ≈ longest scene generation time + merge time
+// NOT: scene1 + scene2 + scene3 + merge
+```
+
+## Complex Multi-Layer Video
+
+Combine multiple techniques for a professional result:
+
+```typescript
+import {
+  compose,
+  generateVideo,
+  generateAudio,
+  merge,
+  layers,
+  captions,
+  videoModel,
+  audioModel,
+} from "@synthome/sdk";
+
+// Build a complete video with:
+// - Multiple scenes
+// - Logo overlay
+// - Background music
+// - Voiceover
+// - Auto-generated captions
+
+const videoWithAudio = merge([
+  // Intro with logo overlay
+  layers({
+    layers: [
+      {
+        media: generateVideo({
+          model: videoModel("bytedance/seedance-1-pro", "replicate"),
+          prompt: "Abstract flowing particles, brand intro",
+          duration: 3,
+        }),
+        placement: "full",
+      },
+      {
+        media: "https://your-cdn.com/logo.png",
+        placement: "center",
+      },
+    ],
+  }),
+
+  // Main scene
+  generateVideo({
+    model: videoModel("bytedance/seedance-1-pro", "replicate"),
+    prompt: "Product reveal, dramatic lighting",
+    duration: 5,
+  }),
+
+  // Feature highlight with text overlay
+  layers({
+    layers: [
+      {
+        media: generateVideo({
+          model: videoModel("bytedance/seedance-1-pro", "replicate"),
+          prompt: "Product features demonstration",
+          duration: 5,
+        }),
+        placement: "full",
+      },
+      {
+        media: "https://your-cdn.com/feature-text.png",
+        placement: "bottom-center",
+      },
+    ],
+  }),
+
+  // Voiceover - plays from start
+  generateAudio({
+    model: audioModel("elevenlabs/turbo-v2.5", "elevenlabs"),
+    text: "Welcome to our brand. Discover innovation. Experience excellence.",
+    voiceId: "EXAVITQu4vr4xnSDxMaL",
+  }),
+
+  // Background music - plays from start
+  "https://your-cdn.com/background-music.mp3",
+]);
+
+// Add auto-generated captions
+const execution = await compose(
+  captions({
+    video: videoWithAudio,
+    transcribe: {
+      model: "openai/whisper",
+      provider: "replicate",
+    },
+    style: {
+      position: "bottom",
+      fontSize: 20,
+    },
+  }),
+).execute();
+```
+
+## Best Practices
+
+### 1. Plan Your Scenes
+
+Sketch out your video structure before coding:
+
+```
+1. Intro (3s) - Logo animation
+2. Scene A (5s) - Product overview
+3. Scene B (5s) - Feature 1
+4. Scene C (5s) - Feature 2
+5. Outro (3s) - Call to action
+```
+
+### 2. Keep Scenes Consistent
+
+Use consistent prompting for visual coherence:
+
+```typescript
+const style = "cinematic, 4K, professional lighting";
+
+const scenes = [
+  `Product on white background, ${style}`,
+  `Product in use, ${style}`,
+  `Product close-up detail, ${style}`,
+];
+```
+
+### 3. Optimize Duration
+
+- Keep individual scenes 3-7 seconds for engagement
+- Total video length depends on platform (15s for ads, 60s for content)
+- Match audio duration to video duration
+
+### 4. Use Existing Assets
+
+Mix generated content with existing branded assets for consistency:
+
+```typescript
+merge([
+  "https://cdn.brand.com/intro.mp4", // Existing brand intro
+  generateVideo({ ... }),             // Generated content
+  "https://cdn.brand.com/outro.mp4", // Existing brand outro
+])
+```
+
+## Next Steps
+
+- [Webhooks](/docs/guides/webhooks) - Handle long-running video generation
+- [Error Handling](/docs/guides/error-handling) - Handle failures gracefully
+- [Layers](/docs/operations/layers) - Deep dive into compositing
+- [Captions](/docs/operations/captions) - Auto-generated subtitles

@@ -1,0 +1,339 @@
+---
+title: Layers
+description: Composite media with positioning, overlays, and effects
+---
+
+# layers()
+
+Composite multiple media items with precise positioning, overlays, and chroma key effects.
+
+```typescript
+import { compose, layers } from "@synthome/sdk";
+
+const execution = await compose(
+  layers([
+    { media: "https://example.com/background.mp4" },
+    { media: "https://example.com/logo.png", placement: "top-right" },
+  ]),
+).execute();
+```
+
+## Basic Usage
+
+### Picture-in-Picture
+
+```typescript
+layers([
+  { media: "https://example.com/main.mp4" },
+  { media: "https://example.com/webcam.mp4", placement: "pip" },
+]);
+```
+
+### Logo Overlay
+
+```typescript
+layers([
+  { media: "https://example.com/video.mp4" },
+  { media: "https://example.com/logo.png", placement: "top-right" },
+]);
+```
+
+### Centered Overlay
+
+```typescript
+layers([
+  { media: "https://example.com/background.mp4" },
+  { media: "https://example.com/title.png", placement: "center" },
+]);
+```
+
+## Placement Presets
+
+Use simple presets for common layouts:
+
+| Preset                 | Description                   |
+| ---------------------- | ----------------------------- |
+| `"full"`               | Full screen (default)         |
+| `"center"`             | Centered, original size       |
+| `"pip"`                | Small overlay in bottom-right |
+| `"picture-in-picture"` | Same as `pip`                 |
+
+```typescript
+layers([
+  { media: "https://example.com/main.mp4" },
+  { media: "https://example.com/overlay.mp4", placement: "pip" },
+]);
+```
+
+## Tailwind-Style Placement
+
+Combine size and position using a familiar syntax:
+
+### Size Classes
+
+| Class   | Description |
+| ------- | ----------- |
+| `w-1/2` | 50% width   |
+| `w-1/3` | 33% width   |
+| `w-1/4` | 25% width   |
+| `w-2/3` | 66% width   |
+| `w-3/4` | 75% width   |
+| `h-1/2` | 50% height  |
+| `h-1/3` | 33% height  |
+| `h-1/4` | 25% height  |
+
+### Position Classes
+
+| Class          | Description         |
+| -------------- | ------------------- |
+| `top-left`     | Top-left corner     |
+| `top-right`    | Top-right corner    |
+| `bottom-left`  | Bottom-left corner  |
+| `bottom-right` | Bottom-right corner |
+| `center`       | Centered            |
+| `top`          | Top center          |
+| `bottom`       | Bottom center       |
+| `left`         | Left center         |
+| `right`        | Right center        |
+
+### Combined Examples
+
+```typescript
+// 1/4 width overlay in bottom-right
+layers([
+  { media: "https://example.com/main.mp4" },
+  { media: "https://example.com/pip.mp4", placement: "w-1/4 bottom-right" },
+]);
+
+// Half-width overlay centered
+layers([
+  { media: "https://example.com/background.mp4" },
+  { media: "https://example.com/content.mp4", placement: "w-1/2 center" },
+]);
+
+// 1/3 height overlay at top
+layers([
+  { media: "https://example.com/main.mp4" },
+  { media: "https://example.com/banner.png", placement: "h-1/3 top" },
+]);
+```
+
+## Custom Placement
+
+For precise control, use custom placement objects:
+
+```typescript
+layers([
+  { media: "https://example.com/background.mp4" },
+  {
+    media: "https://example.com/overlay.png",
+    placement: {
+      width: "300", // Fixed width in pixels
+      height: "200", // Fixed height in pixels
+      position: {
+        x: "50", // 50px from left
+        y: "100", // 100px from top
+      },
+    },
+  },
+]);
+```
+
+### Percentage-Based
+
+```typescript
+placement: {
+  width: "50%",
+  height: "50%",
+  position: {
+    x: "25%",
+    y: "25%",
+  },
+}
+```
+
+### With Padding
+
+```typescript
+placement: {
+  width: "25%",
+  position: { x: "100%", y: "100%" }, // Bottom-right
+  padding: 20, // 20px padding from edge
+}
+```
+
+## Chroma Key (Green Screen)
+
+Remove green backgrounds from overlays:
+
+```typescript
+layers([
+  { media: "https://example.com/background.mp4" },
+  {
+    media: "https://example.com/greenscreen-speaker.mp4",
+    placement: "w-1/3 bottom-right",
+    chromaKey: true,
+  },
+]);
+```
+
+### Custom Chroma Key Settings
+
+```typescript
+layers([
+  { media: "https://example.com/background.mp4" },
+  {
+    media: "https://example.com/bluescreen.mp4",
+    chromaKey: true,
+    chromaKeyColor: "0000ff", // Blue instead of green
+    similarity: 0.3, // Color match threshold
+    blend: 0.1, // Edge blending
+  },
+]);
+```
+
+## Duration Control
+
+### Main Layer
+
+Mark a layer as the duration reference:
+
+```typescript
+layers([
+  { media: "https://example.com/background.mp4", main: true }, // Duration from this
+  { media: "https://example.com/logo.png", placement: "top-right" },
+]);
+```
+
+### Explicit Duration
+
+```typescript
+layers(
+  [
+    { media: "https://example.com/background.jpg" },
+    { media: "https://example.com/overlay.png" },
+  ],
+  { duration: 10 }, // 10 second output
+);
+```
+
+### Output Dimensions
+
+```typescript
+layers(
+  [
+    { media: "https://example.com/video.mp4" },
+    { media: "https://example.com/overlay.png" },
+  ],
+  { width: 1920, height: 1080 },
+);
+```
+
+## Timeline Arrays
+
+Create sequential content within a layer:
+
+```typescript
+layers([
+  { media: "https://example.com/background.mp4", main: true },
+  [
+    // Timeline: plays sequentially on this layer
+    { media: "https://example.com/title1.png", duration: 3 },
+    { media: "https://example.com/title2.png", duration: 3 },
+    { media: "https://example.com/title3.png", duration: 3 },
+  ],
+]);
+```
+
+## With Generated Content
+
+### Generated Background
+
+```typescript
+layers([
+  {
+    media: generateVideo({
+      model: videoModel("bytedance/seedance-1-pro", "replicate"),
+      prompt: "Abstract flowing colors",
+    }),
+  },
+  { media: "https://example.com/logo.png", placement: "center" },
+]);
+```
+
+### Generated Overlay
+
+```typescript
+layers([
+  { media: "https://example.com/video.mp4" },
+  {
+    media: generateImage({
+      model: imageModel("google/nano-banana", "replicate"),
+      prompt: "Watermark logo",
+    }),
+    placement: "w-1/6 bottom-right",
+  },
+]);
+```
+
+### Multiple Generated Layers
+
+```typescript
+layers([
+  {
+    media: generateVideo({
+      model: videoModel("minimax/video-01", "replicate"),
+      prompt: "Ocean waves",
+    }),
+    main: true,
+  },
+  {
+    media: generateVideo({
+      model: videoModel("bytedance/seedance-1-pro", "replicate"),
+      prompt: "Person speaking on green screen",
+    }),
+    placement: "w-1/3 bottom-right",
+    chromaKey: true,
+  },
+]);
+```
+
+## API Reference
+
+### layers(items, options?)
+
+| Parameter | Type                                 | Description            |
+| --------- | ------------------------------------ | ---------------------- |
+| `items`   | `Array<LayerItem \| TimelineItem[]>` | Array of layers        |
+| `options` | `LayersOptions`                      | Optional configuration |
+
+### LayerItem
+
+| Property         | Type                                         | Description                          |
+| ---------------- | -------------------------------------------- | ------------------------------------ |
+| `media`          | `string \| VideoOperation \| ImageOperation` | Media URL or generated content       |
+| `placement`      | `PlacementPreset \| CustomPlacement`         | Position and size                    |
+| `chromaKey`      | `boolean`                                    | Enable green screen removal          |
+| `chromaKeyColor` | `string`                                     | Hex color to remove (default: green) |
+| `similarity`     | `number`                                     | Color match threshold                |
+| `blend`          | `number`                                     | Edge blending amount                 |
+| `main`           | `boolean`                                    | Use this layer's duration            |
+
+### LayersOptions
+
+| Property    | Type     | Description                     |
+| ----------- | -------- | ------------------------------- |
+| `duration`  | `number` | Explicit output duration        |
+| `width`     | `number` | Output width in pixels          |
+| `height`    | `number` | Output height in pixels         |
+| `mainLayer` | `number` | Layer index to use for duration |
+
+### CustomPlacement
+
+| Property      | Type                         | Description                   |
+| ------------- | ---------------------------- | ----------------------------- |
+| `width`       | `string`                     | Width (pixels or percentage)  |
+| `height`      | `string`                     | Height (pixels or percentage) |
+| `position`    | `{ x?: string, y?: string }` | Position coordinates          |
+| `padding`     | `number`                     | Padding in pixels             |
+| `aspectRatio` | `string`                     | Aspect ratio (e.g., "16:9")   |

@@ -1,0 +1,81 @@
+---
+title: CDN Storage
+description: Store generated media in S3-compatible storage
+---
+
+# CDN Storage
+
+Store generated media files in cloud storage for reliable delivery.
+
+## Supported Services
+
+Synthome supports any S3-compatible storage service. Here are common options:
+
+| Service              | Description                            |
+| -------------------- | -------------------------------------- |
+| Amazon S3            | AWS object storage                     |
+| Cloudflare R2        | S3-compatible with no egress fees      |
+| MinIO                | Self-hosted S3-compatible storage      |
+| DigitalOcean Spaces  | S3-compatible object storage           |
+| Backblaze B2         | S3-compatible cloud storage            |
+| Google Cloud Storage | S3-compatible via interoperability API |
+
+Any storage that implements the S3 API will work with Synthome.
+
+## Setup
+
+Connect your storage through the [Synthome Dashboard](https://synthome.dev):
+
+1. Go to **Dashboard > Integrations**
+2. Click **Add Storage**
+3. Enter your S3-compatible credentials:
+   - Access Key ID
+   - Secret Access Key
+   - Endpoint URL (for non-AWS services)
+   - Bucket name
+   - Region (optional)
+4. Click **Save**
+
+Once connected, all generated media will be automatically uploaded to your storage.
+
+## Bucket Configuration
+
+### Public Access
+
+For generated media to be accessible via URL, configure your bucket for public read access.
+
+**Amazon S3 Bucket Policy:**
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "PublicReadGetObject",
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::your-bucket-name/*"
+    }
+  ]
+}
+```
+
+**Cloudflare R2:**
+
+Enable public access through R2's public bucket feature or connect a custom domain in the Cloudflare Dashboard.
+
+### CORS Configuration
+
+If accessing media from a web application, configure CORS on your bucket:
+
+```json
+[
+  {
+    "AllowedOrigins": ["*"],
+    "AllowedMethods": ["GET"],
+    "AllowedHeaders": ["*"],
+    "MaxAgeSeconds": 3600
+  }
+]
+```

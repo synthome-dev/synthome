@@ -1,0 +1,76 @@
+---
+title: Overview
+description: Configure API keys for AI model providers
+---
+
+# Providers
+
+Synthome connects to multiple AI providers to run models. Each provider requires an API key.
+
+## Supported Providers
+
+| Provider                                 | Environment Variable | Models              |
+| ---------------------------------------- | -------------------- | ------------------- |
+| [Replicate](/docs/providers/replicate)   | `REPLICATE_API_KEY`  | Video, Image, Audio |
+| [Fal](/docs/providers/fal)               | `FAL_KEY`            | Video, Image        |
+| [ElevenLabs](/docs/providers/elevenlabs) | `ELEVENLABS_API_KEY` | Audio (TTS)         |
+| [Hume](/docs/providers/hume)             | `HUME_API_KEY`       | Audio (TTS)         |
+
+## Quick Setup
+
+Set environment variables for the providers you need:
+
+```bash
+# .env or .env.local
+REPLICATE_API_KEY=r8_...
+FAL_KEY=...
+ELEVENLABS_API_KEY=...
+HUME_API_KEY=...
+```
+
+## How Providers Work
+
+When you specify a model, you also specify which provider to use:
+
+```typescript
+import { videoModel, imageModel, audioModel } from "@synthome/sdk";
+
+// Replicate for video
+videoModel("bytedance/seedance-1-pro", "replicate");
+
+// Fal for lip-sync
+videoModel("veed/fabric-1.0", "fal");
+
+// ElevenLabs for TTS
+audioModel("elevenlabs/turbo-v2.5", "elevenlabs");
+```
+
+The SDK automatically uses the corresponding API key from your environment.
+
+## Per-Request API Keys
+
+Override environment variables for specific requests:
+
+```typescript
+generateVideo({
+  model: videoModel("bytedance/seedance-1-pro", "replicate"),
+  prompt: "Ocean waves",
+  apiKey: "r8_custom_key_here", // Override for this request
+});
+```
+
+## Provider Selection
+
+Some models are available on multiple providers:
+
+```typescript
+// Same model, different providers
+imageModel("google/nano-banana", "replicate");
+imageModel("google/nano-banana", "fal");
+```
+
+Choose based on:
+
+- **Existing accounts**: Use providers where you already have API keys
+- **Pricing**: Check each provider's pricing page
+- **Rate limits**: Different providers have different limits

@@ -1,0 +1,185 @@
+---
+title: Seedream 4
+description: ByteDance's high-resolution image generation model
+---
+
+# Seedream 4
+
+ByteDance's high-resolution image generation model with flexible sizing options.
+
+| Property | Value                  |
+| -------- | ---------------------- |
+| Model ID | `bytedance/seedream-4` |
+| Provider | Replicate              |
+| Type     | Image generation       |
+
+## Basic Usage
+
+```typescript
+import { compose, generateImage, imageModel } from "@synthome/sdk";
+
+const execution = await compose(
+  generateImage({
+    model: imageModel("bytedance/seedream-4", "replicate"),
+    prompt: "A photorealistic portrait of a woman in natural lighting",
+  }),
+).execute();
+```
+
+## Resolution Presets
+
+Generate at different quality levels:
+
+| Size     | Resolution   | Use Case            |
+| -------- | ------------ | ------------------- |
+| `1K`     | 1024px       | Fast preview        |
+| `2K`     | 2048px       | Standard quality    |
+| `4K`     | 4096px       | High resolution     |
+| `custom` | Up to 4096px | Specific dimensions |
+
+```typescript
+// 4K high resolution
+generateImage({
+  model: imageModel("bytedance/seedream-4", "replicate"),
+  prompt: "Detailed landscape photography",
+  size: "4K",
+});
+```
+
+## Custom Dimensions
+
+Specify exact width and height:
+
+```typescript
+generateImage({
+  model: imageModel("bytedance/seedream-4", "replicate"),
+  prompt: "Banner image for website header",
+  size: "custom",
+  width: 1920,
+  height: 600,
+});
+```
+
+## Options
+
+| Option                      | Type                               | Default  | Description                       |
+| --------------------------- | ---------------------------------- | -------- | --------------------------------- |
+| `prompt`                    | `string`                           | required | Text description                  |
+| `size`                      | `"1K" \| "2K" \| "4K" \| "custom"` | -        | Resolution preset                 |
+| `aspectRatio`               | `string`                           | -        | Aspect ratio (ignored if custom)  |
+| `width`                     | `number`                           | -        | Custom width (1024-4096)          |
+| `height`                    | `number`                           | -        | Custom height (1024-4096)         |
+| `image`                     | `string[]`                         | -        | Reference images (1-10)           |
+| `enhancePrompt`             | `boolean`                          | -        | AI prompt enhancement             |
+| `sequentialImageGeneration` | `"disabled" \| "auto"`             | -        | Multi-image generation            |
+| `maxImages`                 | `number`                           | -        | Max images when sequential (1-15) |
+
+## Image-to-Image
+
+Use reference images for transformation:
+
+```typescript
+generateImage({
+  model: imageModel("bytedance/seedream-4", "replicate"),
+  prompt: "Transform into oil painting style",
+  image: ["https://example.com/photo.jpg"],
+});
+```
+
+### Match Input Aspect Ratio
+
+```typescript
+generateImage({
+  model: imageModel("bytedance/seedream-4", "replicate"),
+  prompt: "Enhance and upscale this image",
+  image: ["https://example.com/input.jpg"],
+  aspectRatio: "match_input_image",
+});
+```
+
+## Multi-Reference Generation
+
+Use multiple reference images (up to 10):
+
+```typescript
+generateImage({
+  model: imageModel("bytedance/seedream-4", "replicate"),
+  prompt: "Create a composite design using elements from all reference images",
+  image: [
+    "https://example.com/ref1.jpg",
+    "https://example.com/ref2.jpg",
+    "https://example.com/ref3.jpg",
+  ],
+});
+```
+
+## Sequential Generation
+
+Let the model decide if multiple related images should be generated:
+
+```typescript
+generateImage({
+  model: imageModel("bytedance/seedream-4", "replicate"),
+  prompt: "A comic strip showing a character's morning routine",
+  sequentialImageGeneration: "auto",
+  maxImages: 4,
+});
+```
+
+## Prompt Enhancement
+
+Enable AI-powered prompt improvement:
+
+```typescript
+generateImage({
+  model: imageModel("bytedance/seedream-4", "replicate"),
+  prompt: "sunset beach",
+  enhancePrompt: true, // AI expands and improves the prompt
+});
+```
+
+## Examples
+
+### High-Resolution Print
+
+```typescript
+generateImage({
+  model: imageModel("bytedance/seedream-4", "replicate"),
+  prompt:
+    "Detailed botanical illustration of exotic flowers, scientific accuracy",
+  size: "4K",
+});
+```
+
+### Website Banner
+
+```typescript
+generateImage({
+  model: imageModel("bytedance/seedream-4", "replicate"),
+  prompt: "Abstract technology background with flowing data streams",
+  size: "custom",
+  width: 2560,
+  height: 600,
+});
+```
+
+### Product Variant
+
+```typescript
+generateImage({
+  model: imageModel("bytedance/seedream-4", "replicate"),
+  prompt: "Show this product in different colors: red, blue, green",
+  image: ["https://example.com/product.jpg"],
+  sequentialImageGeneration: "auto",
+  maxImages: 3,
+});
+```
+
+## Use Cases
+
+Best suited for:
+
+- **High-resolution prints**: Posters, art prints, large format
+- **Custom dimensions**: Banners, headers, specific layouts
+- **Multi-reference**: Complex compositions from multiple sources
+- **Sequential content**: Related image series, variations

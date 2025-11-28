@@ -1,0 +1,145 @@
+---
+title: Incredibly Fast Whisper
+description: Optimized speech-to-text with word-level timestamps
+---
+
+# Incredibly Fast Whisper
+
+Optimized Whisper model with word-level timestamps, ideal for caption generation.
+
+| Property | Value                                |
+| -------- | ------------------------------------ |
+| Model ID | `vaibhavs10/incredibly-fast-whisper` |
+| Provider | Replicate                            |
+| Type     | Speech-to-text                       |
+
+## Basic Usage
+
+```typescript
+import { compose, captions, audioModel } from "@synthome/sdk";
+
+const execution = await compose(
+  captions({
+    video: "https://example.com/video.mp4",
+    model: audioModel("vaibhavs10/incredibly-fast-whisper", "replicate"),
+  }),
+).execute();
+```
+
+## Why Use Fast Whisper
+
+### Word-Level Timestamps
+
+Unlike standard Whisper which provides sentence-level timing, Fast Whisper gives precise word-by-word timestamps:
+
+```json
+[
+  { "word": "Hello", "start": 0.0, "end": 0.3 },
+  { "word": "world", "start": 0.35, "end": 0.7 },
+  { "word": "how", "start": 0.8, "end": 0.95 },
+  { "word": "are", "start": 0.95, "end": 1.1 },
+  { "word": "you", "start": 1.1, "end": 1.4 }
+]
+```
+
+This enables:
+
+- Word-by-word highlighting
+- Karaoke-style captions
+- Precise timing for animated text
+
+### Speed
+
+Significantly faster than standard Whisper while maintaining accuracy.
+
+## Best For
+
+- **Caption generation**: Word-level timing for professional subtitles
+- **Word highlighting**: TikTok-style active word effects
+- **Karaoke**: Sync text with audio precisely
+- **Time-critical workflows**: Faster processing
+
+## Caption Styles
+
+### TikTok Style (Word Highlighting)
+
+```typescript
+captions({
+  video: "https://example.com/video.mp4",
+  model: audioModel("vaibhavs10/incredibly-fast-whisper", "replicate"),
+  style: {
+    preset: "tiktok",
+    highlightActiveWord: true,
+    activeWordColor: "#FFFF00",
+  },
+});
+```
+
+### YouTube Style
+
+```typescript
+captions({
+  video: "https://example.com/video.mp4",
+  model: audioModel("vaibhavs10/incredibly-fast-whisper", "replicate"),
+  style: {
+    preset: "youtube",
+    wordsPerCaption: 8,
+  },
+});
+```
+
+### Cinematic
+
+```typescript
+captions({
+  video: "https://example.com/video.mp4",
+  model: audioModel("vaibhavs10/incredibly-fast-whisper", "replicate"),
+  style: {
+    preset: "cinematic",
+    fontFamily: "Georgia",
+    fontSize: 42,
+  },
+});
+```
+
+## Full Pipeline Example
+
+Generate a video with AI narration and auto-captions:
+
+```typescript
+import {
+  compose,
+  captions,
+  generateVideo,
+  generateAudio,
+  videoModel,
+  audioModel,
+} from "@synthome/sdk";
+
+const execution = await compose(
+  captions({
+    video: generateVideo({
+      model: videoModel("veed/fabric-1.0", "fal"),
+      image: "https://example.com/speaker.jpg",
+      audio: generateAudio({
+        model: audioModel("elevenlabs/turbo-v2.5", "elevenlabs"),
+        text: "Welcome to our channel! Today we're exploring AI video generation.",
+        voiceId: "21m00Tcm4TlvDq8ikWAM",
+      }),
+    }),
+    model: audioModel("vaibhavs10/incredibly-fast-whisper", "replicate"),
+    style: {
+      preset: "tiktok",
+      highlightActiveWord: true,
+      activeWordColor: "#00FF00",
+    },
+  }),
+).execute();
+```
+
+This pipeline:
+
+1. Generates speech audio from text
+2. Creates a lip-synced talking head video
+3. Transcribes with word-level timestamps
+4. Adds captions with word highlighting

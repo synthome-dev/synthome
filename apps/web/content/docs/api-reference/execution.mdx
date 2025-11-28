@@ -1,0 +1,205 @@
+---
+title: Execution & Status
+description: Check execution status and manage pipeline executions
+---
+
+# Execution & Status
+
+Functions and types for managing pipeline executions.
+
+## getExecutionStatus()
+
+Retrieves the current status of an execution by ID.
+
+```typescript
+function getExecutionStatus(
+  executionId: string,
+  options?: {
+    apiUrl?: string;
+    apiKey?: string;
+  },
+): Promise<ExecutionStatusResponse>;
+```
+
+### Parameters
+
+| Parameter        | Type     | Description               |
+| ---------------- | -------- | ------------------------- |
+| `executionId`    | `string` | The execution ID to check |
+| `options.apiUrl` | `string` | Optional API URL override |
+| `options.apiKey` | `string` | Optional API key override |
+
+### Returns
+
+```typescript
+interface ExecutionStatusResponse {
+  id: string;
+  status: "pending" | "processing" | "completed" | "failed";
+  jobs: JobStatus[];
+  result: MediaResult | null;
+  error: string | null;
+  createdAt: Date;
+  completedAt: Date | null;
+}
+
+interface JobStatus {
+  id: string;
+  operation: string;
+  status: string;
+  result: any;
+  error: string | null;
+}
+
+interface MediaResult {
+  url: string;
+  type?: "video" | "audio" | "image";
+  duration?: number;
+  format?: string;
+  size?: number;
+}
+```
+
+### Usage
+
+```typescript
+import { getExecutionStatus } from "@anthropic/synthome-sdk";
+
+const status = await getExecutionStatus("exec_abc123");
+
+if (status.status === "completed") {
+  console.log("Video URL:", status.result?.url);
+}
+```
+
+## PipelineExecution
+
+Returned by `compose().execute()` and `executeFromPlan()`.
+
+```typescript
+interface PipelineExecution {
+  id: string;
+  status: "pending" | "processing" | "completed" | "failed";
+  result?: MediaResult;
+  onComplete(callback: (result: MediaResult) => void): void;
+  onError(callback: (error: Error) => void): void;
+}
+```
+
+### Properties
+
+| Property | Type          | Description                 |
+| -------- | ------------- | --------------------------- |
+| `id`     | `string`      | Unique execution identifier |
+| `status` | `string`      | Current execution status    |
+| `result` | `MediaResult` | Result when completed       |
+
+### Methods
+
+#### `onComplete(callback)`
+
+Register a callback for when execution completes successfully.
+
+```typescript
+execution.onComplete((result) => {
+  console.log("Video ready:", result.url);
+});
+```
+
+#### `onError(callback)`
+
+Register a callback for when execution fails.
+
+```typescript
+execution.onError((error) => {
+  console.error("Execution failed:", error.message);
+});
+```
+
+#### `getStatus()`
+
+Fetch the current status from the API.
+
+```typescript
+const status = await execution.getStatus();
+console.log(status.status, status.progress);
+```
+
+#### `waitForCompletion(progressCallback?)`
+
+Wait for the execution to complete, optionally receiving progress updates.
+
+```typescript
+const result = await execution.waitForCompletion((progress) => {
+  console.log(`${progress.completedJobs}/${progress.totalJobs} jobs done`);
+});
+
+console.log("Final URL:", result.url);
+```
+
+## PipelineProgress
+
+Progress information provided during execution.
+
+```typescript
+interface PipelineProgress {
+  currentJob: string; // ID of the currently running job
+  progress: number; // Overall progress percentage (0-100)
+  totalJobs: number; // Total number of jobs
+  completedJobs: number; // Number of completed jobs
+}
+```
+
+### Usage
+
+```typescript
+const execution = await compose(generateVideo({ ... }))
+  .onProgress((progress) => {
+    console.log(`Progress: ${progress.progress}%`);
+    console.log(`Current: ${progress.currentJob}`);
+    console.log(`Done: ${progress.completedJobs}/${progress.totalJobs}`);
+  })
+  .execute();
+```
+
+## Polling for Status
+
+For async executions (with webhooks), you can poll for status:
+
+```typescript
+import {
+  compose,
+  generateVideo,
+  getExecutionStatus,
+  videoModel,
+} from "@anthropic/synthome-sdk";
+
+// Start async execution
+const execution = await compose(
+  generateVideo({
+    model: videoModel("minimax", "replicate"),
+    prompt: "A sunset",
+  }),
+).execute({
+  webhook: "https://your-server.com/webhook",
+});
+
+// Poll for status
+const checkStatus = async () => {
+  const status = await getExecutionStatus(execution.id);
+
+  if (status.status === "completed") {
+    console.log("Done:", status.result?.url);
+    return;
+  }
+
+  if (status.status === "failed") {
+    console.error("Failed:", status.error);
+    return;
+  }
+
+  // Still processing, check again
+  setTimeout(checkStatus, 5000);
+};
+
+checkStatus();
+```

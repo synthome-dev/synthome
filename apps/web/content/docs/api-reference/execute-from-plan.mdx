@@ -1,0 +1,214 @@
+---
+title: executeFromPlan()
+description: Execute pipelines from JSON execution plans
+---
+
+# executeFromPlan()
+
+Executes a pipeline directly from an `ExecutionPlan` JSON object. This enables AI agents and dynamic pipeline generation.
+
+```typescript
+function executeFromPlan(
+  plan: ExecutionPlan,
+  options?: ExecuteOptions,
+): Promise<PipelineExecution>;
+```
+
+## Parameters
+
+| Parameter | Type             | Description                      |
+| --------- | ---------------- | -------------------------------- |
+| `plan`    | `ExecutionPlan`  | The execution plan JSON          |
+| `options` | `ExecuteOptions` | Optional execution configuration |
+
+## Returns
+
+Returns a `Promise<PipelineExecution>` that resolves when execution completes (or immediately if using webhooks).
+
+## ExecutionPlan Structure
+
+```typescript
+interface ExecutionPlan {
+  jobs: JobNode[];
+  baseExecutionId?: string; // Reference to parent execution
+}
+
+interface JobNode {
+  id: string; // Unique job identifier (e.g., "job1")
+  type: OperationType; // Operation type
+  params: Record<string, unknown>; // Operation parameters
+  dependsOn?: string[]; // Job IDs this job depends on
+  output: string; // Output reference (e.g., "$job1")
+}
+
+type OperationType =
+  | "generate" // Video generation
+  | "generateImage" // Image generation
+  | "generateAudio" // Audio generation
+  | "transcribe" // Audio transcription
+  | "merge" // Merge media
+  | "addSubtitles" // Add subtitles
+  | "layer"; // Composite layers
+```
+
+## Basic Usage
+
+```typescript
+import { executeFromPlan } from "@anthropic/synthome-sdk";
+
+const plan = {
+  jobs: [
+    {
+      id: "job1",
+      type: "generate",
+      params: {
+        modelId: "minimax/video-01",
+        prompt: "A sunset over the ocean",
+      },
+      output: "$job1",
+    },
+  ],
+};
+
+const execution = await executeFromPlan(plan);
+console.log(execution.result?.url);
+```
+
+## From compose().toJSON()
+
+```typescript
+import {
+  compose,
+  generateVideo,
+  videoModel,
+  executeFromPlan,
+} from "@anthropic/synthome-sdk";
+
+// Create pipeline and get JSON
+const pipeline = compose(
+  generateVideo({
+    model: videoModel("minimax", "replicate"),
+    prompt: "A cat playing piano",
+  }),
+);
+
+const plan = pipeline.toJSON();
+
+// Store in database, modify, or send to another service
+await db.save(plan);
+
+// Execute later
+const execution = await executeFromPlan(plan);
+```
+
+## AI Agent Integration
+
+Use with AI agents to generate video pipelines dynamically:
+
+```typescript
+import { generateObject } from "ai";
+import { executeFromPlan, type ExecutionPlan } from "@anthropic/synthome-sdk";
+import { z } from "zod";
+
+// Define schema for AI to generate
+const executionPlanSchema = z.object({
+  jobs: z.array(
+    z.object({
+      id: z.string(),
+      type: z.enum(["generate", "generateImage", "generateAudio", "merge"]),
+      params: z.record(z.unknown()),
+      dependsOn: z.array(z.string()).optional(),
+      output: z.string(),
+    }),
+  ),
+});
+
+// AI generates the plan
+const { object: plan } = await generateObject({
+  model: yourModel,
+  schema: executionPlanSchema,
+  prompt: "Create a video showing a sunrise then a sunset",
+});
+
+// Execute the AI-generated plan
+const execution = await executeFromPlan(plan as ExecutionPlan);
+```
+
+## Multi-Job Plan with Dependencies
+
+```typescript
+const plan = {
+  jobs: [
+    {
+      id: "job1",
+      type: "generate",
+      params: {
+        modelId: "minimax/video-01",
+        prompt: "Scene 1: A sunrise",
+      },
+      output: "$job1",
+    },
+    {
+      id: "job2",
+      type: "generate",
+      params: {
+        modelId: "minimax/video-01",
+        prompt: "Scene 2: Birds flying",
+      },
+      output: "$job2",
+    },
+    {
+      id: "job3",
+      type: "merge",
+      params: {
+        items: [
+          { url: "_videoJobDependency:job1", type: "video" },
+          { url: "_videoJobDependency:job2", type: "video" },
+        ],
+      },
+      dependsOn: ["job1", "job2"],
+      output: "$job3",
+    },
+  ],
+};
+
+const execution = await executeFromPlan(plan);
+```
+
+## Dependency Markers
+
+When referencing outputs from previous jobs, use these markers:
+
+| Marker                           | Description                   |
+| -------------------------------- | ----------------------------- |
+| `_videoJobDependency:jobId`      | Reference a video output      |
+| `_imageJobDependency:jobId`      | Reference an image output     |
+| `_audioJobDependency:jobId`      | Reference an audio output     |
+| `_transcriptJobDependency:jobId` | Reference a transcript output |
+
+## With Options
+
+```typescript
+const execution = await executeFromPlan(plan, {
+  apiKey: "your-api-key",
+  webhook: "https://your-server.com/webhook",
+  webhookSecret: "your-secret",
+});
+```
+
+## Validation
+
+`executeFromPlan()` validates the plan structure before execution:
+
+- Plan must have a `jobs` array
+- Jobs array must not be empty
+- Each job must have `id`, `type`, and `params`
+
+```typescript
+// This will throw an error
+await executeFromPlan({ jobs: [] });
+// Error: ExecutionPlan must contain at least one job
+
+await executeFromPlan({ jobs: [{ type: "generate" }] });
+// Error: Each job must have an 'id' field
+```

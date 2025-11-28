@@ -1,0 +1,149 @@
+---
+title: Nano Banana Pro
+description: Google's Gemini 3 Pro image generation with advanced typography
+---
+
+# Nano Banana Pro
+
+Google's Gemini 3 Pro Image model with advanced text rendering and reasoning capabilities.
+
+| Property  | Value                    |
+| --------- | ------------------------ |
+| Model ID  | `google/nano-banana-pro` |
+| Providers | Replicate, Fal           |
+| Type      | Image generation         |
+
+## Basic Usage
+
+```typescript
+import { compose, generateImage, imageModel } from "@synthome/sdk";
+
+const execution = await compose(
+  generateImage({
+    model: imageModel("google/nano-banana-pro", "replicate"),
+    prompt:
+      "A book cover with the title 'Adventures in AI' in elegant typography",
+  }),
+).execute();
+```
+
+## Key Features
+
+- **Accurate text rendering**: Generates readable text in images
+- **Advanced reasoning**: Better understanding of complex prompts
+- **High resolution**: Superior detail and quality
+- **Multi-image support**: Reference multiple images
+
+## Typography & Text
+
+Nano Banana Pro excels at generating images with text:
+
+```typescript
+generateImage({
+  model: imageModel("google/nano-banana-pro", "replicate"),
+  prompt: "A vintage poster with 'SUMMER SALE' in bold retro lettering",
+});
+```
+
+### Marketing Materials
+
+```typescript
+generateImage({
+  model: imageModel("google/nano-banana-pro", "replicate"),
+  prompt:
+    "Instagram post design with text 'New Collection' in modern sans-serif font, fashion photography background",
+  aspectRatio: "1:1",
+});
+```
+
+### Logo Concepts
+
+```typescript
+generateImage({
+  model: imageModel("google/nano-banana-pro", "replicate"),
+  prompt:
+    "Minimalist logo design with the letters 'AB' intertwined, black on white",
+});
+```
+
+## Options
+
+| Option         | Type                       | Default  | Description                       |
+| -------------- | -------------------------- | -------- | --------------------------------- |
+| `prompt`       | `string`                   | required | Text description                  |
+| `image`        | `string \| string[]`       | -        | Input image(s) for transformation |
+| `aspectRatio`  | `string`                   | `1:1`    | Output aspect ratio               |
+| `outputFormat` | `"jpg" \| "png" \| "webp"` | `png`    | Output format                     |
+
+## Complex Scene Generation
+
+Better at understanding and rendering complex scenes:
+
+```typescript
+generateImage({
+  model: imageModel("google/nano-banana-pro", "replicate"),
+  prompt:
+    "A busy Tokyo street at night with neon signs in Japanese, rain reflections on the ground, crowds of people with umbrellas",
+  aspectRatio: "16:9",
+});
+```
+
+## Multi-Reference Generation
+
+Combine multiple reference images:
+
+```typescript
+generateImage({
+  model: imageModel("google/nano-banana-pro", "replicate"),
+  prompt:
+    "Create a new design combining the color palette of the first image with the style of the second",
+  image: ["https://example.com/colors.jpg", "https://example.com/style.jpg"],
+});
+```
+
+## Examples
+
+### Book Cover
+
+```typescript
+generateImage({
+  model: imageModel("google/nano-banana-pro", "replicate"),
+  prompt:
+    "Science fiction book cover, title 'NEXUS' in chrome metallic text, futuristic city background",
+  aspectRatio: "2:3",
+});
+```
+
+### Event Flyer
+
+```typescript
+generateImage({
+  model: imageModel("google/nano-banana-pro", "replicate"),
+  prompt:
+    "Concert flyer with 'LIVE MUSIC FRIDAY' headline, acoustic guitar illustration, warm earth tones",
+  aspectRatio: "4:5",
+});
+```
+
+### UI Mockup
+
+```typescript
+generateImage({
+  model: imageModel("google/nano-banana-pro", "replicate"),
+  prompt:
+    "Mobile app login screen mockup with 'Welcome Back' heading, clean minimal design, light mode",
+  aspectRatio: "9:16",
+});
+```
+
+## When to Use Pro
+
+Choose Nano Banana Pro over standard Nano Banana when:
+
+- Text must be readable and accurate
+- Creating marketing materials with typography
+- Complex multi-element scenes
+- Higher quality output is needed
+- You need better prompt understanding
+
+For simple image generation without text, standard [Nano Banana](/docs/models/image/nano-banana) is faster and more cost-effective.

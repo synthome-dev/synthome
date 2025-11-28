@@ -1,0 +1,217 @@
+---
+title: Merge
+description: Combine videos, images, and audio into a single video
+---
+
+# merge()
+
+Combine multiple media items (videos, images, audio) into a single video.
+
+```typescript
+import { compose, merge } from "@synthome/sdk";
+
+const execution = await compose(
+  merge([
+    "https://example.com/intro.mp4",
+    "https://example.com/main.mp4",
+    "https://example.com/outro.mp4",
+  ]),
+).execute();
+```
+
+## Basic Usage
+
+### Merge Videos
+
+Combine videos sequentially:
+
+```typescript
+merge([
+  "https://example.com/video1.mp4",
+  "https://example.com/video2.mp4",
+  "https://example.com/video3.mp4",
+]);
+```
+
+### Image Slideshow
+
+Create a video from images (default 1 second per image):
+
+```typescript
+merge([
+  "https://example.com/photo1.jpg",
+  "https://example.com/photo2.jpg",
+  "https://example.com/photo3.png",
+]);
+```
+
+### Custom Image Duration
+
+Control how long each image displays:
+
+```typescript
+merge([
+  { url: "https://example.com/title.jpg", duration: 3 },
+  { url: "https://example.com/content.jpg", duration: 5 },
+  { url: "https://example.com/credits.png", duration: 2 },
+]);
+```
+
+## Adding Audio
+
+### Background Music
+
+Add audio that plays throughout the video:
+
+```typescript
+merge([
+  "https://example.com/video.mp4",
+  { url: "https://example.com/music.mp3", offset: 0 },
+]);
+```
+
+### Audio with Offset
+
+Start audio at a specific time:
+
+```typescript
+merge([
+  "https://example.com/intro.mp4",
+  "https://example.com/main.mp4",
+  { url: "https://example.com/narration.mp3", offset: 5 }, // Starts at 5 seconds
+]);
+```
+
+### Volume Control
+
+Adjust audio levels:
+
+```typescript
+merge([
+  { url: "https://example.com/video.mp4", volume: 0.3 }, // Reduce video audio
+  { url: "https://example.com/music.mp3", volume: 0.8 }, // Background music
+]);
+```
+
+## With Generated Content
+
+### Merge Generated Videos
+
+Combine AI-generated videos:
+
+```typescript
+import { compose, merge, generateVideo, videoModel } from "@synthome/sdk";
+
+const execution = await compose(
+  merge([
+    generateVideo({
+      model: videoModel("bytedance/seedance-1-pro", "replicate"),
+      prompt: "A sunrise over mountains",
+    }),
+    generateVideo({
+      model: videoModel("bytedance/seedance-1-pro", "replicate"),
+      prompt: "Birds flying across the sky",
+    }),
+  ]),
+).execute();
+```
+
+Videos are generated in parallel, then merged sequentially.
+
+### Mix URLs and Generated Content
+
+```typescript
+merge([
+  "https://example.com/intro.mp4", // Existing intro
+  generateVideo({
+    model: videoModel("minimax/video-01", "replicate"),
+    prompt: "Product showcase",
+  }),
+  "https://example.com/outro.mp4", // Existing outro
+]);
+```
+
+### Generated Content with Options
+
+```typescript
+merge([
+  {
+    url: generateVideo({
+      model: videoModel("bytedance/seedance-1-pro", "replicate"),
+      prompt: "Scene 1",
+    }),
+    duration: 5, // Trim to 5 seconds
+  },
+  {
+    url: generateImage({
+      model: imageModel("google/nano-banana", "replicate"),
+      prompt: "Title card",
+    }),
+    duration: 3,
+  },
+  {
+    url: generateAudio({
+      model: audioModel("elevenlabs/turbo-v2.5", "elevenlabs"),
+      text: "Welcome to our video",
+    }),
+    offset: 0,
+    volume: 1,
+  },
+]);
+```
+
+## Mixed Media
+
+### Video + Images + Audio
+
+```typescript
+merge([
+  "https://example.com/intro.mp4",
+  { url: "https://example.com/title.png", duration: 2 },
+  "https://example.com/main.mp4",
+  { url: "https://example.com/credits.jpg", duration: 3 },
+  { url: "https://example.com/soundtrack.mp3", offset: 0, volume: 0.5 },
+]);
+```
+
+## Type Detection
+
+Media type is auto-detected from file extensions:
+
+| Type  | Extensions                               |
+| ----- | ---------------------------------------- |
+| Video | `.mp4`, `.mov`, `.webm`, `.avi`          |
+| Image | `.jpg`, `.jpeg`, `.png`, `.gif`, `.webp` |
+| Audio | `.mp3`, `.wav`, `.aac`, `.ogg`, `.m4a`   |
+
+Override auto-detection when needed:
+
+```typescript
+merge([{ url: "https://cdn.example.com/media/abc123", type: "video" }]);
+```
+
+## API Reference
+
+### merge(items)
+
+| Parameter | Type          | Description          |
+| --------- | ------------- | -------------------- |
+| `items`   | `MergeItem[]` | Array of media items |
+
+### MergeItem
+
+Can be one of:
+
+- `string` - URL (type auto-detected)
+- `MergeOperation` - Generated content
+- `MergeItemWithOptions` - URL or operation with options
+
+### MergeItemWithOptions
+
+| Property   | Type                            | Description                                   |
+| ---------- | ------------------------------- | --------------------------------------------- |
+| `url`      | `string \| MergeOperation`      | URL or generated content                      |
+| `type`     | `"video" \| "image" \| "audio"` | Override auto-detection                       |
+| `duration` | `number`                        | Video: trim duration. Image: display duration |
+| `offset`   | `number`                        | Audio only: start position in seconds         |
+| `volume`   | `number`                        | Volume level 0-1 (default: 1)                 |

@@ -1,0 +1,15 @@
+{
+  "root": true,
+  "pages": [
+    "index",
+    "quickstart",
+    "core-concepts",
+    "generation",
+    "operations",
+    "models",
+    "providers",
+    "integrations",
+    "guides",
+    "api-reference"
+  ]
+}

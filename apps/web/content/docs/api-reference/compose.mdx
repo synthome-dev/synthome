@@ -1,0 +1,207 @@
+---
+title: compose()
+description: Create and execute media generation pipelines
+---
+
+# compose()
+
+Creates a pipeline from media operations and executes them on the Synthome backend.
+
+```typescript
+function compose(...nodes: VideoNode[]): Pipeline;
+```
+
+## Parameters
+
+| Parameter | Type          | Description                           |
+| --------- | ------------- | ------------------------------------- |
+| `nodes`   | `VideoNode[]` | Operations to include in the pipeline |
+
+`VideoNode` can be any of:
+
+- `generateVideo()` - Video generation operation
+- `generateImage()` - Image generation operation
+- `generateAudio()` - Audio generation operation
+- `merge()` - Merge multiple media items
+- `layers()` - Composite media with layering
+- `captions()` - Add subtitles
+- Another `Pipeline` - Nested pipelines
+
+## Returns
+
+Returns a `Pipeline` object with the following methods:
+
+### `execute(options?)`
+
+Executes the pipeline and returns a `PipelineExecution`.
+
+```typescript
+const execution = await compose(
+  generateVideo({
+    model: videoModel("minimax", "replicate"),
+    prompt: "A sunset",
+  }),
+).execute();
+```
+
+### `toJSON()`
+
+Returns the `ExecutionPlan` JSON representation. Useful for storing plans or using with `executeFromPlan()`.
+
+```typescript
+const plan = compose(
+  generateVideo({
+    model: videoModel("minimax", "replicate"),
+    prompt: "A sunset",
+  }),
+).toJSON();
+
+// plan is an ExecutionPlan object
+```
+
+### `onProgress(callback)`
+
+Registers a callback for progress updates. Returns the pipeline for chaining.
+
+```typescript
+compose(generateVideo({ ... }))
+  .onProgress((progress) => {
+    console.log(`Job ${progress.completedJobs}/${progress.totalJobs}`);
+  })
+  .execute();
+```
+
+### `onError(callback)`
+
+Registers a callback for error handling. Returns the pipeline for chaining.
+
+```typescript
+compose(generateVideo({ ... }))
+  .onError((error) => {
+    console.error("Pipeline failed:", error.message);
+  })
+  .execute();
+```
+
+## ExecuteOptions
+
+Options passed to `execute()`:
+
+```typescript
+interface ExecuteOptions {
+  apiKey?: string; // SYNTHOME_API_KEY (defaults to env var)
+  apiUrl?: string; // API endpoint URL
+  webhook?: string; // Webhook URL for async completion
+  webhookSecret?: string; // HMAC secret for webhook verification
+  baseExecutionId?: string; // Reference to parent execution
+  providerApiKeys?: {
+    // Provider API keys (auto-read from env)
+    replicate?: string;
+    fal?: string;
+  };
+}
+```
+
+## Basic Usage
+
+```typescript
+import { compose, generateVideo, videoModel } from "@anthropic/synthome-sdk";
+
+const execution = await compose(
+  generateVideo({
+    model: videoModel("minimax", "replicate"),
+    prompt: "A cat playing piano",
+  }),
+).execute();
+
+console.log(execution.result?.url);
+```
+
+## Multi-Step Pipelines
+
+Chain multiple operations:
+
+```typescript
+import {
+  compose,
+  generateVideo,
+  merge,
+  videoModel,
+} from "@anthropic/synthome-sdk";
+
+const execution = await compose(
+  merge([
+    generateVideo({
+      model: videoModel("minimax", "replicate"),
+      prompt: "Scene 1: A sunrise",
+    }),
+    generateVideo({
+      model: videoModel("minimax", "replicate"),
+      prompt: "Scene 2: Birds flying",
+    }),
+  ]),
+).execute();
+```
+
+## Async with Webhooks
+
+For long-running pipelines, use webhooks instead of blocking:
+
+```typescript
+const execution = await compose(
+  generateVideo({
+    model: videoModel("minimax", "replicate"),
+    prompt: "A sunset",
+  }),
+).execute({
+  webhook: "https://your-server.com/webhook",
+  webhookSecret: "your-secret",
+});
+
+// Returns immediately with execution.id
+// Your webhook receives the result when complete
+```
+
+## Error Handling
+
+```typescript
+const execution = await compose(
+  generateVideo({
+    model: videoModel("minimax", "replicate"),
+    prompt: "A sunset",
+  }),
+)
+  .onError((error) => {
+    // Handle errors
+    console.error("Failed:", error.message);
+  })
+  .execute();
+```
+
+## Getting the Execution Plan
+
+Use `toJSON()` to get the execution plan without executing:
+
+```typescript
+const pipeline = compose(
+  generateVideo({
+    model: videoModel("minimax", "replicate"),
+    prompt: "A sunset",
+  }),
+);
+
+const plan = pipeline.toJSON();
+// {
+//   jobs: [
+//     {
+//       id: "job1",
+//       type: "generate",
+//       params: { modelId: "minimax/video-01", prompt: "A sunset" },
+//       output: "$job1"
+//     }
+//   ]
+// }
+
+// Execute later with executeFromPlan()
+const execution = await executeFromPlan(plan);
+```

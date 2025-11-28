@@ -1,0 +1,198 @@
+---
+title: ElevenLabs Turbo
+description: High-quality text-to-speech with voice cloning
+---
+
+# ElevenLabs Turbo v2.5
+
+Fast, high-quality text-to-speech from ElevenLabs with extensive voice options.
+
+| Property  | Value                   |
+| --------- | ----------------------- |
+| Model ID  | `elevenlabs/turbo-v2.5` |
+| Providers | ElevenLabs, Replicate   |
+| Type      | Text-to-speech          |
+
+## Basic Usage
+
+```typescript
+import { compose, generateAudio, audioModel } from "@synthome/sdk";
+
+const execution = await compose(
+  generateAudio({
+    model: audioModel("elevenlabs/turbo-v2.5", "elevenlabs"),
+    text: "Hello! Welcome to our video tutorial.",
+    voiceId: "21m00Tcm4TlvDq8ikWAM", // Rachel voice
+  }),
+).execute();
+```
+
+## Voice Selection
+
+ElevenLabs provides pre-made voices and custom voice cloning.
+
+### Popular Pre-Made Voices
+
+| Voice  | ID                     | Description               |
+| ------ | ---------------------- | ------------------------- |
+| Rachel | `21m00Tcm4TlvDq8ikWAM` | Calm, professional female |
+| Adam   | `pNInz6obpgDQGcFmaJgB` | Deep, authoritative male  |
+| Josh   | `TxGEqnHWrfWFTfGW9XjX` | Young, energetic male     |
+| Bella  | `EXAVITQu4vr4xnSDxMaL` | Warm, friendly female     |
+
+```typescript
+generateAudio({
+  model: audioModel("elevenlabs/turbo-v2.5", "elevenlabs"),
+  text: "Your narration text here.",
+  voiceId: "pNInz6obpgDQGcFmaJgB", // Adam
+});
+```
+
+## Options
+
+| Option            | Type      | Default             | Description                        |
+| ----------------- | --------- | ------------------- | ---------------------------------- |
+| `text`            | `string`  | required            | Text to convert (max 40,000 chars) |
+| `voiceId`         | `string`  | required            | ElevenLabs voice ID                |
+| `modelId`         | `string`  | `eleven_turbo_v2_5` | ElevenLabs model variant           |
+| `stability`       | `number`  | `0.5`               | Voice consistency (0-1)            |
+| `similarityBoost` | `number`  | `0.75`              | Voice similarity (0-1)             |
+| `style`           | `number`  | `0`                 | Style exaggeration (0-1)           |
+| `useSpeakerBoost` | `boolean` | `true`              | Enhanced audio quality             |
+| `outputFormat`    | `string`  | `mp3_44100_128`     | Audio format                       |
+| `languageCode`    | `string`  | auto                | Language code                      |
+
+## Voice Settings
+
+### Stability
+
+Controls consistency vs expressiveness:
+
+```typescript
+generateAudio({
+  model: audioModel("elevenlabs/turbo-v2.5", "elevenlabs"),
+  text: "This is a test.",
+  voiceId: "21m00Tcm4TlvDq8ikWAM",
+  stability: 0.7, // More consistent, less expressive
+});
+```
+
+- **Low (0.0-0.3)**: More expressive, variable delivery
+- **Medium (0.4-0.6)**: Balanced
+- **High (0.7-1.0)**: Very consistent, robotic at extremes
+
+### Similarity Boost
+
+How closely to match the original voice:
+
+```typescript
+generateAudio({
+  model: audioModel("elevenlabs/turbo-v2.5", "elevenlabs"),
+  text: "Match the voice closely.",
+  voiceId: "21m00Tcm4TlvDq8ikWAM",
+  similarityBoost: 0.9, // Very close to original
+});
+```
+
+### Style
+
+Exaggerate speaking style (v2 models):
+
+```typescript
+generateAudio({
+  model: audioModel("elevenlabs/turbo-v2.5", "elevenlabs"),
+  text: "An exciting announcement!",
+  voiceId: "21m00Tcm4TlvDq8ikWAM",
+  style: 0.5, // More expressive delivery
+});
+```
+
+## Multi-Language
+
+Supports 32 languages:
+
+```typescript
+// Spanish
+generateAudio({
+  model: audioModel("elevenlabs/turbo-v2.5", "elevenlabs"),
+  text: "Hola, bienvenidos a nuestro canal.",
+  voiceId: "21m00Tcm4TlvDq8ikWAM",
+  languageCode: "es",
+});
+
+// French
+generateAudio({
+  model: audioModel("elevenlabs/turbo-v2.5", "elevenlabs"),
+  text: "Bonjour, bienvenue sur notre chaîne.",
+  voiceId: "21m00Tcm4TlvDq8ikWAM",
+  languageCode: "fr",
+});
+```
+
+## Output Formats
+
+| Format          | Description                  |
+| --------------- | ---------------------------- |
+| `mp3_44100_128` | MP3 128kbps (default)        |
+| `mp3_44100_192` | MP3 192kbps (higher quality) |
+| `pcm_16000`     | PCM 16kHz                    |
+| `pcm_22050`     | PCM 22kHz                    |
+| `pcm_24000`     | PCM 24kHz                    |
+| `pcm_44100`     | PCM 44.1kHz                  |
+
+## Context for Better Pronunciation
+
+Provide surrounding text for better prosody:
+
+```typescript
+generateAudio({
+  model: audioModel("elevenlabs/turbo-v2.5", "elevenlabs"),
+  text: "This is the middle part.",
+  voiceId: "21m00Tcm4TlvDq8ikWAM",
+  previousText: "Here's the introduction.",
+  nextText: "And here's the conclusion.",
+});
+```
+
+## With Video Generation
+
+Create narrated videos:
+
+```typescript
+import {
+  compose,
+  generateVideo,
+  generateAudio,
+  videoModel,
+  audioModel,
+} from "@synthome/sdk";
+
+const execution = await compose(
+  generateVideo({
+    model: videoModel("veed/fabric-1.0", "fal"),
+    image: "https://example.com/speaker.jpg",
+    audio: generateAudio({
+      model: audioModel("elevenlabs/turbo-v2.5", "elevenlabs"),
+      text: "Welcome to today's tutorial on AI video generation.",
+      voiceId: "21m00Tcm4TlvDq8ikWAM",
+    }),
+  }),
+).execute();
+```
+
+## Model Variants
+
+| Model ID                 | Speed     | Quality | Languages |
+| ------------------------ | --------- | ------- | --------- |
+| `eleven_turbo_v2_5`      | Fastest   | High    | 32        |
+| `eleven_multilingual_v2` | Fast      | Highest | 29        |
+| `eleven_flash_v2_5`      | Very fast | Good    | 32        |
+
+```typescript
+generateAudio({
+  model: audioModel("elevenlabs/turbo-v2.5", "elevenlabs"),
+  text: "Using the multilingual model for highest quality.",
+  voiceId: "21m00Tcm4TlvDq8ikWAM",
+  modelId: "eleven_multilingual_v2",
+});
+```

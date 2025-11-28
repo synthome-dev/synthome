@@ -1,0 +1,158 @@
+---
+title: Audio Generation
+description: Generate audio with AI models using generateAudio()
+---
+
+# Audio Generation
+
+Use `generateAudio()` to create AI-generated speech from text using text-to-speech models.
+
+## Basic Usage
+
+```typescript
+import { compose, generateAudio, audioModel } from "@synthome/sdk";
+
+const execution = await compose(
+  generateAudio({
+    model: audioModel("elevenlabs/turbo-v2.5", "elevenlabs"),
+    text: "Welcome to Synthome, the composable AI media toolkit.",
+    voiceId: "EXAVITQu4vr4xnSDxMaL",
+  }),
+).execute();
+
+console.log(execution.result?.url);
+```
+
+## Options
+
+Options vary by model. Here are common options:
+
+### ElevenLabs
+
+| Option    | Type         | Description               |
+| --------- | ------------ | ------------------------- |
+| `model`   | `AudioModel` | The audio model to use    |
+| `text`    | `string`     | Text to convert to speech |
+| `voiceId` | `string`     | ElevenLabs voice ID       |
+
+### Hume
+
+| Option  | Type         | Description               |
+| ------- | ------------ | ------------------------- |
+| `model` | `AudioModel` | The audio model to use    |
+| `text`  | `string`     | Text to convert to speech |
+
+## ElevenLabs TTS
+
+Generate speech with ElevenLabs voices:
+
+```typescript
+const execution = await compose(
+  generateAudio({
+    model: audioModel("elevenlabs/turbo-v2.5", "elevenlabs"),
+    text: "Hello! This is a test of the ElevenLabs text-to-speech system.",
+    voiceId: "EXAVITQu4vr4xnSDxMaL", // Sarah voice
+  }),
+).execute();
+```
+
+### Popular ElevenLabs Voice IDs
+
+| Voice  | ID                     | Description               |
+| ------ | ---------------------- | ------------------------- |
+| Sarah  | `EXAVITQu4vr4xnSDxMaL` | Soft, friendly female     |
+| Rachel | `21m00Tcm4TlvDq8ikWAM` | Calm, professional female |
+| Adam   | `pNInz6obpgDQGcFmaJgB` | Deep, authoritative male  |
+| Josh   | `TxGEqnHWrfWFTfGW9XjX` | Conversational male       |
+
+<Callout type="info">
+  Find more voices in the [ElevenLabs Voice
+  Library](https://elevenlabs.io/voice-library).
+</Callout>
+
+## Hume TTS
+
+Generate emotionally expressive speech with Hume:
+
+```typescript
+const execution = await compose(
+  generateAudio({
+    model: audioModel("hume/tts", "hume"),
+    text: "I'm so excited to share this news with you!",
+  }),
+).execute();
+```
+
+Hume automatically detects emotion from the text and adjusts the voice accordingly.
+
+## Using with Video Generation
+
+Generate audio and use it for lip-sync video:
+
+```typescript
+const execution = await compose(
+  generateVideo({
+    model: videoModel("veed/fabric-1.0", "fal"),
+    prompt: "A professional presenter",
+    image: "https://example.com/portrait.jpg",
+    audio: generateAudio({
+      model: audioModel("elevenlabs/turbo-v2.5", "elevenlabs"),
+      text: "Welcome to our product demonstration. Today I'll show you...",
+      voiceId: "EXAVITQu4vr4xnSDxMaL",
+    }),
+  }),
+).execute();
+```
+
+The audio is generated first, then passed to the video model for lip-sync.
+
+## Using with Merge
+
+Add generated audio as a voiceover:
+
+```typescript
+const execution = await compose(
+  merge([
+    "https://example.com/video.mp4",
+    {
+      url: generateAudio({
+        model: audioModel("elevenlabs/turbo-v2.5", "elevenlabs"),
+        text: "This is the voiceover for the video.",
+        voiceId: "EXAVITQu4vr4xnSDxMaL",
+      }),
+      offset: 2, // Start 2 seconds into the video
+      volume: 0.8,
+    },
+  ]),
+).execute();
+```
+
+## Available Models
+
+| Model                   | Provider              | Features                   |
+| ----------------------- | --------------------- | -------------------------- |
+| `elevenlabs/turbo-v2.5` | elevenlabs, replicate | Fast TTS, voice selection  |
+| `hume/tts`              | hume                  | Emotionally expressive TTS |
+
+## Transcription Models
+
+For speech-to-text (transcription), use these models with the `captions()` operation:
+
+| Model                                | Provider  | Features                    |
+| ------------------------------------ | --------- | --------------------------- |
+| `openai/whisper`                     | replicate | Sentence-level timestamps   |
+| `vaibhavs10/incredibly-fast-whisper` | replicate | Word-level timestamps, fast |
+
+## Next Steps
+
+<Cards>
+  <Card href="/docs/generation/video" title="Video Generation">
+    Generate videos with generateVideo()
+  </Card>
+  <Card href="/docs/generation/image" title="Image Generation">
+    Generate images with generateImage()
+  </Card>
+  <Card href="/docs/operations/captions" title="Captions Operation">
+    Add captions with transcription
+  </Card>
+</Cards>
