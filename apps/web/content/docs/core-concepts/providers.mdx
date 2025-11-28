@@ -1,0 +1,193 @@
+---
+title: Providers
+description: Configure API keys for AI model providers
+---
+
+# Providers
+
+Providers are the platforms that host and run AI models. Synthome orchestrates calls to these providers using your API keys.
+
+## Supported Providers
+
+| Provider   | Models                | API Key Env Variable |
+| ---------- | --------------------- | -------------------- |
+| Replicate  | Video, image, audio   | `REPLICATE_API_KEY`  |
+| Fal        | Image, lip-sync video | `FAL_KEY`            |
+| ElevenLabs | Text-to-speech        | `ELEVENLABS_API_KEY` |
+| Hume       | Expressive TTS        | `HUME_API_KEY`       |
+
+## API Key Configuration
+
+There are three ways to provide API keys, in order of priority:
+
+### 1. Model-Level (Highest Priority)
+
+Pass the API key directly when creating a model:
+
+```typescript
+const model = videoModel("bytedance/seedance-1-pro", {
+  provider: "replicate",
+  apiKey: "your-replicate-key",
+});
+```
+
+### 2. Dashboard
+
+Add your API keys in the [Synthome dashboard](https://synthome.dev). Keys are stored securely and used automatically.
+
+### 3. Environment Variables (Lowest Priority)
+
+Set environment variables in your shell or `.env` file:
+
+```bash
+# Replicate
+export REPLICATE_API_KEY="your-replicate-key"
+
+# Fal
+export FAL_KEY="your-fal-key"
+
+# ElevenLabs
+export ELEVENLABS_API_KEY="your-elevenlabs-key"
+
+# Hume
+export HUME_API_KEY="your-hume-key"
+```
+
+<Callout type="info">
+  **Priority Order**: Model-level API key → Dashboard keys → Environment
+  variables
+</Callout>
+
+## Provider-Specific Configuration
+
+### Replicate
+
+Replicate hosts a wide variety of models including video generation, image generation, and audio processing.
+
+```typescript
+// Video generation
+const video = videoModel("bytedance/seedance-1-pro", "replicate");
+
+// Image generation
+const image = imageModel("google/nano-banana", "replicate");
+
+// Audio transcription
+const audio = audioModel("openai/whisper", "replicate");
+```
+
+Get your API key at [replicate.com/account/api-tokens](https://replicate.com/account/api-tokens)
+
+### Fal
+
+Fal specializes in fast image generation and lip-sync video.
+
+```typescript
+// Fast image generation
+const image = imageModel("google/nano-banana", "fal");
+
+// Lip-sync video
+const video = videoModel("veed/fabric-1.0", "fal");
+```
+
+Get your API key at [fal.ai/dashboard/keys](https://fal.ai/dashboard/keys)
+
+### ElevenLabs
+
+ElevenLabs provides high-quality text-to-speech with voice cloning capabilities.
+
+```typescript
+const audio = audioModel("elevenlabs/turbo-v2.5", "elevenlabs");
+
+const execution = await compose(
+  generateAudio({
+    model: audio,
+    text: "Hello, this is a test.",
+    voiceId: "EXAVITQu4vr4xnSDxMaL", // Sarah voice
+  }),
+).execute();
+```
+
+Get your API key at [elevenlabs.io/app/settings/api-keys](https://elevenlabs.io/app/settings/api-keys)
+
+### Hume
+
+Hume provides emotionally expressive text-to-speech.
+
+```typescript
+const audio = audioModel("hume/tts", "hume");
+
+const execution = await compose(
+  generateAudio({
+    model: audio,
+    text: "I'm so excited to meet you!",
+  }),
+).execute();
+```
+
+Get your API key at [platform.hume.ai/settings/keys](https://platform.hume.ai/settings/keys)
+
+## Passing Keys at Execution
+
+You can also pass provider API keys when executing a pipeline:
+
+```typescript
+const execution = await compose(
+  generateVideo({ ... }),
+).execute({
+  providerApiKeys: {
+    replicate: "your-replicate-key",
+    fal: "your-fal-key",
+  },
+});
+```
+
+This is useful when you need to use different keys for different executions.
+
+## Key Filtering
+
+Synthome automatically filters which API keys to send based on which providers your pipeline uses. If your pipeline only uses Replicate models, only the Replicate API key is sent to the backend.
+
+## Security Best Practices
+
+1. **Never commit API keys** to version control
+2. **Use environment variables** for local development
+3. **Use the dashboard** for production deployments
+4. **Rotate keys regularly** if they may have been exposed
+
+## Troubleshooting
+
+### "Missing API key for provider X"
+
+This error means no API key was found for a required provider. Check:
+
+1. Environment variable is set correctly
+2. Key is added in the dashboard
+3. Provider name matches (case-sensitive)
+
+### "Invalid API key"
+
+The API key was found but rejected by the provider. Check:
+
+1. Key is not expired
+2. Key has the required permissions
+3. Key is for the correct environment (production vs test)
+
+## Request a Model or Provider
+
+Don't see the model or provider you need? We're actively expanding our support and typically add new models and providers within **48 hours**.
+
+Use the **"Request Model"** button in the [dashboard](https://synthome.dev) to submit your request.
+
+## Next Steps
+
+<Cards>
+  <Card href="/docs/generation/video" title="Video Generation">
+    Start generating videos
+  </Card>
+  <Card href="/docs/generation/image" title="Image Generation">
+    Start generating images
+  </Card>
+  <Card href="/docs/generation/audio" title="Audio Generation">
+    Start generating audio
+  </Card>
+</Cards>

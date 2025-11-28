@@ -1,0 +1,214 @@
+---
+title: Quickstart
+description: Get started with Synthome SDK in 5 minutes
+---
+
+# Quickstart
+
+Get up and running with Synthome SDK in just a few minutes.
+
+## Installation
+
+Install the SDK using your preferred package manager:
+
+<Tabs items={["npm", "yarn", "pnpm", "bun"]}>
+  <Tab value="npm">
+
+```bash
+npm install @synthome/sdk
+```
+
+  </Tab>
+  <Tab value="yarn">
+
+```bash
+yarn add @synthome/sdk
+```
+
+  </Tab>
+  <Tab value="pnpm">
+
+```bash
+pnpm add @synthome/sdk
+```
+
+  </Tab>
+  <Tab value="bun">
+
+```bash
+bun add @synthome/sdk
+```
+
+  </Tab>
+</Tabs>
+
+## Setup API Keys
+
+### 1. Synthome API Key
+
+Get your Synthome API key from the [dashboard](https://synthome.dev):
+
+```bash
+export SYNTHOME_API_KEY="your-synthome-api-key"
+```
+
+### 2. Provider API Keys
+
+Synthome orchestrates AI models across multiple providers. You need API keys for the providers you want to use.
+
+**Option A: Dashboard (Recommended)**
+
+Add your provider API keys in the [Synthome dashboard](https://synthome.dev). This keeps your keys secure and managed in one place.
+
+**Option B: Environment Variables**
+
+```bash
+# For Replicate models
+export REPLICATE_API_KEY="your-replicate-key"
+
+# For Fal models
+export FAL_KEY="your-fal-key"
+
+# For ElevenLabs audio
+export ELEVENLABS_API_KEY="your-elevenlabs-key"
+
+# For Hume TTS
+export HUME_API_KEY="your-hume-key"
+```
+
+**Option C: Pass in Code**
+
+```typescript
+const model = videoModel("bytedance/seedance-1-pro", {
+  provider: "replicate",
+  apiKey: "your-replicate-key",
+});
+```
+
+<Callout type="info">
+  **Priority Order**: Model-level API key → Dashboard keys → Environment
+  variables
+</Callout>
+
+## Your First Pipeline
+
+Let's generate a simple video:
+
+```typescript
+import { compose, generateVideo, videoModel } from "@synthome/sdk";
+
+const execution = await compose(
+  generateVideo({
+    model: videoModel("bytedance/seedance-1-pro", "replicate"),
+    prompt: "A serene mountain landscape at sunrise, cinematic",
+    duration: 5,
+  }),
+).execute();
+
+console.log("Video URL:", execution.result?.url);
+```
+
+## Generate an Image
+
+```typescript
+import { compose, generateImage, imageModel } from "@synthome/sdk";
+
+const execution = await compose(
+  generateImage({
+    model: imageModel("google/nano-banana", "fal"),
+    prompt: "A futuristic city skyline at night",
+  }),
+).execute();
+
+console.log("Image URL:", execution.result?.url);
+```
+
+## Generate Audio (Text-to-Speech)
+
+```typescript
+import { compose, generateAudio, audioModel } from "@synthome/sdk";
+
+const execution = await compose(
+  generateAudio({
+    model: audioModel("elevenlabs/turbo-v2.5", "elevenlabs"),
+    text: "Welcome to Synthome, the composable AI media toolkit.",
+    voiceId: "EXAVITQu4vr4xnSDxMaL", // Sarah voice
+  }),
+).execute();
+
+console.log("Audio URL:", execution.result?.url);
+```
+
+## Combine Multiple Operations
+
+The real power of Synthome is composing multiple operations. You can mix **direct URLs** with **generated media**:
+
+```typescript
+import { compose, generateVideo, merge, videoModel } from "@synthome/sdk";
+
+const execution = await compose(
+  merge([
+    // Use an existing video URL
+    "https://example.com/intro.mp4",
+    // Generate new videos
+    generateVideo({
+      model: videoModel("bytedance/seedance-1-pro", "replicate"),
+      prompt: "Scene 1: A rocket launching into space",
+    }),
+    generateVideo({
+      model: videoModel("bytedance/seedance-1-pro", "replicate"),
+      prompt: "Scene 2: Earth from orbit",
+    }),
+  ]),
+).execute();
+
+console.log("Merged video:", execution.result?.url);
+```
+
+Generated videos run in parallel, and the merge waits for all inputs before combining them.
+
+## Use Webhooks (Async)
+
+For long-running pipelines, use webhooks instead of polling:
+
+```typescript
+const execution = await compose(
+  generateVideo({
+    model: videoModel("bytedance/seedance-1-pro", "replicate"),
+    prompt: "An epic cinematic scene",
+  }),
+).execute({
+  webhook: "https://your-server.com/webhook",
+  webhookSecret: "your-secret", // Optional: for signature verification
+});
+
+// Returns immediately with execution ID
+console.log("Execution ID:", execution.id);
+```
+
+Your webhook will receive the result when the pipeline completes.
+
+## Next Steps
+
+Now that you have the basics, explore more:
+
+<Cards>
+  <Card href="/docs/core-concepts" title="Core Concepts">
+    Understand how pipelines, models, and providers work
+  </Card>
+  <Card href="/docs/generation/video" title="Video Generation">
+    Deep dive into video generation options
+  </Card>
+  <Card href="/docs/generation/image" title="Image Generation">
+    Deep dive into image generation options
+  </Card>
+  <Card href="/docs/generation/audio" title="Audio Generation">
+    Deep dive into audio generation options
+  </Card>
+  <Card href="/docs/operations" title="Operations">
+    Learn about merge, layers, captions, and more
+  </Card>
+  <Card href="/docs/models" title="Models">
+    See all supported AI models
+  </Card>
+</Cards>

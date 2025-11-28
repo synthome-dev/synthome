@@ -15,7 +15,7 @@ export default function MarketingLayout({
   return (
     <>
       <Header />
-      <main role="main" data-theme="dark" className="bg-background">
+      <main role="main" className="bg-background">
         {children}
       </main>
       {/* <FooterSection /> */}

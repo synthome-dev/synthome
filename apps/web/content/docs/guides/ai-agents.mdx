@@ -1,0 +1,330 @@
+---
+title: AI Agents
+description: Use AI agents to dynamically generate and execute media pipelines
+---
+
+# AI Agents
+
+One of Synthome's most powerful features is the ability to let AI agents generate execution plans. This enables dynamic, content-aware video creation without hardcoding pipeline logic.
+
+## How It Works
+
+The workflow is:
+
+1. **Create a pipeline** using `compose()` and other operations
+2. **Export the plan** as JSON with `pipeline.toJSON()`
+3. **Let an AI agent modify** or generate the JSON
+4. **Execute the plan** with `executeFromPlan()`
+
+This separation allows AI agents to work with a simple JSON structure instead of code.
+
+## The Execution Plan Format
+
+An execution plan is a JSON object with a `jobs` array:
+
+```typescript
+interface ExecutionPlan {
+  jobs: JobNode[];
+  baseExecutionId?: string;
+}
+
+interface JobNode {
+  id: string; // Unique job identifier
+  type: OperationType; // "generate", "generateImage", "merge", etc.
+  params: Record<string, unknown>; // Job-specific parameters
+  dependsOn?: string[]; // IDs of jobs this depends on
+  output: string; // Output reference key
+}
+```
+
+### Example Plan
+
+```json
+{
+  "jobs": [
+    {
+      "id": "scene-1",
+      "type": "generate",
+      "params": {
+        "model": "bytedance/seedance-1-pro",
+        "provider": "replicate",
+        "prompt": "A rocket launching into space, cinematic"
+      },
+      "output": "scene-1-output"
+    },
+    {
+      "id": "scene-2",
+      "type": "generate",
+      "params": {
+        "model": "bytedance/seedance-1-pro",
+        "provider": "replicate",
+        "prompt": "Earth from orbit, blue planet"
+      },
+      "output": "scene-2-output"
+    },
+    {
+      "id": "final",
+      "type": "merge",
+      "params": {
+        "items": [
+          { "ref": "scene-1-output", "type": "video" },
+          { "ref": "scene-2-output", "type": "video" }
+        ]
+      },
+      "dependsOn": ["scene-1", "scene-2"],
+      "output": "final-output"
+    }
+  ]
+}
+```
+
+## Using executeFromPlan()
+
+The `executeFromPlan()` function executes a plan directly:
+
+```typescript
+import { executeFromPlan } from "@synthome/sdk";
+
+const plan = {
+  jobs: [
+    {
+      id: "image-1",
+      type: "generateImage",
+      params: {
+        model: "google/nano-banana",
+        provider: "fal",
+        prompt: "A futuristic city at night",
+      },
+      output: "image-output",
+    },
+  ],
+};
+
+const execution = await executeFromPlan(plan);
+console.log("Result:", execution.result?.url);
+```
+
+### With Options
+
+```typescript
+const execution = await executeFromPlan(plan, {
+  apiKey: "your-synthome-api-key",
+  webhook: "https://your-server.com/webhook",
+  webhookSecret: "your-secret",
+  providerApiKeys: {
+    replicate: "your-replicate-key",
+    fal: "your-fal-key",
+  },
+});
+```
+
+## AI Agent Integration
+
+### Prompt Template
+
+Give your AI agent this context to generate valid plans:
+
+```text
+You are generating an execution plan for Synthome SDK.
+
+Available job types:
+- generate: Generate a video (params: model, provider, prompt, duration, imageUrl)
+- generateImage: Generate an image (params: model, provider, prompt)
+- generateAudio: Generate audio/TTS (params: model, provider, text, voiceId)
+- merge: Combine media sequentially (params: items array with ref/url and type)
+- layer: Composite media with positioning (params: layers array)
+- addSubtitles: Add captions to video (params: subtitles or transcribe options)
+
+Available models:
+Video: bytedance/seedance-1-pro, minimax/video-01, veed/fabric-1.0
+Image: google/nano-banana, google/nano-banana-pro, bytedance/seedream-4
+Audio: elevenlabs/turbo-v2.5, hume/tts
+
+Output format:
+{
+  "jobs": [
+    {
+      "id": "unique-id",
+      "type": "jobType",
+      "params": { ... },
+      "dependsOn": ["other-job-id"], // optional
+      "output": "output-key"
+    }
+  ]
+}
+
+Use dependsOn to specify job dependencies. Jobs without dependencies run in parallel.
+For merge/layer, reference other job outputs with { "ref": "output-key" }.
+```
+
+### Example: Vercel AI SDK
+
+```typescript
+import { generateObject } from "ai";
+import { openai } from "@ai-sdk/openai";
+import { z } from "zod";
+import { executeFromPlan } from "@synthome/sdk";
+
+// Define the execution plan schema
+const ExecutionPlanSchema = z.object({
+  jobs: z.array(
+    z.object({
+      id: z.string(),
+      type: z.enum(["generate", "generateImage", "generateAudio", "merge"]),
+      params: z.object({
+        model: z.string().optional(),
+        provider: z.string().optional(),
+        prompt: z.string().optional(),
+        duration: z.number().optional(),
+        items: z
+          .array(
+            z.object({
+              ref: z.string().optional(),
+              url: z.string().optional(),
+              type: z.enum(["video", "image", "audio"]),
+            }),
+          )
+          .optional(),
+      }),
+      dependsOn: z.array(z.string()).optional(),
+      output: z.string(),
+    }),
+  ),
+});
+
+async function generateVideoFromDescription(description: string) {
+  const { object: plan } = await generateObject({
+    model: openai("gpt-4o"),
+    schema: ExecutionPlanSchema,
+    prompt: `Generate a Synthome SDK execution plan for: ${description}
+
+Available models:
+- Video: bytedance/seedance-1-pro (provider: replicate), minimax/video-01 (provider: replicate)
+- Image: google/nano-banana (provider: fal), bytedance/seedream-4 (provider: replicate)
+- Audio: elevenlabs/turbo-v2.5 (provider: elevenlabs)
+
+Use type "generate" for video, "generateImage" for images, "merge" to combine.
+Use dependsOn to specify job dependencies. Jobs without dependencies run in parallel.
+For merge, reference other job outputs with { "ref": "output-key", "type": "video" }.`,
+  });
+
+  // Execute the AI-generated plan
+  const execution = await executeFromPlan(plan);
+  return execution;
+}
+
+// Usage
+const execution = await generateVideoFromDescription(
+  "A 3-scene video showing: sunrise over mountains, birds flying, sunset",
+);
+```
+
+The Vercel AI SDK's `generateObject` with Zod schemas ensures type-safe, validated output from the AI model.
+
+## Converting Pipelines to Plans
+
+You can also create a pipeline with `compose()` and export it:
+
+```typescript
+import { compose, generateVideo, merge, videoModel } from "@synthome/sdk";
+
+// Create pipeline programmatically
+const pipeline = compose(
+  merge([
+    generateVideo({
+      model: videoModel("bytedance/seedance-1-pro", "replicate"),
+      prompt: "Scene 1: Ocean waves",
+    }),
+    generateVideo({
+      model: videoModel("bytedance/seedance-1-pro", "replicate"),
+      prompt: "Scene 2: Beach sunset",
+    }),
+  ]),
+);
+
+// Export as JSON
+const plan = pipeline.toJSON();
+console.log(JSON.stringify(plan, null, 2));
+
+// Modify the plan if needed
+plan.jobs[0].params.prompt = "Scene 1: Calm ocean at dawn";
+
+// Execute the modified plan
+const execution = await executeFromPlan(plan);
+```
+
+## Validation
+
+`executeFromPlan()` validates the plan before execution:
+
+- Plan must have a `jobs` array
+- Each job must have `id`, `type`, and `params`
+- At least one job must exist
+
+Invalid plans throw descriptive errors:
+
+```typescript
+try {
+  await executeFromPlan({ jobs: [] });
+} catch (error) {
+  console.error(error.message);
+  // "ExecutionPlan must contain at least one job"
+}
+```
+
+## Best Practices
+
+### 1. Validate AI Output
+
+Always validate AI-generated plans before execution:
+
+```typescript
+function validatePlan(plan: any): boolean {
+  if (!plan?.jobs || !Array.isArray(plan.jobs)) return false;
+  if (plan.jobs.length === 0) return false;
+
+  for (const job of plan.jobs) {
+    if (!job.id || !job.type || !job.params) return false;
+  }
+
+  return true;
+}
+
+const plan = JSON.parse(aiResponse);
+if (!validatePlan(plan)) {
+  throw new Error("Invalid plan generated by AI");
+}
+```
+
+### 2. Use Structured Output
+
+Use `generateObject` with Zod schemas (as shown in the AI SDK example) to ensure type-safe, validated JSON output.
+
+### 3. Provide Clear Examples
+
+Give your AI agent concrete examples of valid plans for your use case.
+
+### 4. Handle Errors Gracefully
+
+```typescript
+try {
+  const execution = await executeFromPlan(plan);
+  console.log("Success:", execution.result?.url);
+} catch (error) {
+  if (error.message.includes("ExecutionPlan")) {
+    // Plan validation error - ask AI to regenerate
+    console.error("Invalid plan:", error.message);
+  } else {
+    // Execution error
+    console.error("Execution failed:", error.message);
+  }
+}
+```
+
+## Use Cases
+
+- **Content generation at scale**: Let AI decide scene composition based on content
+- **Dynamic video creation**: Generate videos based on user input or data
+- **A/B testing**: Generate variations by modifying plans
+- **Workflow automation**: Store and replay execution plans
+- **Multi-tenant applications**: Generate plans per-user with different parameters

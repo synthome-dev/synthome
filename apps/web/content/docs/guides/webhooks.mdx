@@ -1,0 +1,327 @@
+---
+title: Webhooks
+description: Handle long-running pipelines with async webhook notifications
+---
+
+# Webhooks
+
+Video generation can take minutes. Instead of blocking your application, use webhooks to receive notifications when pipelines complete.
+
+## How It Works
+
+1. **Start execution** with a webhook URL
+2. **Receive execution ID** immediately
+3. **Continue processing** other requests
+4. **Receive webhook** when pipeline completes or fails
+
+```
+┌─────────┐     execute()      ┌───────────┐
+│  Your   │ ─────────────────► │  Synthome │
+│  App    │ ◄───────────────── │   API     │
+└─────────┘   { id: "abc" }    └───────────┘
+     │                               │
+     │  (continue processing)        │ (generating...)
+     │                               │
+     │        POST /webhook          │
+     │ ◄──────────────────────────── │
+     │   { status: "completed" }     │
+     ▼                               ▼
+```
+
+## Basic Usage
+
+```typescript
+import { compose, generateVideo, videoModel } from "@synthome/sdk";
+
+const execution = await compose(
+  generateVideo({
+    model: videoModel("bytedance/seedance-1-pro", "replicate"),
+    prompt: "A cinematic ocean scene at sunset",
+    duration: 5,
+  }),
+).execute({
+  webhook: "https://your-server.com/api/webhook",
+});
+
+// Returns immediately with execution ID
+console.log("Execution started:", execution.id);
+// "Execution started: exec_abc123"
+```
+
+## Webhook Payload
+
+When the pipeline completes, Synthome sends a POST request to your webhook URL:
+
+### Success Payload
+
+```json
+{
+  "executionId": "exec_abc123",
+  "status": "completed",
+  "result": {
+    "url": "https://cdn.synthome.dev/videos/abc123.mp4",
+    "status": "completed"
+  },
+  "completedAt": "2024-01-15T10:30:00Z"
+}
+```
+
+### Failure Payload
+
+```json
+{
+  "executionId": "exec_abc123",
+  "status": "failed",
+  "error": "Video generation failed: model timeout",
+  "failedAt": "2024-01-15T10:30:00Z"
+}
+```
+
+## Webhook Handler Example
+
+### Express.js
+
+```typescript
+import express from "express";
+
+const app = express();
+app.use(express.json());
+
+app.post("/api/webhook", async (req, res) => {
+  const { executionId, status, result, error } = req.body;
+
+  if (status === "completed") {
+    console.log(`Execution ${executionId} completed!`);
+    console.log(`Video URL: ${result.url}`);
+
+    // Process the result
+    await saveToDatabase(executionId, result.url);
+    await notifyUser(executionId);
+  } else if (status === "failed") {
+    console.error(`Execution ${executionId} failed: ${error}`);
+
+    // Handle failure
+    await markAsFailed(executionId, error);
+    await notifyUserOfError(executionId);
+  }
+
+  // Always respond with 200 to acknowledge receipt
+  res.status(200).json({ received: true });
+});
+
+app.listen(3000);
+```
+
+### Next.js API Route
+
+```typescript
+// app/api/webhook/route.ts
+import { NextRequest, NextResponse } from "next/server";
+
+export async function POST(request: NextRequest) {
+  const payload = await request.json();
+  const { executionId, status, result, error } = payload;
+
+  if (status === "completed") {
+    // Store result in database
+    await db.executions.update({
+      where: { id: executionId },
+      data: {
+        status: "completed",
+        videoUrl: result.url,
+        completedAt: new Date(),
+      },
+    });
+  } else if (status === "failed") {
+    await db.executions.update({
+      where: { id: executionId },
+      data: {
+        status: "failed",
+        error: error,
+        failedAt: new Date(),
+      },
+    });
+  }
+
+  return NextResponse.json({ received: true });
+}
+```
+
+## Signature Verification
+
+Secure your webhook endpoint with signature verification:
+
+```typescript
+const execution = await compose(
+  generateVideo({ ... })
+).execute({
+  webhook: "https://your-server.com/api/webhook",
+  webhookSecret: "your-secret-key",
+});
+```
+
+Synthome signs webhook payloads using HMAC-SHA256. Verify the signature:
+
+```typescript
+import crypto from "crypto";
+
+function verifyWebhookSignature(
+  payload: string,
+  signature: string,
+  secret: string,
+): boolean {
+  const expectedSignature = crypto
+    .createHmac("sha256", secret)
+    .update(payload)
+    .digest("hex");
+
+  return crypto.timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(expectedSignature),
+  );
+}
+
+// In your webhook handler
+app.post(
+  "/api/webhook",
+  express.raw({ type: "application/json" }),
+  (req, res) => {
+    const signature = req.headers["x-synthome-signature"] as string;
+    const payload = req.body.toString();
+
+    if (
+      !verifyWebhookSignature(payload, signature, process.env.WEBHOOK_SECRET!)
+    ) {
+      return res.status(401).json({ error: "Invalid signature" });
+    }
+
+    const data = JSON.parse(payload);
+    // Process verified webhook...
+
+    res.status(200).json({ received: true });
+  },
+);
+```
+
+## Polling as Fallback
+
+If webhooks aren't suitable, you can poll for status:
+
+```typescript
+import { compose, generateVideo, videoModel } from "@synthome/sdk";
+
+const execution = await compose(
+  generateVideo({
+    model: videoModel("bytedance/seedance-1-pro", "replicate"),
+    prompt: "A cinematic scene",
+  }),
+).execute({
+  webhook: "https://your-server.com/webhook", // Non-blocking
+});
+
+// Store execution ID
+const executionId = execution.id;
+
+// Later, check status
+const status = await execution.getStatus();
+
+if (status.status === "completed") {
+  console.log("Video URL:", status.result.url);
+} else if (status.status === "processing") {
+  console.log("Still processing...");
+}
+```
+
+## Complete Example
+
+```typescript
+// 1. Start execution with webhook
+import { compose, generateVideo, videoModel } from "@synthome/sdk";
+
+async function createVideo(prompt: string, userId: string) {
+  // Store pending execution in database
+  const record = await db.videos.create({
+    data: {
+      userId,
+      prompt,
+      status: "pending",
+    },
+  });
+
+  // Start pipeline with webhook
+  const execution = await compose(
+    generateVideo({
+      model: videoModel("bytedance/seedance-1-pro", "replicate"),
+      prompt,
+      duration: 5,
+    }),
+  ).execute({
+    webhook: `https://api.yourapp.com/webhooks/synthome`,
+    webhookSecret: process.env.WEBHOOK_SECRET,
+  });
+
+  // Update with execution ID
+  await db.videos.update({
+    where: { id: record.id },
+    data: { executionId: execution.id },
+  });
+
+  return { videoId: record.id, executionId: execution.id };
+}
+
+// 2. Handle webhook
+app.post("/webhooks/synthome", async (req, res) => {
+  // Verify signature
+  const signature = req.headers["x-synthome-signature"];
+  if (!verifySignature(req.body, signature)) {
+    return res.status(401).json({ error: "Invalid signature" });
+  }
+
+  const { executionId, status, result, error } = req.body;
+
+  // Find video record
+  const video = await db.videos.findFirst({
+    where: { executionId },
+  });
+
+  if (!video) {
+    return res.status(404).json({ error: "Video not found" });
+  }
+
+  // Update status
+  if (status === "completed") {
+    await db.videos.update({
+      where: { id: video.id },
+      data: {
+        status: "completed",
+        url: result.url,
+        completedAt: new Date(),
+      },
+    });
+
+    // Notify user
+    await sendNotification(video.userId, {
+      type: "video_ready",
+      videoId: video.id,
+      url: result.url,
+    });
+  } else if (status === "failed") {
+    await db.videos.update({
+      where: { id: video.id },
+      data: {
+        status: "failed",
+        error,
+        failedAt: new Date(),
+      },
+    });
+  }
+
+  res.status(200).json({ received: true });
+});
+```
+
+## Next Steps
+
+- [Error Handling](/docs/guides/error-handling) - Handle failures gracefully
+- [AI Agents](/docs/guides/ai-agents) - Dynamic pipeline generation
+- [API Reference](/docs/api-reference/execution) - Execution API details

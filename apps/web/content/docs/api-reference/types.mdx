@@ -1,0 +1,378 @@
+---
+title: Types
+description: TypeScript types and interfaces for the Synthome SDK
+---
+
+# Types
+
+All TypeScript types and interfaces exported by the Synthome SDK.
+
+## Core Types
+
+### Pipeline
+
+The main pipeline interface returned by `compose()`.
+
+```typescript
+interface Pipeline {
+  toJSON(): ExecutionPlan;
+  execute(config?: ExecuteOptions): Promise<PipelineExecution>;
+  onProgress(callback: (progress: PipelineProgress) => void): Pipeline;
+  onError(callback: (error: Error) => void): Pipeline;
+  getOperations(): VideoOperation[];
+}
+```
+
+### ExecutionPlan
+
+JSON representation of a pipeline, used with `executeFromPlan()`.
+
+```typescript
+interface ExecutionPlan {
+  jobs: JobNode[];
+  baseExecutionId?: string;
+}
+```
+
+### JobNode
+
+A single job within an execution plan.
+
+```typescript
+interface JobNode {
+  id: string;
+  type: OperationType;
+  params: Record<string, unknown>;
+  dependsOn?: string[];
+  output: string;
+}
+```
+
+### OperationType
+
+All supported operation types.
+
+```typescript
+type OperationType =
+  | "generate" // Video generation
+  | "generateImage" // Image generation
+  | "generateAudio" // Audio/speech generation
+  | "transcribe" // Audio transcription
+  | "merge" // Merge media items
+  | "addSubtitles" // Add subtitles
+  | "layer"; // Composite layers
+```
+
+## Execution Types
+
+### ExecuteOptions
+
+Options for pipeline execution.
+
+```typescript
+interface ExecuteOptions {
+  apiKey?: string; // SYNTHOME_API_KEY
+  apiUrl?: string; // API endpoint URL
+  baseExecutionId?: string; // Reference to parent execution
+  webhook?: string; // Webhook URL for async completion
+  webhookSecret?: string; // HMAC secret for webhook verification
+  providerApiKeys?: {
+    replicate?: string;
+    fal?: string;
+  };
+}
+```
+
+### PipelineExecution
+
+Execution handle returned by `execute()` and `executeFromPlan()`.
+
+```typescript
+interface PipelineExecution {
+  id: string;
+  status: "pending" | "processing" | "completed" | "failed";
+  result?: MediaResult;
+  onComplete(callback: (result: MediaResult) => void): void;
+  onError(callback: (error: Error) => void): void;
+}
+```
+
+### PipelineProgress
+
+Progress information during execution.
+
+```typescript
+interface PipelineProgress {
+  currentJob: string;
+  progress: number;
+  totalJobs: number;
+  completedJobs: number;
+}
+```
+
+## Result Types
+
+### MediaResult
+
+Result from a completed execution.
+
+```typescript
+interface MediaResult {
+  url: string;
+  type?: "video" | "audio" | "image";
+  duration?: number;
+  format?: string;
+  size?: number;
+}
+```
+
+### ExecutionStatusResponse
+
+Full status response from the API.
+
+```typescript
+interface ExecutionStatusResponse {
+  id: string;
+  status: "pending" | "processing" | "completed" | "failed";
+  jobs: JobStatus[];
+  result: MediaResult | null;
+  error: string | null;
+  createdAt: Date;
+  completedAt: Date | null;
+}
+
+interface JobStatus {
+  id: string;
+  operation: string;
+  status: string;
+  result: any;
+  error: string | null;
+}
+```
+
+## Operation Types
+
+### VideoOperation
+
+Base video operation type.
+
+```typescript
+interface VideoOperation {
+  type: OperationType;
+  params: Record<string, unknown>;
+  inputs?: VideoNode[];
+}
+```
+
+### ImageOperation
+
+Image generation operation.
+
+```typescript
+interface ImageOperation {
+  type: "generateImage";
+  params: Record<string, unknown>;
+}
+```
+
+### AudioOperation
+
+Audio generation operation.
+
+```typescript
+interface AudioOperation {
+  type: "generateAudio";
+  params: Record<string, unknown>;
+}
+```
+
+### VideoNode
+
+Union type for pipeline nodes.
+
+```typescript
+type VideoNode = Video | VideoOperation | Pipeline;
+```
+
+## Generation Options
+
+### GenerateVideoOptions
+
+Options for `generateVideo()`.
+
+```typescript
+interface GenerateVideoOptions {
+  model: VideoModel;
+  prompt: string;
+  image?: string | ImageOperation;
+  audio?: string | AudioOperation;
+  aspectRatio?: "16:9" | "9:16" | "1:1";
+  duration?: number;
+}
+```
+
+### GenerateImageOptions
+
+Options for `generateImage()`.
+
+```typescript
+interface GenerateImageOptions {
+  model: ImageModel;
+  prompt: string;
+  aspectRatio?: "16:9" | "9:16" | "1:1" | "4:3" | "3:4";
+  width?: number;
+  height?: number;
+}
+```
+
+### GenerateAudioOptions
+
+Options for `generateAudio()`.
+
+```typescript
+interface GenerateAudioOptions {
+  model: AudioModel;
+  text: string;
+  voice?: string;
+}
+```
+
+## Merge Types
+
+### MergeItem
+
+Items that can be merged.
+
+```typescript
+type MergeItem = string | MergeOperation | MergeItemWithOptions;
+
+interface MergeItemWithOptions {
+  url: string | MergeOperation;
+  type?: "video" | "image" | "audio";
+  duration?: number; // Display duration (images) or trim duration (video)
+  offset?: number; // Audio start position in timeline
+  volume?: number; // Volume level 0-1
+}
+```
+
+## Layers Types
+
+### LayerItem
+
+A single layer in a composition.
+
+```typescript
+interface LayerItem {
+  media?:
+    | string
+    | string[]
+    | VideoOperation
+    | ImageOperation
+    | Array<VideoOperation | ImageOperation>;
+  placement?: PlacementPreset | CustomPlacement;
+  chromaKey?: boolean;
+  chromaKeyColor?: string;
+  similarity?: number;
+  blend?: number;
+  duration?: number;
+  main?: boolean;
+}
+```
+
+### PlacementPreset
+
+Preset placement options.
+
+```typescript
+type PlacementPreset =
+  | "full" // Full screen
+  | "center" // Centered, original size
+  | "pip" // Picture-in-picture (bottom-right)
+  | "picture-in-picture" // Same as pip
+  | string; // Tailwind-style (e.g., "w-1/4 bottom-right")
+```
+
+### CustomPlacement
+
+Custom placement configuration.
+
+```typescript
+interface CustomPlacement {
+  width?: string; // e.g., "50%", "1920", "iw/2"
+  height?: string; // e.g., "50%", "1080", "ih/2"
+  position?: {
+    x?: string; // e.g., "0", "50%", "(W-w)/2"
+    y?: string;
+  };
+  padding?: number;
+  aspectRatio?: string;
+}
+```
+
+### LayersOptions
+
+Options for the `layers()` function.
+
+```typescript
+interface LayersOptions {
+  duration?: number; // Output duration
+  width?: number; // Output width
+  height?: number; // Output height
+  mainLayer?: number; // Index of main layer for duration
+}
+```
+
+## Model Types
+
+### VideoModelName
+
+Available video models.
+
+```typescript
+type VideoModelName = "seedance" | "minimax" | "fabric" | "fabric-fast";
+```
+
+### ImageModelName
+
+Available image models.
+
+```typescript
+type ImageModelName =
+  | "nano-banana"
+  | "nano-banana-pro"
+  | "seedream"
+  | "background-remover";
+```
+
+### AudioModelName
+
+Available audio models.
+
+```typescript
+type AudioModelName = "elevenlabs" | "hume" | "whisper" | "fast-whisper";
+```
+
+## API Response Types
+
+### ExecuteResponse
+
+Response from POST /api/execute.
+
+```typescript
+interface ExecuteResponse {
+  executionId: string;
+  status: "pending";
+  createdAt: string;
+}
+```
+
+### ErrorResponse
+
+Error response from API.
+
+```typescript
+interface ErrorResponse {
+  error: string;
+  details?: string;
+}
+```

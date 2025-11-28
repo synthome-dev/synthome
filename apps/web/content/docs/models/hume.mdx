@@ -1,0 +1,213 @@
+---
+title: Hume TTS
+description: Emotionally expressive text-to-speech
+---
+
+# Hume TTS
+
+Emotionally expressive text-to-speech that can convey tone, emotion, and personality.
+
+| Property | Value          |
+| -------- | -------------- |
+| Model ID | `hume/tts`     |
+| Provider | Hume           |
+| Type     | Text-to-speech |
+
+## Basic Usage
+
+```typescript
+import { compose, generateAudio, audioModel } from "@synthome/sdk";
+
+const execution = await compose(
+  generateAudio({
+    model: audioModel("hume/tts", "hume"),
+    text: "I'm so excited to share this news with you!",
+  }),
+).execute();
+```
+
+## Emotion Control
+
+Hume TTS understands emotional context and delivers appropriate prosody:
+
+```typescript
+// Excited delivery
+generateAudio({
+  model: audioModel("hume/tts", "hume"),
+  text: "We just hit a million subscribers!",
+  description: "Excited, energetic, celebratory",
+});
+
+// Calm delivery
+generateAudio({
+  model: audioModel("hume/tts", "hume"),
+  text: "Take a deep breath and relax.",
+  description: "Calm, soothing, gentle",
+});
+
+// Serious delivery
+generateAudio({
+  model: audioModel("hume/tts", "hume"),
+  text: "This is an important safety announcement.",
+  description: "Serious, authoritative, clear",
+});
+```
+
+## Options
+
+| Option            | Type                      | Default  | Description                 |
+| ----------------- | ------------------------- | -------- | --------------------------- |
+| `text`            | `string`                  | required | Text to synthesize          |
+| `voice`           | `object`                  | -        | Voice specification         |
+| `description`     | `string`                  | -        | Emotional/style description |
+| `speed`           | `number`                  | -        | Speed multiplier (0.5-2.0)  |
+| `trailingSilence` | `number`                  | -        | Silence after speech (0-5s) |
+| `format`          | `"mp3" \| "wav" \| "pcm"` | `mp3`    | Output format               |
+| `version`         | `"1" \| "2"`              | auto     | Model version               |
+| `numGenerations`  | `number`                  | -        | Batch generation (1-5)      |
+
+## Voice Selection
+
+### By Voice ID
+
+```typescript
+generateAudio({
+  model: audioModel("hume/tts", "hume"),
+  text: "Using a specific voice.",
+  voice: {
+    id: "your-voice-id-here",
+    provider: "HUME_AI",
+  },
+});
+```
+
+### By Voice Name
+
+```typescript
+generateAudio({
+  model: audioModel("hume/tts", "hume"),
+  text: "Using a named voice.",
+  voice: {
+    name: "Friendly Assistant",
+    provider: "HUME_AI",
+  },
+});
+```
+
+### Custom Voices
+
+```typescript
+generateAudio({
+  model: audioModel("hume/tts", "hume"),
+  text: "Using my custom cloned voice.",
+  voice: {
+    id: "custom-voice-id",
+    provider: "CUSTOM_VOICE",
+  },
+});
+```
+
+## Description as Acting Direction
+
+When using with a voice, the description acts as acting direction:
+
+```typescript
+generateAudio({
+  model: audioModel("hume/tts", "hume"),
+  text: "I can't believe you did that.",
+  voice: { name: "Default Voice" },
+  description: "Playfully surprised, with a hint of disbelief", // Acting direction
+});
+```
+
+Keep descriptions under 100 characters for best results.
+
+## Voice Generation from Description
+
+Without a voice, the description generates a new voice:
+
+```typescript
+generateAudio({
+  model: audioModel("hume/tts", "hume"),
+  text: "Welcome to our meditation session.",
+  description: "Soft female voice, warm and calming, slight British accent",
+});
+```
+
+## Speed Control
+
+```typescript
+// Slower for emphasis
+generateAudio({
+  model: audioModel("hume/tts", "hume"),
+  text: "Let me explain this carefully.",
+  speed: 0.8,
+});
+
+// Faster for energy
+generateAudio({
+  model: audioModel("hume/tts", "hume"),
+  text: "Quick update for everyone!",
+  speed: 1.3,
+});
+```
+
+Recommended range: 0.75-1.5 for stability.
+
+## Trailing Silence
+
+Add silence after the speech:
+
+```typescript
+generateAudio({
+  model: audioModel("hume/tts", "hume"),
+  text: "End of chapter one.",
+  trailingSilence: 2, // 2 seconds of silence
+});
+```
+
+## Batch Generation
+
+Generate multiple variations:
+
+```typescript
+generateAudio({
+  model: audioModel("hume/tts", "hume"),
+  text: "Choose the best take.",
+  numGenerations: 3, // Get 3 different renditions
+});
+```
+
+## Examples
+
+### Podcast Intro
+
+```typescript
+generateAudio({
+  model: audioModel("hume/tts", "hume"),
+  text: "Welcome back to Tech Talk, the podcast where we explore the future of technology.",
+  description: "Warm, enthusiastic, professional podcast host",
+});
+```
+
+### Meditation Guide
+
+```typescript
+generateAudio({
+  model: audioModel("hume/tts", "hume"),
+  text: "Close your eyes. Take a deep breath in... and slowly release.",
+  description: "Calm, gentle, soothing, slow pace",
+  speed: 0.85,
+  trailingSilence: 3,
+});
+```
+
+### Character Voice
+
+```typescript
+generateAudio({
+  model: audioModel("hume/tts", "hume"),
+  text: "Greetings, traveler! What brings you to our village?",
+  description: "Friendly elderly wizard, wise and welcoming, slight rasp",
+});
+```

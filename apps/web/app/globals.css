@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "dither-plugin";
+@import "fumadocs-ui/css/solar.css";
+@import "fumadocs-ui/css/preset.css";
 
 @plugin 'tailwindcss-animate';
 
@@ -15,7 +17,14 @@
   }
 }
 
+/* Fumadocs layout constraints */
 @theme {
+  /* Constrain sidebar and layout widths */
+  --fd-sidebar-width: 260px;
+  --fd-toc-width: 220px;
+  --fd-layout-width: 1400px;
+  --spacing-fd-container: 1400px;
+
   --font-mono: "Geist Mono", "Fira Code", monospace;
 
   --color-background: var(--background);
@@ -317,131 +326,4 @@
   body {
     @apply bg-background text-foreground;
   }
-
-  .line {
-    counter-increment: line;
-    @apply relative pl-10 before:absolute before:opacity-35 before:inset-y-0 before:transition-colors before:duration-200 before:content-[counter(line)] before:text-xs before:left-0 before:text-right before:w-6 before:mr-6 before:my-auto hover:before:opacity-100;
-  }
-
-  .line:first-of-type {
-    counter-set: line var(--counter-start);
-  }
-}
-
-[data-theme="quartz"] {
-  --radius: 0.625rem;
-  --color-background: var(--color-white);
-  --color-foreground: var(--color-zinc-950);
-  --color-card: var(--color-white);
-  --color-illustration: var(--color-white);
-  --color-card-foreground: var(--color-zinc-950);
-  --color-popover: var(--color-white);
-  --color-popover-foreground: var(--color-zinc-950);
-  --color-primary: var(--color-indigo-500);
-  --color-primary-foreground: var(--color-white);
-  --color-secondary: var(--color-sky-100);
-  --color-secondary-foreground: var(--color-sky-600);
-  --color-muted: var(--color-zinc-100);
-  --color-muted-foreground: var(--color-zinc-600);
-  --color-accent: var(--color-zinc-100);
-  --color-accent-foreground: var(--color-zinc-800);
-  --color-destructive: var(--color-red-600);
-  --color-border: var(--color-zinc-200);
-  --color-border-illustration: color-mix(
-    in oklab,
-    var(--color-zinc-950) 7.5%,
-    transparent
-  );
-  --color-input: var(--color-zinc-200);
-  --color-ring: var(--color-indigo-500);
-
-  @variant dark {
-    --color-background: var(--color-white);
-    --color-foreground: var(--color-zinc-950);
-    --color-card: var(--color-white);
-    --color-illustration: var(--color-white);
-    --color-card-foreground: var(--color-zinc-950);
-    --color-popover: var(--color-white);
-    --color-popover-foreground: var(--color-zinc-950);
-    --color-primary: var(--color-indigo-500);
-    --color-primary-foreground: var(--color-white);
-    --color-secondary: var(--color-sky-100);
-    --color-secondary-foreground: var(--color-sky-600);
-    --color-muted: var(--color-zinc-100);
-    --color-muted-foreground: var(--color-zinc-600);
-    --color-accent: var(--color-zinc-100);
-    --color-accent-foreground: var(--color-zinc-800);
-    --color-destructive: var(--color-red-600);
-    --color-border: var(--color-zinc-200);
-    --color-border-illustration: color-mix(
-      in oklab,
-      var(--color-zinc-950) 7.5%,
-      transparent
-    );
-    --color-input: var(--color-zinc-200);
-    --color-ring: var(--color-indigo-500);
-  }
-
-  @apply scheme-light;
-}
-
-[data-theme="dark"] {
-  --color-background: var(--color-zinc-950);
-  --color-foreground: var(--color-white);
-  --color-card: color-mix(
-    in oklab,
-    var(--color-zinc-800) 15%,
-    var(--color-zinc-950)
-  );
-  --color-illustration: var(--color-zinc-900);
-  --color-card-foreground: var(--color-white);
-  --color-popover: var(--color-zinc-900);
-  --popover-foreground: var(--color-white);
-  --color-primary: var(--color-white);
-  --color-primary-foreground: var(--color-zinc-950);
-  --color-secondary: var(--color-zinc-800);
-  --color-secondary-foreground: var(--color-white);
-  --color-muted: var(--color-zinc-800);
-  --color-muted-foreground: var(--color-zinc-300);
-  --color-accent: var(--color-zinc-800);
-  --color-accent-foreground: var(--color-white);
-  --color-destructive: var(--color-red-700);
-  --color-destructive-foreground: var(--color-white);
-  --color-border: color-mix(in oklab, var(--color-white) 10%, transparent);
-  --color-border-illustration: color-mix(
-    in oklab,
-    var(--color-white) 7.5%,
-    transparent
-  );
-  --color-input: var(--color-zinc-800);
-  --color-ring: var(--color-zinc-600);
-  --color-chart-1: var(--color-blue-500);
-  --color-chart-2: var(--color-green-500);
-  --color-chart-3: var(--color-yellow-500);
-  --color-chart-4: var(--color-purple-500);
-  --color-chart-5: var(--color-pink-500);
-
-  @apply scheme-dark;
-}
-
-[data-theme="svelte"] {
-  --radius: 0.5rem;
-  --color-background: var(--color-white);
-  --color-foreground: var(--color-zinc-950);
-  --color-card: var(--color-zinc-50);
-  --color-card-foreground: var(--color-zinc-950);
-  --color-popover: var(--color-white);
-  --color-popover-foreground: var(--color-zinc-950);
-  --color-primary: var(--color-orange-600);
-  --color-primary-foreground: var(--color-white);
-  --color-secondary: var(--color-sky-100);
-  --color-secondary-foreground: var(--color-sky-600);
-  --color-muted: var(--color-zinc-100);
-  --color-muted-foreground: var(--color-zinc-600);
-  --color-accent: var(--color-zinc-700);
-  --color-accent-foreground: var(--color-white);
-  --color-destructive: var(--color-red-600);
-  --color-border: var(--color-zinc-200);
-  --color-input: var(--color-zinc-200);
-  --color-ring: var(--color-orange-600);
 }

@@ -1,0 +1,128 @@
+---
+title: Seedance 1 Pro
+description: ByteDance's high-quality video generation model
+---
+
+# Seedance 1 Pro
+
+High-quality video generation from ByteDance supporting text-to-video and image-to-video.
+
+| Property | Value                      |
+| -------- | -------------------------- |
+| Model ID | `bytedance/seedance-1-pro` |
+| Provider | Replicate                  |
+| Type     | Video generation           |
+
+## Basic Usage
+
+```typescript
+import { compose, generateVideo, videoModel } from "@synthome/sdk";
+
+const execution = await compose(
+  generateVideo({
+    model: videoModel("bytedance/seedance-1-pro", "replicate"),
+    prompt: "A majestic eagle soaring over mountain peaks at sunrise",
+  }),
+).execute();
+```
+
+## Text-to-Video
+
+Generate video from a text prompt:
+
+```typescript
+generateVideo({
+  model: videoModel("bytedance/seedance-1-pro", "replicate"),
+  prompt: "Ocean waves crashing on a rocky shore, cinematic lighting",
+  resolution: "1080p",
+  aspectRatio: "16:9",
+});
+```
+
+## Image-to-Video
+
+Animate a starting image:
+
+```typescript
+generateVideo({
+  model: videoModel("bytedance/seedance-1-pro", "replicate"),
+  prompt: "The woman turns and smiles at the camera",
+  image: "https://example.com/portrait.jpg",
+});
+```
+
+## Options
+
+| Option           | Type                          | Default  | Description                           |
+| ---------------- | ----------------------------- | -------- | ------------------------------------- |
+| `prompt`         | `string`                      | required | Text description of the video         |
+| `image`          | `string`                      | -        | Starting image URL for image-to-video |
+| `resolution`     | `"480p" \| "720p" \| "1080p"` | -        | Output resolution                     |
+| `aspectRatio`    | `string`                      | -        | Aspect ratio (16:9, 9:16, 1:1, etc.)  |
+| `duration`       | `number`                      | -        | Video duration in seconds             |
+| `seed`           | `number`                      | -        | Random seed for reproducibility       |
+| `cameraFixed`    | `boolean`                     | -        | Lock camera movement                  |
+| `lastFrameImage` | `string`                      | -        | Target end frame image URL            |
+
+## Aspect Ratios
+
+Supported aspect ratios:
+
+- `16:9` - Landscape (YouTube, desktop)
+- `9:16` - Portrait (TikTok, Reels, Shorts)
+- `4:3` - Classic TV
+- `3:4` - Portrait classic
+- `1:1` - Square (Instagram)
+- `21:9` - Ultrawide
+- `9:21` - Ultra-tall
+
+```typescript
+generateVideo({
+  model: videoModel("bytedance/seedance-1-pro", "replicate"),
+  prompt: "Vertical video of a waterfall",
+  aspectRatio: "9:16",
+});
+```
+
+## Resolutions
+
+| Resolution | Dimensions | Use Case                 |
+| ---------- | ---------- | ------------------------ |
+| `480p`     | 854x480    | Preview, fast generation |
+| `720p`     | 1280x720   | Standard quality         |
+| `1080p`    | 1920x1080  | High quality             |
+
+## Examples
+
+### Cinematic Scene
+
+```typescript
+generateVideo({
+  model: videoModel("bytedance/seedance-1-pro", "replicate"),
+  prompt: "Drone shot flying through a misty forest at dawn, cinematic",
+  resolution: "1080p",
+  aspectRatio: "21:9",
+});
+```
+
+### Product Animation
+
+```typescript
+generateVideo({
+  model: videoModel("bytedance/seedance-1-pro", "replicate"),
+  prompt: "Product rotating on a white pedestal, studio lighting",
+  image: "https://example.com/product.png",
+  aspectRatio: "1:1",
+});
+```
+
+### Social Media Vertical
+
+```typescript
+generateVideo({
+  model: videoModel("bytedance/seedance-1-pro", "replicate"),
+  prompt: "Person walking through a busy city street",
+  aspectRatio: "9:16",
+  resolution: "1080p",
+});
+```

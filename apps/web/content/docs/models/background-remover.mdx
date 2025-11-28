@@ -1,0 +1,147 @@
+---
+title: Background Remover
+description: Remove backgrounds from images automatically
+---
+
+# Background Remover
+
+Automatically remove backgrounds from images, outputting transparent PNG files.
+
+| Property | Value                             |
+| -------- | --------------------------------- |
+| Model ID | `codeplugtech/background_remover` |
+| Provider | Replicate                         |
+| Type     | Image transformation              |
+
+## Basic Usage
+
+```typescript
+import { compose, generateImage, imageModel } from "@synthome/sdk";
+
+const execution = await compose(
+  generateImage({
+    model: imageModel("codeplugtech/background_remover", "replicate"),
+    image: "https://example.com/photo.jpg",
+  }),
+).execute();
+```
+
+## How It Works
+
+The model detects the main subject in an image and removes everything else, producing a transparent PNG.
+
+**Input**: Any image with a distinguishable subject
+**Output**: PNG with transparent background
+
+## Options
+
+| Option  | Type     | Description                |
+| ------- | -------- | -------------------------- |
+| `image` | `string` | Input image URL (required) |
+
+## Use Cases
+
+### Product Photos
+
+Remove backgrounds for e-commerce:
+
+```typescript
+generateImage({
+  model: imageModel("codeplugtech/background_remover", "replicate"),
+  image: "https://example.com/product-photo.jpg",
+});
+```
+
+### Portrait Cutouts
+
+Create transparent portraits for compositing:
+
+```typescript
+generateImage({
+  model: imageModel("codeplugtech/background_remover", "replicate"),
+  image: "https://example.com/headshot.jpg",
+});
+```
+
+### Logo Preparation
+
+Extract logos from backgrounds:
+
+```typescript
+generateImage({
+  model: imageModel("codeplugtech/background_remover", "replicate"),
+  image: "https://example.com/logo-on-background.jpg",
+});
+```
+
+## In Pipelines
+
+### Generate Then Remove Background
+
+```typescript
+import { compose, generateImage, imageModel } from "@synthome/sdk";
+
+const execution = await compose(
+  generateImage({
+    model: imageModel("codeplugtech/background_remover", "replicate"),
+    image: generateImage({
+      model: imageModel("google/nano-banana", "replicate"),
+      prompt: "A red sports car, side view",
+    }),
+  }),
+).execute();
+```
+
+This pipeline:
+
+1. Generates an image of a car
+2. Removes the background automatically
+
+### For Video Compositing
+
+Remove background from an image to use as an overlay:
+
+```typescript
+import { compose, layers, generateImage, imageModel } from "@synthome/sdk";
+
+const execution = await compose(
+  layers([
+    { media: "https://example.com/background-video.mp4" },
+    {
+      media: generateImage({
+        model: imageModel("codeplugtech/background_remover", "replicate"),
+        image: "https://example.com/logo-with-bg.png",
+      }),
+      placement: "w-1/6 top-right",
+    },
+  ]),
+).execute();
+```
+
+## Best Practices
+
+### Good Input Images
+
+- **Clear subject**: The main subject should be easily distinguishable
+- **Contrast**: Subject should contrast with the background
+- **Focus**: Subject should be in focus
+- **Lighting**: Even lighting helps with edge detection
+
+### Challenging Cases
+
+The model may struggle with:
+
+- Very similar foreground/background colors
+- Transparent or translucent subjects
+- Complex hair or fur edges
+- Multiple overlapping subjects
+
+## Output Format
+
+The output is always a PNG with:
+
+- Transparent background (alpha channel)
+- Original subject preserved
+- Clean edges around the subject
+
+Use the output directly in compositing workflows or save for later use.

@@ -1,0 +1,187 @@
+---
+title: Models
+description: Unified model naming system for AI media generation
+---
+
+# Models
+
+Synthome uses a unified model naming system that abstracts provider-specific model IDs. This means you can use the same model name regardless of which provider hosts it.
+
+## Model Functions
+
+Use the type-safe model functions to create model instances:
+
+```typescript
+import { videoModel, imageModel, audioModel } from "@synthome/sdk";
+
+// Video models
+const seedance = videoModel("bytedance/seedance-1-pro", "replicate");
+const minimax = videoModel("minimax/video-01", "replicate");
+
+// Image models
+const nanoBanana = imageModel("google/nano-banana", "fal");
+const seedream = imageModel("bytedance/seedream-4", "replicate");
+
+// Audio models
+const elevenlabs = audioModel("elevenlabs/turbo-v2.5", "elevenlabs");
+const hume = audioModel("hume/tts", "hume");
+```
+
+Each function takes:
+
+1. **Model name** - The unified model identifier
+2. **Provider** - Which provider to use for this model
+
+## Unified Model Names
+
+Models follow a `creator/model-name` naming convention:
+
+| Model Name                 | Type  | Description                   |
+| -------------------------- | ----- | ----------------------------- |
+| `bytedance/seedance-1-pro` | video | High-quality video generation |
+| `minimax/video-01`         | video | Video generation              |
+| `veed/fabric-1.0`          | video | Lip-sync video                |
+| `google/nano-banana`       | image | Fast image generation         |
+| `google/nano-banana-pro`   | image | Advanced image generation     |
+| `bytedance/seedream-4`     | image | High-quality image generation |
+| `elevenlabs/turbo-v2.5`    | audio | Text-to-speech                |
+| `hume/tts`                 | audio | Expressive TTS                |
+
+## Provider Selection
+
+Some models are available on multiple providers. Choose based on your needs:
+
+```typescript
+// Same model, different providers
+const nanoOnFal = imageModel("google/nano-banana", "fal");
+const nanoOnReplicate = imageModel("google/nano-banana", "replicate");
+```
+
+TypeScript provides autocomplete for valid provider options per model.
+
+## Passing API Keys
+
+You can pass provider API keys directly to the model:
+
+```typescript
+// Option 1: Simple provider string
+const model = videoModel("bytedance/seedance-1-pro", "replicate");
+
+// Option 2: Options object with API key
+const model = videoModel("bytedance/seedance-1-pro", {
+  provider: "replicate",
+  apiKey: "your-replicate-key",
+});
+```
+
+<Callout type="info">
+  API keys passed to the model override environment variables and dashboard
+  keys.
+</Callout>
+
+## Using Models in Generation
+
+Pass models to generation functions:
+
+```typescript
+import {
+  compose,
+  generateVideo,
+  generateImage,
+  videoModel,
+  imageModel,
+} from "@synthome/sdk";
+
+const execution = await compose(
+  generateVideo({
+    model: videoModel("bytedance/seedance-1-pro", "replicate"),
+    prompt: "A serene mountain landscape",
+    duration: 5,
+  }),
+).execute();
+```
+
+## Image-to-Video Generation
+
+Some video models support image input:
+
+```typescript
+const execution = await compose(
+  generateVideo({
+    model: videoModel("bytedance/seedance-1-pro", "replicate"),
+    prompt: "Make this image come alive",
+    image: generateImage({
+      model: imageModel("google/nano-banana", "fal"),
+      prompt: "A beautiful sunset over the ocean",
+    }),
+  }),
+).execute();
+```
+
+## Available Models by Type
+
+### Video Models
+
+| Model                      | Providers | Features                      |
+| -------------------------- | --------- | ----------------------------- |
+| `bytedance/seedance-1-pro` | replicate | Text-to-video, image-to-video |
+| `minimax/video-01`         | replicate | Text-to-video                 |
+| `veed/fabric-1.0`          | fal       | Lip-sync, image-to-video      |
+| `veed/fabric-1.0/fast`     | fal       | Fast lip-sync                 |
+
+### Image Models
+
+| Model                             | Providers      | Features             |
+| --------------------------------- | -------------- | -------------------- |
+| `google/nano-banana`              | replicate, fal | Text-to-image, fast  |
+| `google/nano-banana-pro`          | replicate, fal | Advanced, typography |
+| `bytedance/seedream-4`            | replicate      | High-resolution      |
+| `codeplugtech/background_remover` | replicate      | Background removal   |
+
+### Audio Models
+
+| Model                                | Providers             | Features              |
+| ------------------------------------ | --------------------- | --------------------- |
+| `elevenlabs/turbo-v2.5`              | elevenlabs, replicate | TTS, voice cloning    |
+| `hume/tts`                           | hume                  | Expressive, emotional |
+| `openai/whisper`                     | replicate             | Speech-to-text        |
+| `vaibhavs10/incredibly-fast-whisper` | replicate             | Fast transcription    |
+
+## Model Utilities
+
+The SDK provides utility functions for working with models:
+
+```typescript
+import {
+  getModelInfo,
+  isModelAvailable,
+  listModelProviders,
+} from "@synthome/sdk";
+
+// Get model information
+const info = getModelInfo("bytedance/seedance-1-pro");
+console.log(info.mediaType); // "video"
+console.log(info.providers); // ["replicate"]
+
+// Check if model is available on a provider
+const available = isModelAvailable("google/nano-banana", "fal");
+console.log(available); // true
+
+// List all providers for a model
+const providers = listModelProviders("google/nano-banana");
+console.log(providers); // ["replicate", "fal"]
+```
+
+## Next Steps
+
+<Cards>
+  <Card href="/docs/core-concepts/providers" title="Providers">
+    Configure provider API keys
+  </Card>
+  <Card href="/docs/generation/video" title="Video Generation">
+    Generate videos with different models
+  </Card>
+  <Card href="/docs/generation/image" title="Image Generation">
+    Generate images with different models
+  </Card>
+</Cards>

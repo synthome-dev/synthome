@@ -1,0 +1,20 @@
+{
+  "title": "Models",
+  "pages": [
+    "index",
+    "---Video---",
+    "fabric",
+    "minimax",
+    "seedance",
+    "---Image---",
+    "background-remover",
+    "nano-banana",
+    "nano-banana-pro",
+    "seedream",
+    "---Audio---",
+    "elevenlabs",
+    "fast-whisper",
+    "hume",
+    "whisper"
+  ]
+}

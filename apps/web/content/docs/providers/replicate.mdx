@@ -1,0 +1,95 @@
+---
+title: Replicate
+description: Setup and configuration for Replicate
+---
+
+# Replicate
+
+Replicate hosts a wide variety of AI models including video, image, and audio generation.
+
+## Setup
+
+### 1. Get API Key
+
+1. Create an account at [replicate.com](https://replicate.com)
+2. Go to [API Tokens](https://replicate.com/account/api-tokens)
+3. Create a new token
+
+### 2. Configure Environment
+
+```bash
+# .env or .env.local
+REPLICATE_API_KEY=r8_your_api_key_here
+```
+
+## Available Models
+
+### Video
+
+| Model            | ID                         |
+| ---------------- | -------------------------- |
+| Seedance 1 Pro   | `bytedance/seedance-1-pro` |
+| Minimax Video 01 | `minimax/video-01`         |
+
+```typescript
+import { generateVideo, videoModel } from "@synthome/sdk";
+
+generateVideo({
+  model: videoModel("bytedance/seedance-1-pro", "replicate"),
+  prompt: "A sunset over the ocean",
+});
+```
+
+### Image
+
+| Model              | ID                                |
+| ------------------ | --------------------------------- |
+| Nano Banana        | `google/nano-banana`              |
+| Nano Banana Pro    | `google/nano-banana-pro`          |
+| Seedream 4         | `bytedance/seedream-4`            |
+| Background Remover | `codeplugtech/background_remover` |
+
+```typescript
+import { generateImage, imageModel } from "@synthome/sdk";
+
+generateImage({
+  model: imageModel("google/nano-banana", "replicate"),
+  prompt: "Mountain landscape at dawn",
+});
+```
+
+### Audio
+
+| Model            | ID                                   |
+| ---------------- | ------------------------------------ |
+| ElevenLabs Turbo | `elevenlabs/turbo-v2.5`              |
+| Whisper          | `openai/whisper`                     |
+| Fast Whisper     | `vaibhavs10/incredibly-fast-whisper` |
+
+```typescript
+import { generateAudio, audioModel } from "@synthome/sdk";
+
+generateAudio({
+  model: audioModel("elevenlabs/turbo-v2.5", "replicate"),
+  text: "Hello world",
+  voiceId: "21m00Tcm4TlvDq8ikWAM",
+});
+```
+
+## Per-Request API Key
+
+Override the environment variable for specific requests:
+
+```typescript
+generateVideo({
+  model: videoModel("bytedance/seedance-1-pro", "replicate"),
+  prompt: "Ocean waves",
+  apiKey: "r8_different_key",
+});
+```
+
+## Resources
+
+- [Replicate Documentation](https://replicate.com/docs)
+- [Pricing](https://replicate.com/pricing)
+- [API Tokens](https://replicate.com/account/api-tokens)

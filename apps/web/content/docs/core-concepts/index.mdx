@@ -1,0 +1,124 @@
+---
+title: Overview
+description: Understand the fundamental building blocks of Synthome SDK
+---
+
+# Core Concepts
+
+Synthome SDK is built around three core concepts: **Pipelines**, **Models**, and **Providers**. Understanding these concepts will help you build powerful media generation workflows.
+
+## Architecture Overview
+
+```typescript
+compose(                            // Pipeline
+  merge([                           // Operation
+    generateVideo({                 // Generation
+      model: videoModel(            // Model
+        "bytedance/seedance-1-pro",
+        "replicate"                 // Provider
+      ),
+      prompt: "Scene 1"
+    }),
+    generateVideo({ ... }),
+  ]),
+).execute()
+```
+
+## The Three Pillars
+
+### 1. Pipelines
+
+Pipelines define **what** operations to perform and in **what order**. Use `compose()` to chain operations together:
+
+```typescript
+const pipeline = compose(
+  merge([
+    generateVideo({ ... }),
+    generateVideo({ ... }),
+  ]),
+);
+```
+
+Pipelines are lazy - they don't execute until you call `.execute()`. This lets you build complex workflows and run them when ready.
+
+[Learn more about Pipelines](/docs/core-concepts/pipelines)
+
+### 2. Models
+
+Models define **which AI model** to use for generation. Synthome uses a unified model naming system that works across providers:
+
+```typescript
+// Unified model name + provider
+const model = videoModel("bytedance/seedance-1-pro", "replicate");
+```
+
+The same model name works regardless of which provider hosts it. Switch providers by changing one argument.
+
+[Learn more about Models](/docs/core-concepts/models)
+
+### 3. Providers
+
+Providers are the **infrastructure** that runs the AI models. Synthome supports multiple providers:
+
+- **Replicate** - Video and image generation
+- **Fal** - Fast image generation and lip-sync
+- **ElevenLabs** - Text-to-speech
+- **Hume** - Expressive TTS
+
+You bring your own API keys, and Synthome orchestrates the calls.
+
+[Learn more about Providers](/docs/core-concepts/providers)
+
+## How It All Fits Together
+
+When you execute a pipeline:
+
+1. **Pipeline** is converted to an execution plan (JSON)
+2. **Synthome API** receives the plan and schedules jobs
+3. **Jobs** run in parallel when possible, waiting for dependencies when needed
+4. **Results** are collected and returned (or sent via webhook)
+
+```typescript
+// Build the pipeline - mix URLs with generated media
+const pipeline = compose(
+  merge([
+    // Direct URL - no generation needed
+    "https://example.com/intro.mp4",
+    // Generated videos - run in parallel
+    generateVideo({
+      model: videoModel("bytedance/seedance-1-pro", "replicate"),
+      prompt: "A rocket launching",
+    }),
+    generateVideo({
+      model: videoModel("bytedance/seedance-1-pro", "replicate"),
+      prompt: "Earth from orbit",
+    }),
+  ]),
+);
+
+// Execute and wait for results
+const execution = await pipeline.execute();
+console.log(execution.result?.url);
+```
+
+## Key Benefits
+
+| Concept   | Benefit                                          |
+| --------- | ------------------------------------------------ |
+| Pipelines | Compose complex workflows from simple operations |
+| Models    | Unified naming across providers                  |
+| Providers | Use best-in-class models from multiple platforms |
+
+## Next Steps
+
+<Cards>
+  <Card href="/docs/core-concepts/pipelines" title="Pipelines">
+    Deep dive into compose() and execution
+  </Card>
+  <Card href="/docs/core-concepts/models" title="Models">
+    Learn the unified model system
+  </Card>
+  <Card href="/docs/core-concepts/providers" title="Providers">
+    Configure provider API keys
+  </Card>
+</Cards>

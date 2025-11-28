@@ -1,0 +1,71 @@
+---
+title: ElevenLabs
+description: Setup and configuration for ElevenLabs
+---
+
+# ElevenLabs
+
+ElevenLabs provides high-quality text-to-speech with a large voice library.
+
+## Setup
+
+### 1. Get API Key
+
+1. Create an account at [elevenlabs.io](https://elevenlabs.io)
+2. Go to [Profile Settings](https://elevenlabs.io/app/settings/api-keys)
+3. Copy your API key
+
+### 2. Configure Environment
+
+```bash
+# .env or .env.local
+ELEVENLABS_API_KEY=your_elevenlabs_key_here
+```
+
+## Available Models
+
+| Model      | ID                      |
+| ---------- | ----------------------- |
+| Turbo v2.5 | `elevenlabs/turbo-v2.5` |
+
+```typescript
+import { generateAudio, audioModel } from "@synthome/sdk";
+
+generateAudio({
+  model: audioModel("elevenlabs/turbo-v2.5", "elevenlabs"),
+  text: "Hello, welcome to our video.",
+  voiceId: "21m00Tcm4TlvDq8ikWAM",
+});
+```
+
+## Voice IDs
+
+ElevenLabs provides pre-made voices. Common voice IDs:
+
+| Voice  | ID                     |
+| ------ | ---------------------- |
+| Rachel | `21m00Tcm4TlvDq8ikWAM` |
+| Adam   | `pNInz6obpgDQGcFmaJgB` |
+| Josh   | `TxGEqnHWrfWFTfGW9XjX` |
+| Bella  | `EXAVITQu4vr4xnSDxMaL` |
+
+Find more voices in the [ElevenLabs Voice Library](https://elevenlabs.io/voice-library).
+
+## Per-Request API Key
+
+Override the environment variable for specific requests:
+
+```typescript
+generateAudio({
+  model: audioModel("elevenlabs/turbo-v2.5", "elevenlabs"),
+  text: "Hello world",
+  voiceId: "21m00Tcm4TlvDq8ikWAM",
+  apiKey: "different_elevenlabs_key",
+});
+```
+
+## Resources
+
+- [ElevenLabs Documentation](https://elevenlabs.io/docs)
+- [Voice Library](https://elevenlabs.io/voice-library)
+- [Pricing](https://elevenlabs.io/pricing)

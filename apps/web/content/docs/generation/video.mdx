@@ -1,0 +1,173 @@
+---
+title: Video Generation
+description: Generate videos with AI models using generateVideo()
+---
+
+# Video Generation
+
+Use `generateVideo()` to create AI-generated videos from text prompts, images, or both.
+
+## Basic Usage
+
+```typescript
+import { compose, generateVideo, videoModel } from "@synthome/sdk";
+
+const execution = await compose(
+  generateVideo({
+    model: videoModel("bytedance/seedance-1-pro", "replicate"),
+    prompt: "A serene mountain landscape at sunrise, cinematic",
+    duration: 5,
+  }),
+).execute();
+
+console.log(execution.result?.url);
+```
+
+## Options
+
+### Required
+
+| Option   | Type         | Description                               |
+| -------- | ------------ | ----------------------------------------- |
+| `model`  | `VideoModel` | The video model to use                    |
+| `prompt` | `string`     | Text description of the video to generate |
+
+### Optional
+
+| Option         | Type                              | Description                                      |
+| -------------- | --------------------------------- | ------------------------------------------------ |
+| `duration`     | `number`                          | Video duration in seconds                        |
+| `resolution`   | `"480p"` \| `"720p"` \| `"1080p"` | Output resolution                                |
+| `aspectRatio`  | `string`                          | Aspect ratio (e.g., `"16:9"`, `"9:16"`, `"1:1"`) |
+| `seed`         | `number`                          | Random seed for reproducibility                  |
+| `image`        | `string` \| `ImageOperation`      | Input image (URL or generated)                   |
+| `audio`        | `string` \| `AudioOperation`      | Input audio (URL or generated)                   |
+| `startImage`   | `string`                          | Starting frame image URL                         |
+| `endImage`     | `string`                          | Ending frame image URL                           |
+| `cameraMotion` | `"fixed"` \| `"dynamic"`          | Camera movement style                            |
+
+## Text-to-Video
+
+Generate a video from a text prompt:
+
+```typescript
+const execution = await compose(
+  generateVideo({
+    model: videoModel("bytedance/seedance-1-pro", "replicate"),
+    prompt: "A rocket launching into space, dramatic lighting",
+    duration: 5,
+    aspectRatio: "16:9",
+  }),
+).execute();
+```
+
+## Image-to-Video
+
+Animate an existing image:
+
+```typescript
+// Using an image URL
+const execution = await compose(
+  generateVideo({
+    model: videoModel("bytedance/seedance-1-pro", "replicate"),
+    prompt: "Gentle wind blowing through the trees",
+    image: "https://example.com/landscape.jpg",
+  }),
+).execute();
+```
+
+### With Generated Image
+
+Generate an image first, then animate it:
+
+```typescript
+const execution = await compose(
+  generateVideo({
+    model: videoModel("bytedance/seedance-1-pro", "replicate"),
+    prompt: "The waves gently rolling onto the shore",
+    image: generateImage({
+      model: imageModel("google/nano-banana", "fal"),
+      prompt: "A beautiful sunset beach scene",
+    }),
+  }),
+).execute();
+```
+
+The image is generated first, then automatically passed to the video model.
+
+## Lip-Sync Video
+
+Create talking head videos with the Fabric model:
+
+```typescript
+const execution = await compose(
+  generateVideo({
+    model: videoModel("veed/fabric-1.0", "fal"),
+    prompt: "A professional presenter speaking",
+    image: "https://example.com/portrait.jpg",
+    audio: "https://example.com/speech.mp3",
+  }),
+).execute();
+```
+
+### With Generated Audio
+
+```typescript
+const execution = await compose(
+  generateVideo({
+    model: videoModel("veed/fabric-1.0", "fal"),
+    prompt: "A friendly presenter",
+    image: "https://example.com/portrait.jpg",
+    audio: generateAudio({
+      model: audioModel("elevenlabs/turbo-v2.5", "elevenlabs"),
+      text: "Hello! Welcome to our product demo.",
+      voiceId: "EXAVITQu4vr4xnSDxMaL",
+    }),
+  }),
+).execute();
+```
+
+## Available Models
+
+| Model                      | Provider  | Features                            |
+| -------------------------- | --------- | ----------------------------------- |
+| `bytedance/seedance-1-pro` | replicate | Text-to-video, image-to-video       |
+| `minimax/video-01`         | replicate | Text-to-video                       |
+| `veed/fabric-1.0`          | fal       | Lip-sync, image-to-video with audio |
+| `veed/fabric-1.0/fast`     | fal       | Fast lip-sync                       |
+
+## Combining with Operations
+
+Use generated videos with operations like `merge()`:
+
+```typescript
+const execution = await compose(
+  merge([
+    "https://example.com/intro.mp4",
+    generateVideo({
+      model: videoModel("bytedance/seedance-1-pro", "replicate"),
+      prompt: "Main content scene",
+    }),
+    generateVideo({
+      model: videoModel("bytedance/seedance-1-pro", "replicate"),
+      prompt: "Closing scene",
+    }),
+  ]),
+).execute();
+```
+
+All video generations run in parallel, then merge waits for them to complete.
+
+## Next Steps
+
+<Cards>
+  <Card href="/docs/generation/image" title="Image Generation">
+    Generate images with generateImage()
+  </Card>
+  <Card href="/docs/generation/audio" title="Audio Generation">
+    Generate audio with generateAudio()
+  </Card>
+  <Card href="/docs/operations/merge" title="Merge Operation">
+    Combine multiple videos
+  </Card>
+</Cards>

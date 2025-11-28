@@ -1,0 +1,76 @@
+---
+title: Minimax Video 01
+description: Minimax's video generation model
+---
+
+# Minimax Video 01
+
+Video generation model from Minimax with prompt optimization.
+
+| Property | Value              |
+| -------- | ------------------ |
+| Model ID | `minimax/video-01` |
+| Provider | Replicate          |
+| Type     | Video generation   |
+
+## Basic Usage
+
+```typescript
+import { compose, generateVideo, videoModel } from "@synthome/sdk";
+
+const execution = await compose(
+  generateVideo({
+    model: videoModel("minimax/video-01", "replicate"),
+    prompt: "A colorful hot air balloon floating over fields of lavender",
+  }),
+).execute();
+```
+
+## Options
+
+| Option            | Type      | Default  | Description                   |
+| ----------------- | --------- | -------- | ----------------------------- |
+| `prompt`          | `string`  | required | Text description of the video |
+| `promptOptimizer` | `boolean` | -        | Enable AI prompt enhancement  |
+
+## Prompt Optimization
+
+Enable automatic prompt enhancement for better results:
+
+```typescript
+generateVideo({
+  model: videoModel("minimax/video-01", "replicate"),
+  prompt: "sunset beach",
+  promptOptimizer: true, // AI expands and improves the prompt
+});
+```
+
+## Examples
+
+### Nature Scene
+
+```typescript
+generateVideo({
+  model: videoModel("minimax/video-01", "replicate"),
+  prompt: "A butterfly landing on a flower in slow motion, macro photography",
+});
+```
+
+### Abstract Animation
+
+```typescript
+generateVideo({
+  model: videoModel("minimax/video-01", "replicate"),
+  prompt: "Flowing abstract shapes morphing between colors, smooth transitions",
+  promptOptimizer: true,
+});
+```
+
+### Character Animation
+
+```typescript
+generateVideo({
+  model: videoModel("minimax/video-01", "replicate"),
+  prompt: "An animated character waving hello, friendly expression",
+});
+```

@@ -1,0 +1,99 @@
+---
+title: Overview
+description: Transform and combine media with operations
+---
+
+# Operations
+
+Operations transform and combine media. Unlike generation functions that create new content, operations work with existing media (URLs or generated content).
+
+| Operation    | Description                                        |
+| ------------ | -------------------------------------------------- |
+| `merge()`    | Combine multiple videos, images, or audio into one |
+| `layers()`   | Composite media with positioning and effects       |
+| `captions()` | Add captions/subtitles to a video                  |
+
+## Quick Examples
+
+### Merge Videos
+
+```typescript
+import { compose, merge } from "@synthome/sdk";
+
+const execution = await compose(
+  merge([
+    "https://example.com/intro.mp4",
+    "https://example.com/main.mp4",
+    "https://example.com/outro.mp4",
+  ]),
+).execute();
+```
+
+### Add Captions
+
+```typescript
+import { compose, captions, audioModel } from "@synthome/sdk";
+
+const execution = await compose(
+  captions({
+    video: "https://example.com/video.mp4",
+    model: audioModel("vaibhavs10/incredibly-fast-whisper", "replicate"),
+    style: { preset: "tiktok" },
+  }),
+).execute();
+```
+
+### Layer Media
+
+```typescript
+import { compose, layers } from "@synthome/sdk";
+
+const execution = await compose(
+  layers([
+    { media: "https://example.com/background.mp4" },
+    { media: "https://example.com/overlay.png", placement: "pip" },
+  ]),
+).execute();
+```
+
+## Combining with Generation
+
+Operations work seamlessly with generation functions:
+
+```typescript
+const execution = await compose(
+  captions({
+    video: merge([
+      generateVideo({
+        model: videoModel("bytedance/seedance-1-pro", "replicate"),
+        prompt: "Scene 1",
+      }),
+      generateVideo({
+        model: videoModel("bytedance/seedance-1-pro", "replicate"),
+        prompt: "Scene 2",
+      }),
+    ]),
+    model: audioModel("vaibhavs10/incredibly-fast-whisper", "replicate"),
+  }),
+).execute();
+```
+
+This pipeline:
+
+1. Generates two videos in parallel
+2. Merges them into one
+3. Transcribes and adds captions
+
+## Next Steps
+
+<Cards>
+  <Card href="/docs/operations/merge" title="Merge">
+    Combine videos, images, and audio
+  </Card>
+  <Card href="/docs/operations/layers" title="Layers">
+    Composite media with positioning
+  </Card>
+  <Card href="/docs/operations/captions" title="Captions">
+    Add subtitles to videos
+  </Card>
+</Cards>

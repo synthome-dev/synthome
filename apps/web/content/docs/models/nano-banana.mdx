@@ -1,0 +1,137 @@
+---
+title: Nano Banana
+description: Google's Gemini 2.5 Flash image generation model
+---
+
+# Nano Banana
+
+Google's Gemini 2.5 Flash Image model for fast, high-quality image generation.
+
+| Property  | Value                |
+| --------- | -------------------- |
+| Model ID  | `google/nano-banana` |
+| Providers | Replicate, Fal       |
+| Type      | Image generation     |
+
+## Basic Usage
+
+```typescript
+import { compose, generateImage, imageModel } from "@synthome/sdk";
+
+const execution = await compose(
+  generateImage({
+    model: imageModel("google/nano-banana", "replicate"),
+    prompt: "A serene Japanese garden with cherry blossoms",
+  }),
+).execute();
+```
+
+## Provider Options
+
+Available on multiple providers:
+
+```typescript
+// Via Replicate
+imageModel("google/nano-banana", "replicate");
+
+// Via Fal
+imageModel("google/nano-banana", "fal");
+```
+
+## Text-to-Image
+
+Generate images from text descriptions:
+
+```typescript
+generateImage({
+  model: imageModel("google/nano-banana", "replicate"),
+  prompt: "A cozy coffee shop interior, warm lighting, photorealistic",
+  aspectRatio: "16:9",
+});
+```
+
+## Image-to-Image
+
+Transform existing images:
+
+```typescript
+generateImage({
+  model: imageModel("google/nano-banana", "replicate"),
+  prompt: "Transform into a watercolor painting style",
+  image: "https://example.com/photo.jpg",
+});
+```
+
+## Options
+
+| Option         | Type                       | Default  | Description                       |
+| -------------- | -------------------------- | -------- | --------------------------------- |
+| `prompt`       | `string`                   | required | Text description                  |
+| `image`        | `string \| string[]`       | -        | Input image(s) for transformation |
+| `aspectRatio`  | `string`                   | `1:1`    | Output aspect ratio               |
+| `outputFormat` | `"jpg" \| "png" \| "webp"` | `png`    | Output format                     |
+
+## Aspect Ratios
+
+| Ratio  | Use Case                         |
+| ------ | -------------------------------- |
+| `1:1`  | Square (Instagram, profile pics) |
+| `16:9` | Landscape (YouTube thumbnails)   |
+| `9:16` | Portrait (Stories, mobile)       |
+| `4:3`  | Classic photo                    |
+| `3:2`  | Photography standard             |
+| `21:9` | Ultrawide                        |
+
+```typescript
+generateImage({
+  model: imageModel("google/nano-banana", "replicate"),
+  prompt: "Mountain landscape at sunset",
+  aspectRatio: "21:9",
+});
+```
+
+## Multiple Reference Images
+
+Use multiple images as references:
+
+```typescript
+generateImage({
+  model: imageModel("google/nano-banana", "replicate"),
+  prompt: "Combine these styles into a new design",
+  image: ["https://example.com/style1.jpg", "https://example.com/style2.jpg"],
+});
+```
+
+## Examples
+
+### Product Photography
+
+```typescript
+generateImage({
+  model: imageModel("google/nano-banana", "replicate"),
+  prompt:
+    "Professional product photo of a leather wallet on marble surface, studio lighting",
+  aspectRatio: "1:1",
+});
+```
+
+### Social Media Content
+
+```typescript
+generateImage({
+  model: imageModel("google/nano-banana", "replicate"),
+  prompt: "Motivational quote background, abstract gradient, purple and blue",
+  aspectRatio: "9:16",
+  outputFormat: "jpg",
+});
+```
+
+### Style Transfer
+
+```typescript
+generateImage({
+  model: imageModel("google/nano-banana", "replicate"),
+  prompt: "Convert to anime art style",
+  image: "https://example.com/portrait.jpg",
+});
+```

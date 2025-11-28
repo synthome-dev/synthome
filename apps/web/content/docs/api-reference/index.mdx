@@ -1,0 +1,39 @@
+---
+title: API Reference
+description: Complete API reference for the Synthome SDK
+---
+
+# API Reference
+
+Complete reference documentation for all Synthome SDK functions, types, and interfaces.
+
+## Core Functions
+
+| Function                                                     | Description                                 |
+| ------------------------------------------------------------ | ------------------------------------------- |
+| [`compose()`](/docs/api-reference/compose)                   | Create and execute media pipelines          |
+| [`executeFromPlan()`](/docs/api-reference/execute-from-plan) | Execute pipelines from JSON execution plans |
+| [`getExecutionStatus()`](/docs/api-reference/execution)      | Check execution status by ID                |
+
+## Generation Functions
+
+| Function          | Description                       |
+| ----------------- | --------------------------------- |
+| `generateVideo()` | Generate video from text or image |
+| `generateImage()` | Generate images from text         |
+| `generateAudio()` | Generate speech from text         |
+
+## Operation Functions
+
+| Function             | Description                       |
+| -------------------- | --------------------------------- |
+| `merge()`            | Combine videos, images, and audio |
+| `layers()`           | Composite media with layering     |
+| `captions()`         | Add auto-generated subtitles      |
+| `reframe()`          | Change aspect ratio               |
+| `lipSync()`          | Sync video to audio               |
+| `removeBackground()` | Remove video background           |
+
+## Types
+
+See [Types](/docs/api-reference/types) for all TypeScript interfaces and types.
