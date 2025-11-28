@@ -3,7 +3,10 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
-    remotePatterns: [new URL("https://cdn.midjourney.com/**")],
+    remotePatterns: [
+      new URL("https://cdn.midjourney.com/**"),
+      new URL("https://res.cloudinary.com/**"),
+    ],
   },
   async rewrites() {
     return [
