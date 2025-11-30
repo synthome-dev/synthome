@@ -18,11 +18,11 @@ export default function MarketingLayout({
 }>) {
   return (
     <>
-      <Header />
-      <main role="main" className="bg-background">
+      <main role="main" className="bg-background" data-theme="light">
+        <Header />
         {children}
+        <FooterSection />
       </main>
-      <FooterSection />
     </>
   );
 }
