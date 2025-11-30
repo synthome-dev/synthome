@@ -19,8 +19,8 @@
 #### Card 2: Mix Providers
 
 - **Tag:** Providers
-- **Title:** Any model, any provider
-- **Subtitle:** Replicate for video, ElevenLabs for audio, Whisper for transcription — all in one pipeline. No adapter code.
+- **Title:** AI Agents
+- **Subtitle:** Export any pipeline to JSON. Let AI agents generate plans dynamically. Store, replay, modify — no code required
 
 #### Card 3: Mix Media Types
 
