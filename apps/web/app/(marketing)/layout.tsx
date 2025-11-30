@@ -17,12 +17,12 @@ export default function MarketingLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="light" style={{ colorScheme: "light" }}>
+    <>
       <Header />
       <main role="main" className="bg-background">
         {children}
       </main>
       <FooterSection />
-    </div>
+    </>
   );
 }
