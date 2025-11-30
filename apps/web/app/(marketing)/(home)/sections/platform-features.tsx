@@ -30,7 +30,7 @@ export function PlatformFeatures() {
         <div className="relative bg-background">
           <div className=" @4xl:grid-cols-2 @4xl:*:p-8 @5xl:*:p-12 @max-4xl:divide-y @4xl:divide-x grid border-b *:p-4">
             <div className="row-span-2 grid grid-rows-subgrid gap-8">
-              <div className="relative self-center mx-auto max-w-sm">
+              <div className="relative self-center mx-auto max-w-xs sm:max-w-sm">
                 <CodeBlock
                   lineNumbers
                   code={`await compose(
@@ -44,7 +44,7 @@ export function PlatformFeatures() {
 )`}
                   lang="typescript"
                   maxHeight={360}
-                  className="[&_pre]:h-20 [&_pre]:min-h-[14.3rem] [&_pre]:rounded-xl [&_pre]:border-none [&_pre]:!bg-transparent ring ring-foreground/5 shadow-md shadow-black/5 rounded-2xl"
+                  className="[&_pre]:h-20 [&_pre]:min-h-[14.3rem] [&_pre]:rounded-xl [&_pre]:border-none [&_pre]:!bg-transparent ring ring-foreground/5 shadow-md shadow-black/5 rounded-2xl no-scrollbar"
                 />
               </div>
               <div className="mx-auto max-w-sm">

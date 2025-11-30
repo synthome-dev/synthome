@@ -19,9 +19,8 @@
 
 /* Fumadocs layout constraints */
 @theme {
-  /* Constrain sidebar and layout widths */
-  --fd-sidebar-width: 260px;
-  --fd-toc-width: 220px;
+  /* Constrain layout width - fumadocs handles --fd-sidebar-width and --fd-toc-width
+     responsively (0px on mobile, larger on md/lg/xl breakpoints) */
   --fd-layout-width: 1400px;
   --spacing-fd-container: 1400px;
 
@@ -326,4 +325,14 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Hide scrollbar while keeping scroll functionality */
+.no-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }

@@ -119,7 +119,7 @@ const execution = await compose(
   return (
     <div className="relative z-10 overflow-hidden pt-6">
       <div className="relative z-10 px-3">
-        <div className="relative mt-4 flex gap-1">
+        <div className="relative mt-4 flex gap-1 overflow-x-auto no-scrollbar">
           <motion.span
             animate={{ x: indicatorLeft, width: indicatorWidth }}
             layout
