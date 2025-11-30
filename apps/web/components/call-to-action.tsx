@@ -1,30 +1,48 @@
-import { Button } from '@/components/ui/button'
-import Link from 'next/link'
+import { Container } from "@/components/container";
+import { NpmISynthome } from "@/components/npm-i-synthome";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+// import { LayoutIllustration } from '@/app/grid-1/components/illustrations/layout-illustration'
 
 export function CallToAction() {
-    return (
-        <section className="py-20">
-            <div className="relative mx-auto max-w-5xl px-6">
-                <div className="relative mx-auto max-w-2xl text-center">
-                    <h2 className="text-balance text-4xl font-semibold md:text-5xl">
-                        Build, Sell and Scale <span className="bg-linear-to-b from-foreground/50 to-foreground/95 bg-clip-text text-transparent [-webkit-text-stroke:0.5px_var(--color-foreground)]">Your Business</span>
-                    </h2>
-                    <p className="text-muted-foreground mb-6 mt-4 text-balance">Join a community of over 1000+ companies and developers who have already discovered the power of Tailark. </p>
+  return (
+    <section className="relative">
+      <Container className="**:data-[slot=content]:py-0 relative">
+        <div className="border-b [--color-border:var(--color-border-illustration)] border-dashed">
+          <div
+            aria-hidden
+            className="h-3 w-full bg-[repeating-linear-gradient(-45deg,var(--color-foreground),var(--color-foreground)_1px,transparent_1px,transparent_4px)] opacity-5"
+          />
+        </div>
+        <div className="relative overflow-hidden pl-8 pt-8 md:p-20 bg-background">
+          <div className="max-w-xl max-md:pr-8">
+            <div className="relative">
+              <h2 className="text-foreground text-balance text-4xl font-semibold lg:text-5xl">
+                Start building today
+              </h2>
+              <p className="text-foreground mb-6 mt-4 text-balance text-lg">
+                One SDK. Any AI media model. Start composing.
+              </p>
 
-                    <Button
-                        asChild
-                        size="sm">
-                        <Link href="#">Get Started</Link>
-                    </Button>
-                    <Button
-                        asChild
-                        className="bg-foreground/10 ring-foreground/20 hover:bg-foreground/15 ml-3 backdrop-blur"
-                        variant="outline"
-                        size="sm">
-                        <Link href="#">Contact Sales</Link>
-                    </Button>
-                </div>
+              <div className="flex gap-2">
+                <Button asChild>
+                  <Link href="https://dashboard.synthome.dev/sign-up">
+                    Get API Key
+                  </Link>
+                </Button>
+                <NpmISynthome />
+              </div>
             </div>
-        </section>
-    )
+          </div>
+        </div>
+        <div className="border-t [--color-border:var(--color-border-illustration)] border-dashed">
+          <div
+            aria-hidden
+            className="h-3 w-full bg-[repeating-linear-gradient(-45deg,var(--color-foreground),var(--color-foreground)_1px,transparent_1px,transparent_4px)] opacity-5"
+          />
+        </div>
+      </Container>
+      <div className="border-b"></div>
+    </section>
+  );
 }

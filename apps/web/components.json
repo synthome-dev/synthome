@@ -26,6 +26,7 @@
       }
     },
     "@svgl": "https://svgl.app/r/{name}.json",
-    "@motion-primitives": "https://motion-primitives.com/c/{name}.json"
+    "@motion-primitives": "https://motion-primitives.com/c/{name}.json",
+    "@prompt-kit": "https://prompt-kit.com/c/{name}.json"
   }
 }
