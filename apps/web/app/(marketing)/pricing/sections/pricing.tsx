@@ -100,7 +100,9 @@ export function Pricing() {
               <div className="text-muted-foreground text-sm">Contact us</div>
             </div>
             <Button asChild variant="outline" className="w-full">
-              <Link href="#">Contact Sales</Link>
+              <Link href="mailto:dmitry@synthome.dev?subject=Enterprise%20Inquiry">
+                Contact Sales
+              </Link>
             </Button>
 
             <ul role="list" className="space-y-3 text-sm">
