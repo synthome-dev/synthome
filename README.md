@@ -11,7 +11,6 @@
 <p align="center">
   <a href="https://www.npmjs.com/package/@synthome/sdk"><img src="https://img.shields.io/npm/v/@synthome/sdk?style=flat-square" alt="npm"></a>
   <a href="https://discord.gg/4TdA9UPeJe"><img src="https://img.shields.io/discord/1444715314356158488?style=flat-square&label=discord" alt="Discord"></a>
-  <a href="https://github.com/synthome-dev/synthome/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-blue?style=flat-square" alt="License"></a>
 </p>
 
 ---
