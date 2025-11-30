@@ -40,5 +40,9 @@ yarn-error.log*
 .DS_Store
 *.pem
 
+# GCP credentials
+**/gc/*.json
+vertex-ai.json
+
 # Sandbox files
 packages/synthome-sdk/sandbox.ts
