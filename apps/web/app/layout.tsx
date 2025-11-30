@@ -26,7 +26,7 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="en" suppressHydrationWarning>
+      <html lang="en" className="light" suppressHydrationWarning>
         <head>
           <link
             rel="icon"
@@ -81,7 +81,13 @@ export default function RootLayout({
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
-          <RootProvider>{children}</RootProvider>
+          <RootProvider
+            theme={{
+              enabled: false,
+            }}
+          >
+            {children}
+          </RootProvider>
         </body>
       </html>
     </ClerkProvider>
