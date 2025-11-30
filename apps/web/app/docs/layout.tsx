@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 
 export default function Layout({ children }: { children: ReactNode }) {
   return (
-    <>
+    <div>
       <DocsLayout
         tree={source.pageTree}
         nav={{
@@ -13,6 +13,6 @@ export default function Layout({ children }: { children: ReactNode }) {
       >
         {children}
       </DocsLayout>
-    </>
+    </div>
   );
 }
