@@ -24,7 +24,7 @@ export class GenerateAudioJob extends BasePipelineJob {
 
       console.log(
         `[GenerateAudioJob] Execution provider keys:`,
-        JSON.stringify(execution.providerApiKeys, null, 2)
+        JSON.stringify(execution.providerApiKeys, null, 2),
       );
 
       const {
@@ -51,18 +51,18 @@ export class GenerateAudioJob extends BasePipelineJob {
         validatedParams = parseModelOptions(modelId, providerParams);
         console.log(
           `[GenerateAudioJob] Validated params for ${modelId}:`,
-          validatedParams
+          validatedParams,
         );
       } catch (error) {
         const validationError =
           error instanceof Error ? error.message : "Unknown validation error";
         throw new Error(
-          `Parameter validation failed for model ${modelId}: ${validationError}`
+          `Parameter validation failed for model ${modelId}: ${validationError}`,
         );
       }
 
       console.log(
-        `[GenerateAudioJob] Using synchronous polling for model ${modelId}`
+        `[GenerateAudioJob] Using synchronous polling for model ${modelId}`,
       );
 
       await this.updateJobProgress(jobRecordId, "calling provider API", 10);
@@ -76,41 +76,41 @@ export class GenerateAudioJob extends BasePipelineJob {
 
       console.log(`[GenerateAudioJob] Provider: ${modelInfo.provider}`);
       console.log(
-        `[GenerateAudioJob] Model-level API key present: ${!!modelApiKey}`
+        `[GenerateAudioJob] Model-level API key present: ${!!modelApiKey}`,
       );
       console.log(
-        `[GenerateAudioJob] Execution-level API key for ${modelInfo.provider}: ${!!execution.providerApiKeys?.[modelInfo.provider as keyof typeof execution.providerApiKeys]}`
+        `[GenerateAudioJob] Execution-level API key for ${modelInfo.provider}: ${!!execution.providerApiKeys?.[modelInfo.provider as keyof typeof execution.providerApiKeys]}`,
       );
       console.log(
-        `[GenerateAudioJob] Final providerApiKey present: ${!!providerApiKey}`
+        `[GenerateAudioJob] Final providerApiKey present: ${!!providerApiKey}`,
       );
       console.log(
-        `[GenerateAudioJob] Using ${modelApiKey ? "model-level" : "execution-level"} API key for provider ${modelInfo.provider}`
+        `[GenerateAudioJob] Using ${modelApiKey ? "model-level" : "execution-level"} API key for provider ${modelInfo.provider}`,
       );
 
       const provider = VideoProviderFactory.getProvider(
         modelInfo.provider,
-        providerApiKey
+        providerApiKey,
       );
 
       console.log(
         `[GenerateAudioJob] Calling provider.startGeneration with modelId: ${modelId}, params:`,
-        validatedParams
+        validatedParams,
       );
 
       // Start audio generation (no webhook needed - we'll poll synchronously)
       const generationStart = await provider.startGeneration(
         modelId,
-        validatedParams
+        validatedParams,
       );
 
       console.log(
         `[GenerateAudioJob] Provider returned:`,
-        JSON.stringify(generationStart, null, 2)
+        JSON.stringify(generationStart, null, 2),
       );
 
       console.log(
-        `[GenerateAudioJob] Started provider job: ${generationStart.providerJobId}`
+        `[GenerateAudioJob] Started provider job: ${generationStart.providerJobId}`,
       );
 
       await this.updateJobProgress(jobRecordId, "polling for completion", 30);
@@ -126,17 +126,17 @@ export class GenerateAudioJob extends BasePipelineJob {
 
         const progressPercentage = Math.min(
           30 + Math.floor((attempts / MAX_ATTEMPTS) * 60),
-          90
+          90,
         );
         await this.updateJobProgress(
           jobRecordId,
           `polling (attempt ${attempts}/${MAX_ATTEMPTS})`,
-          progressPercentage
+          progressPercentage,
         );
 
         // Check status via provider
         const status = await provider.getJobStatus(
-          generationStart.providerJobId
+          generationStart.providerJobId,
         );
 
         if (status.status === "failed") {
@@ -150,7 +150,7 @@ export class GenerateAudioJob extends BasePipelineJob {
           }
 
           const rawResponse = await provider.getRawJobResponse(
-            generationStart.providerJobId
+            generationStart.providerJobId,
           );
 
           // Parse the raw response using the model's polling parser
@@ -176,22 +176,23 @@ export class GenerateAudioJob extends BasePipelineJob {
               isBase64String(firstOutput.url)
             ) {
               console.log(
-                `[GenerateAudioJob] Detected base64 audio string, uploading to CDN...`
+                `[GenerateAudioJob] Detected base64 audio string, uploading to CDN...`,
               );
 
               await this.updateJobProgress(
                 jobRecordId,
                 "uploading audio to CDN",
-                92
+                92,
               );
 
               const cdnUrl = await uploadBase64Audio(firstOutput.url, {
                 executionId: execution.executionId,
                 jobId: jobRecordId,
+                organizationId: execution.organizationId,
               });
 
               console.log(
-                `[GenerateAudioJob] Successfully uploaded audio to CDN: ${cdnUrl}`
+                `[GenerateAudioJob] Successfully uploaded audio to CDN: ${cdnUrl}`,
               );
 
               // Replace base64 string with CDN URL in the outputs array
@@ -210,7 +211,7 @@ export class GenerateAudioJob extends BasePipelineJob {
       }
 
       throw new Error(
-        `Audio generation timeout after ${MAX_ATTEMPTS} attempts`
+        `Audio generation timeout after ${MAX_ATTEMPTS} attempts`,
       );
     } catch (error) {
       const errorMessage =

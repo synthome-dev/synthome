@@ -1,6 +1,10 @@
 // Export service
 export { ApiKeyService, apiKeyService } from "./api-key-service";
 export { ProviderKeyService, providerKeyService } from "./provider-key-service";
+export {
+  StorageIntegrationService,
+  storageIntegrationService,
+} from "./storage-integration-service";
 
 // Export types
 export type {
@@ -8,4 +12,6 @@ export type {
   ApiKeyInfo,
   ValidatedApiKey,
   ProviderKeyInfo,
+  StorageConfig,
+  StorageIntegrationInfo,
 } from "./types";

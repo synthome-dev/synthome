@@ -1,6 +1,7 @@
 "use client";
 
 import { IntegrationsTable } from "./integrations-table";
+import { StorageIntegrationCard } from "./storage-integration-card";
 
 interface ProviderKey {
   id: string;
@@ -12,7 +13,26 @@ interface ProviderKey {
   updatedAt: Date;
 }
 
-export function IntegrationsContent({ keys }: { keys: ProviderKey[] }) {
+interface StorageIntegrationInfo {
+  id: string;
+  endpoint: string | null;
+  region: string | null;
+  bucket: string | null;
+  cdnUrl: string | null;
+  hasCredentials: boolean;
+  isActive: boolean;
+  lastUsedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export function IntegrationsContent({
+  keys,
+  storageIntegration,
+}: {
+  keys: ProviderKey[];
+  storageIntegration: StorageIntegrationInfo | null;
+}) {
   return (
     <>
       <div className="mb-6">
@@ -25,7 +45,19 @@ export function IntegrationsContent({ keys }: { keys: ProviderKey[] }) {
         </p>
       </div>
 
-      <IntegrationsTable keys={keys} />
+      <div className="space-y-8">
+        <section>
+          <h2 className="text-lg font-medium text-primary mb-4">
+            AI Providers
+          </h2>
+          <IntegrationsTable keys={keys} />
+        </section>
+
+        <section>
+          <h2 className="text-lg font-medium text-primary mb-4">Storage</h2>
+          <StorageIntegrationCard storageIntegration={storageIntegration} />
+        </section>
+      </div>
     </>
   );
 }

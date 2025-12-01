@@ -1,13 +1,13 @@
+import { relations } from "drizzle-orm";
 import {
+  boolean,
+  decimal,
+  integer,
+  jsonb,
   pgTable,
   text,
   timestamp,
-  jsonb,
-  integer,
-  boolean,
-  decimal,
 } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
 
 // API Keys table - secure key storage
 // organizationId references Clerk organization ID
@@ -78,6 +78,30 @@ export const providerApiKeys = pgTable("provider_api_keys", {
   // Encrypted API key (nullable - empty until user adds key)
   keyEncrypted: text("key_encrypted"), // AES-256 encrypted, null until set
   keyPrefix: text("key_prefix"), // 'r8_', 'fal_', etc. for display
+
+  isActive: boolean("is_active").notNull().default(true),
+
+  // Tracking
+  lastUsedAt: timestamp("last_used_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Storage Integrations table - stores user's S3-compatible storage configuration
+// One record per organization
+export const storageIntegrations = pgTable("storage_integrations", {
+  id: text("id").primaryKey(),
+  organizationId: text("organization_id").notNull().unique(), // Clerk org ID
+
+  // S3 credentials (encrypted)
+  accessKeyEncrypted: text("access_key_encrypted"), // AES-256 encrypted, null until set
+  secretKeyEncrypted: text("secret_key_encrypted"), // AES-256 encrypted, null until set
+
+  // S3 configuration
+  endpoint: text("endpoint"), // S3 endpoint URL (e.g., https://s3.amazonaws.com)
+  region: text("region"), // AWS region (e.g., us-east-1)
+  bucket: text("bucket"), // Bucket name
+  cdnUrl: text("cdn_url"), // Optional CDN URL for public file access
 
   isActive: boolean("is_active").notNull().default(true),
 
@@ -191,7 +215,12 @@ export const usageLimitsRelations = relations(usageLimits, ({}) => ({}));
 
 export const providerApiKeysRelations = relations(
   providerApiKeys,
-  ({}) => ({}),
+  ({}) => ({})
+);
+
+export const storageIntegrationsRelations = relations(
+  storageIntegrations,
+  ({}) => ({})
 );
 
 export const actionLogsRelations = relations(actionLogs, ({ one }) => ({
@@ -226,5 +255,5 @@ export const executionJobsRelations = relations(
       references: [executions.id],
     }),
     actionLogs: many(actionLogs),
-  }),
+  })
 );

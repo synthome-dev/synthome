@@ -52,15 +52,9 @@ export class TranscribeJob extends BasePipelineJob {
         `[TranscribeJob] Model: ${modelId}, Provider: ${modelInfo.provider}`,
       );
 
-      // Step 1: Extract audio from video using FFmpeg service
-      console.log(`[TranscribeJob] Extracting audio from video: ${videoUrl}`);
-      await this.updateJobProgress(jobRecordId, "extracting_audio", 20);
-
-      const audioUrl = await this.extractAudioFromVideo(videoUrl);
-      console.log(`[TranscribeJob] Audio extracted: ${audioUrl}`);
-
-      // Get provider API keys from execution
+      // Get provider API keys and organizationId from execution early
       const execution = await this.getExecutionWithProviderKeys(jobRecordId);
+      const organizationId = execution.organizationId;
       const providerKey =
         modelApiKey ||
         execution.providerApiKeys?.[
@@ -72,6 +66,16 @@ export class TranscribeJob extends BasePipelineJob {
           `No API key found for provider: ${modelInfo.provider}. Please provide API key.`,
         );
       }
+
+      // Step 1: Extract audio from video using FFmpeg service
+      console.log(`[TranscribeJob] Extracting audio from video: ${videoUrl}`);
+      await this.updateJobProgress(jobRecordId, "extracting_audio", 20);
+
+      const audioUrl = await this.extractAudioFromVideo(
+        videoUrl,
+        organizationId,
+      );
+      console.log(`[TranscribeJob] Audio extracted: ${audioUrl}`);
 
       await this.updateJobProgress(jobRecordId, "validating_params", 30);
 
@@ -268,16 +272,22 @@ export class TranscribeJob extends BasePipelineJob {
           const fileName = `transcripts/${generateId()}.json`;
           const transcriptBuffer = Buffer.from(JSON.stringify(transcript));
 
-          const { url: transcriptUrl, error: uploadError } =
-            await storage.upload(fileName, transcriptBuffer, {
+          const uploadResult = await storage.upload(
+            fileName,
+            transcriptBuffer,
+            {
               contentType: "application/json",
-            });
+              organizationId,
+            },
+          );
 
-          if (uploadError || !transcriptUrl) {
+          if ("error" in uploadResult) {
             throw new Error(
-              `Failed to upload transcript: ${uploadError?.message || "Unknown error"}`,
+              `Failed to upload transcript: ${uploadResult.error?.message || "Unknown error"}`,
             );
           }
+
+          const transcriptUrl = uploadResult.url;
 
           console.log(`[TranscribeJob] Transcript uploaded: ${transcriptUrl}`);
 
@@ -310,7 +320,10 @@ export class TranscribeJob extends BasePipelineJob {
   /**
    * Extract audio from video and upload to storage
    */
-  private async extractAudioFromVideo(videoUrl: string): Promise<string> {
+  private async extractAudioFromVideo(
+    videoUrl: string,
+    organizationId?: string,
+  ): Promise<string> {
     const ffmpegServiceUrl = process.env.FFMPEG_API_URL;
 
     try {
@@ -348,19 +361,18 @@ export class TranscribeJob extends BasePipelineJob {
 
       // Upload audio to storage
       const audioFileName = `audio/${generateId()}.mp3`;
-      const { url: audioUrl, error: uploadError } = await storage.upload(
-        audioFileName,
-        audioBuffer,
-        { contentType: "audio/mpeg" },
-      );
+      const uploadResult = await storage.upload(audioFileName, audioBuffer, {
+        contentType: "audio/mpeg",
+        organizationId,
+      });
 
-      if (uploadError || !audioUrl) {
+      if ("error" in uploadResult) {
         throw new Error(
-          `Failed to upload audio: ${uploadError?.message || "Unknown error"}`,
+          `Failed to upload audio: ${uploadResult.error?.message || "Unknown error"}`,
         );
       }
 
-      return audioUrl;
+      return uploadResult.url;
     } catch (error) {
       console.error("[TranscribeJob] Audio extraction failed:", error);
       throw new Error(
