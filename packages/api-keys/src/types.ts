@@ -34,3 +34,25 @@ export interface ProviderKeyInfo {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export interface StorageConfig {
+  accessKeyId: string;
+  secretAccessKey: string;
+  endpoint: string;
+  region: string;
+  bucket: string;
+  cdnUrl: string;
+}
+
+export interface StorageIntegrationInfo {
+  id: string;
+  endpoint: string | null;
+  region: string | null;
+  bucket: string | null;
+  cdnUrl: string | null;
+  hasCredentials: boolean;
+  isActive: boolean;
+  lastUsedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}

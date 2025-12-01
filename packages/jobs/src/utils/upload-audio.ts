@@ -4,6 +4,7 @@ import { generateId } from "@repo/tools";
 export interface UploadAudioOptions {
   executionId: string;
   jobId: string;
+  organizationId?: string;
 }
 
 /**
@@ -18,15 +19,22 @@ export async function uploadBase64Audio(
   const buffer = Buffer.from(base64Data, "base64");
 
   // Upload to CDN as MP3
-  const { url } = await storage.upload(`audio/${generateId()}.mp3`, buffer, {
-    contentType: "audio/mpeg",
-  });
+  const uploadResult = await storage.upload(
+    `audio/${generateId()}.mp3`,
+    buffer,
+    {
+      contentType: "audio/mpeg",
+      organizationId: options.organizationId,
+    },
+  );
 
-  if (!url) {
-    throw new Error("Upload failed - no URL returned");
+  if ("error" in uploadResult) {
+    throw new Error(
+      `Upload failed: ${uploadResult.error?.message || "Unknown error"}`,
+    );
   }
 
-  return url;
+  return uploadResult.url;
 }
 
 /**

@@ -21,7 +21,9 @@ export class AddSubtitlesJob extends BasePipelineJob {
 
     await this.updateJobProgress(jobRecordId, "processing", 10);
 
-    const ffmpegUrl = process.env.FFMPEG_API_URL;
+    // Get organizationId for storage
+    const execution = await this.getExecutionWithProviderKeys(jobRecordId);
+    const organizationId = execution.organizationId;
 
     try {
       // 1. Get Transcript (either from params or fetch from URL)
@@ -131,17 +133,19 @@ export class AddSubtitlesJob extends BasePipelineJob {
       await this.updateJobProgress(jobRecordId, "uploading", 90);
 
       const fileName = `captions/${generateId()}.mp4`;
-      const { url: outputUrl, error: uploadError } = await storage.upload(
+      const uploadResult = await storage.upload(
         fileName,
         Buffer.from(videoBuffer),
-        { contentType: "video/mp4" },
+        { contentType: "video/mp4", organizationId },
       );
 
-      if (uploadError || !outputUrl) {
+      if ("error" in uploadResult) {
         throw new Error(
-          `Failed to upload result: ${uploadError?.message || "Unknown error"}`,
+          `Failed to upload result: ${uploadResult.error?.message || "Unknown error"}`,
         );
       }
+
+      const outputUrl = uploadResult.url;
 
       console.log(`[AddSubtitlesJob] Job completed. Result: ${outputUrl}`);
 

@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { verifyWebhook } from "@clerk/backend/webhooks";
 import { initializeUsageLimits } from "@repo/db";
-import { providerKeyService } from "@repo/api-keys";
+import { providerKeyService, storageIntegrationService } from "@repo/api-keys";
 
 const clerkWebhooksRouter = new Hono();
 
@@ -75,6 +75,14 @@ clerkWebhooksRouter.post("/", async (c) => {
         await providerKeyService.initializeProviderKeys(organizationId);
         console.log(
           `[ClerkWebhook] Successfully initialized provider keys for organization ${organizationId}`,
+        );
+
+        // Initialize empty storage integration record
+        await storageIntegrationService.initializeStorageIntegration(
+          organizationId,
+        );
+        console.log(
+          `[ClerkWebhook] Successfully initialized storage integration for organization ${organizationId}`,
         );
 
         return c.json({
