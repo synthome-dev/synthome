@@ -11,6 +11,7 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@repo/api-keys": "workspace:*",
     "bun": "1.2.4",
     "dotenv-cli": "^8.0.0",
     "jszip": "^3.10.1"

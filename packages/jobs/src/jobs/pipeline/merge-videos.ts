@@ -20,6 +20,10 @@ export class MergeVideosJob extends BasePipelineJob {
     try {
       await this.updateJobProgress(jobRecordId, "starting", 0);
 
+      // Get organizationId for storage
+      const execution = await this.getExecutionWithProviderKeys(jobRecordId);
+      const organizationId = execution.organizationId;
+
       console.log(`[MergeVideosJob] Merging media with params:`, params);
       console.log(`[MergeVideosJob] Dependencies:`, dependencies);
 
@@ -114,6 +118,7 @@ export class MergeVideosJob extends BasePipelineJob {
         Buffer.from(mergedVideoBuffer),
         {
           contentType: "video/mp4",
+          organizationId,
         },
       );
 

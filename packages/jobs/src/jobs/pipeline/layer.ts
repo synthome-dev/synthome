@@ -81,6 +81,10 @@ export class LayerJob extends BasePipelineJob {
     try {
       await this.updateJobProgress(jobRecordId, "starting", 0);
 
+      // Get organizationId for storage
+      const execution = await this.getExecutionWithProviderKeys(jobRecordId);
+      const organizationId = execution.organizationId;
+
       console.log(`[LayerJob] Processing with params:`, params);
 
       const { layers, outputDuration, outputWidth, outputHeight, mainLayer } =
@@ -330,6 +334,7 @@ export class LayerJob extends BasePipelineJob {
       const s3Key = `executions/${executionId}/${jobId}/output.mp4`;
       const uploadResult = await storage.upload(s3Key, videoBuffer, {
         contentType: "video/mp4",
+        organizationId,
       });
 
       if ("error" in uploadResult) {

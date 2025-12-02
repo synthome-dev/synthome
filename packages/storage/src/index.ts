@@ -1,3 +1,4 @@
+import { storageIntegrationService } from "@repo/api-keys";
 import { S3Client } from "bun";
 import JSZip from "jszip";
 
@@ -11,18 +12,33 @@ type FileBody =
   | Response
   | Buffer;
 
-const client = new S3Client({
-  accessKeyId: process.env.S3_ACCESS_KEY!,
-  secretAccessKey: process.env.S3_SECRET_KEY!,
-  endpoint: process.env.S3_URL!,
-  region: process.env.S3_REGION || "us-east-1",
-  bucket: "default",
-});
+export interface StorageConfig {
+  accessKeyId: string;
+  secretAccessKey: string;
+  endpoint: string;
+  region: string;
+  bucket: string;
+  cdnUrl: string;
+}
 
-const getFileUrl = (path: string) => {
-  const endpoint = "https://cdn.proom.ai";
-  return `${endpoint}/${path}`;
-};
+export interface UploadOptions {
+  contentType?: string;
+  expiresInHours?: number;
+  organizationId?: string;
+}
+
+export interface ZipUploadOptions {
+  expiresInHours?: number;
+  organizationId?: string;
+}
+
+export interface DeleteOptions {
+  organizationId?: string;
+}
+
+export interface GetFileUrlOptions {
+  organizationId?: string;
+}
 
 const isUrl = (str: string): boolean => {
   try {
@@ -61,12 +77,9 @@ const convertToUint8Array = async (file: FileBody): Promise<Uint8Array> => {
   }
 
   if (typeof file === "string") {
-    // Check if string is a URL, if so download it
     if (isUrl(file)) {
       return await downloadFromUrl(file);
     }
-
-    // Otherwise treat as text content
     return new TextEncoder().encode(file);
   }
 
@@ -85,24 +98,93 @@ const convertToUint8Array = async (file: FileBody): Promise<Uint8Array> => {
   throw new Error("Unsupported file type");
 };
 
+function getEnvConfig(): StorageConfig {
+  const accessKeyId = process.env.S3_ACCESS_KEY;
+  const secretAccessKey = process.env.S3_SECRET_KEY;
+  const endpoint = process.env.S3_URL;
+  const region = process.env.S3_REGION || "us-east-1";
+  const bucket = process.env.S3_BUCKET || "default";
+  const cdnUrl = process.env.S3_CDN_URL || "https://cdn.proom.ai";
+
+  if (!accessKeyId || !secretAccessKey || !endpoint) {
+    throw new Error(
+      "Storage configuration not found. Configure S3_ACCESS_KEY, S3_SECRET_KEY, and S3_URL environment variables."
+    );
+  }
+
+  return {
+    accessKeyId,
+    secretAccessKey,
+    endpoint,
+    region,
+    bucket,
+    cdnUrl,
+  };
+}
+
+let defaultClient: {
+  s3: ReturnType<typeof createS3Client>;
+  config: StorageConfig;
+} | null = null;
+
+function createS3Client(config: StorageConfig) {
+  return new S3Client({
+    accessKeyId: config.accessKeyId,
+    secretAccessKey: config.secretAccessKey,
+    endpoint: config.endpoint,
+    region: config.region,
+    bucket: config.bucket,
+  });
+}
+
+function getDefaultClient() {
+  if (!defaultClient) {
+    const config = getEnvConfig();
+    defaultClient = {
+      s3: createS3Client(config),
+      config,
+    };
+  }
+  return defaultClient;
+}
+
+async function getClientForOrg(organizationId?: string): Promise<{
+  s3: ReturnType<typeof createS3Client>;
+  config: StorageConfig;
+}> {
+  if (organizationId) {
+    const orgConfig =
+      await storageIntegrationService.getStorageConfigForExecution(
+        organizationId
+      );
+
+    if (orgConfig) {
+      return {
+        s3: createS3Client(orgConfig),
+        config: orgConfig,
+      };
+    }
+  }
+
+  return getDefaultClient();
+}
+
 const upload = async (
   path: string,
   file: FileBody,
-  options?: {
-    contentType?: string;
-    expiresInHours?: number;
-  },
-) => {
+  options?: UploadOptions
+): Promise<{ success: true; url: string } | { error: Error }> => {
   try {
+    const { s3, config } = await getClientForOrg(options?.organizationId);
     const body = await convertToUint8Array(file);
 
-    await client.write(path, body, {
+    await s3.write(path, body, {
       type: options?.contentType,
     });
 
     return {
       success: true,
-      url: getFileUrl(path),
+      url: `${config.cdnUrl}/${path}`,
     };
   } catch (error) {
     console.error("Error uploading file:", error);
@@ -115,38 +197,52 @@ const upload = async (
 const zipAndUpload = async (
   path: string,
   files: File[],
-  options?: {
-    expiresInHours?: number;
-  },
-) => {
+  options?: ZipUploadOptions
+): Promise<{ success: true; url: string } | { error: Error }> => {
   const zip = new JSZip();
 
-  // Add all files to the zip
   for (const file of files) {
     const arrayBuffer = await file.arrayBuffer();
     zip.file(file.name, arrayBuffer);
   }
 
-  // Generate zip file
   const zipBuffer = await zip.generateAsync({ type: "nodebuffer" });
 
   return upload(path, zipBuffer, {
     contentType: "application/zip",
     expiresInHours: options?.expiresInHours,
+    organizationId: options?.organizationId,
   });
 };
 
-const deleteFile = async (path: string) => {
-  await client.delete(path);
+const deleteFile = async (
+  path: string,
+  options?: DeleteOptions
+): Promise<void> => {
+  const { s3 } = await getClientForOrg(options?.organizationId);
+  await s3.delete(path);
 };
 
-export const storage = Object.assign(
-  {},
-  {
-    upload,
-    delete: deleteFile,
-    getFileUrl,
-    zipAndUpload,
-    downloadFromUrl,
-  },
-);
+const getFileUrl = async (
+  path: string,
+  options?: GetFileUrlOptions
+): Promise<string> => {
+  const { config } = await getClientForOrg(options?.organizationId);
+  return `${config.cdnUrl}/${path}`;
+};
+
+/**
+ * Storage client with organization-aware methods.
+ * Each method accepts an optional organizationId in options.
+ * If provided, checks for org-specific storage integration first,
+ * then falls back to environment variables.
+ */
+export const storage = {
+  upload,
+  delete: deleteFile,
+  getFileUrl,
+  zipAndUpload,
+  downloadFromUrl,
+};
+
+export { downloadFromUrl };
