@@ -2,11 +2,11 @@ import { CallToAction } from "@/components/call-to-action";
 import { Container } from "@/components/container";
 import { portableTextComponents } from "@/components/content-components";
 import {
-    Breadcrumb,
-    BreadcrumbItem,
-    BreadcrumbLink,
-    BreadcrumbList,
-    BreadcrumbSeparator,
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { getAllPostSlugs, getPostBySlug } from "@/lib/actions";
 import { formatDate } from "@/lib/format-date";
@@ -155,9 +155,13 @@ export default async function BlogPostPage({
           </div>
         </article>
       </div>
-      <Container className="**:data-[slot=content]:pt-2 h-8 mask-t-from-95% border-0 bg-transparent"></Container>
+      <Container className="**:data-[slot=content]:pt-2 h-8 mask-t-from-95% border-0 bg-transparent">
+        <span></span>
+      </Container>
       <CallToAction />
-      <Container className="**:data-[slot=content]:pt-2 h-8 mask-t-from-95% border-0 bg-transparent"></Container>
+      <Container className="**:data-[slot=content]:pt-2 h-8 mask-t-from-95% border-0 bg-transparent">
+        <span></span>
+      </Container>
     </div>
   );
 }
