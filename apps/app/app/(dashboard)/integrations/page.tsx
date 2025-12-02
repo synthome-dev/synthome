@@ -1,7 +1,7 @@
 import { PageWrapper } from "@/components/page-wrapper";
 import { IntegrationsContent } from "@/features/integrations";
 import { auth } from "@clerk/nextjs/server";
-import { providerKeyService } from "@repo/api-keys";
+import { providerKeyService, storageIntegrationService } from "@repo/api-keys";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -26,11 +26,17 @@ export default async function IntegrationsPage() {
     );
   }
 
-  const keys = await providerKeyService.listProviderKeys(orgId);
+  const [keys, storageIntegration] = await Promise.all([
+    providerKeyService.listProviderKeys(orgId),
+    storageIntegrationService.getStorageIntegration(orgId),
+  ]);
 
   return (
     <PageWrapper>
-      <IntegrationsContent keys={keys} />
+      <IntegrationsContent
+        keys={keys}
+        storageIntegration={storageIntegration}
+      />
     </PageWrapper>
   );
 }
