@@ -23,6 +23,10 @@ const links = [
     group: "Company",
     items: [
       {
+        title: "Blog",
+        href: "/blog",
+      },
+      {
         title: "Terms",
         href: "/terms",
       },
