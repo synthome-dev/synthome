@@ -2,7 +2,6 @@ import { Container } from "@/components/container";
 import { NpmISynthome } from "@/components/npm-i-synthome";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-// import { LayoutIllustration } from '@/app/grid-1/components/illustrations/layout-illustration'
 
 export function CallToAction() {
   return (

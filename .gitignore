@@ -45,3 +45,6 @@ vertex-ai.json
 
 # Sandbox files
 packages/synthome-sdk/sandbox.ts
+
+# SEO articles
+seo/
