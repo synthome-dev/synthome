@@ -81,7 +81,7 @@ export default function CodeBlock({
   return (
     <div
       className={cn(
-        "[&_code]:text-[13px]/2 [&_pre]:max-h-(--pre-max-height) [&_code]:font-mono [&_pre]:min-h-[32rem] [&_pre]:overflow-auto [&_pre]:border-l [&_pre]:!bg-transparent [&_pre]:p-4 [&_pre]:leading-snug [&_pre]:pl-0",
+        "[&_code]:text-[13px]/2 [&_pre]:max-h-(--pre-max-height) [&_code]:font-mono [&_pre]:min-h-[32rem] [&_pre]:overflow-auto [&_pre]:!bg-transparent [&_pre]:p-4 [&_pre]:leading-snug",
         lineNumbers &&
           "[&_.line[data-line]]:before:mr-4 [&_.line[data-line]]:before:inline-block [&_.line[data-line]]:before:w-4 [&_.line[data-line]]:before:text-right [&_.line[data-line]]:before:text-zinc-400 [&_.line[data-line]]:before:content-[attr(data-line)]",
         className,

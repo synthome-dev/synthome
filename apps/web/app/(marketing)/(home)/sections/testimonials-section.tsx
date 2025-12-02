@@ -52,7 +52,7 @@ export function TestimonialsSection() {
               Testimonials
             </span>
             <h2 className="text-foreground mt-6 text-balance text-4xl font-semibold lg:text-5xl">
-              What our customers are saying about Tailark Quartz
+              What our customers are saying about Synthome
             </h2>
             <p className="text-muted-foreground text-balance text-lg">
               Join the increasing number of customers and advocates who rely on
