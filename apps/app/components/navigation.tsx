@@ -1,5 +1,7 @@
 "use client";
 
+import { CreditCardIcon } from "@/components/icons";
+import { BillingPage } from "@/features/billing";
 import { cn } from "@/lib/utils";
 import { OrganizationSwitcher, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
@@ -30,7 +32,20 @@ export function Navigation() {
               },
             },
           }}
-        />
+        >
+          <OrganizationSwitcher.OrganizationProfilePage
+            label="Billing"
+            url="billing"
+            labelIcon={
+              <div className="flex items-center justify-center w-5 h-5 -mt-0.5">
+                <CreditCardIcon />
+              </div>
+            }
+          >
+            <BillingPage />
+          </OrganizationSwitcher.OrganizationProfilePage>
+        </OrganizationSwitcher>
+
         <UserButton />
       </div>
 
@@ -47,7 +62,7 @@ export function Navigation() {
                   className={cn(
                     "flex items-center px-3.5 relative shrink-0 transition font-book text-[14px]",
                     "hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500",
-                    isActive ? "text-primary" : "text-secondary",
+                    isActive ? "text-primary" : "text-secondary"
                   )}
                 >
                   {item.label}

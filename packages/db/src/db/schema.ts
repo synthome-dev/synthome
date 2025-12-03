@@ -51,7 +51,7 @@ export const usageLimits = pgTable("usage_limits", {
     .notNull()
     .default(0),
 
-  // Pro plan overage (no payment integration yet, just tracking)
+  // Pro plan overage
   overageAllowed: boolean("overage_allowed").notNull().default(false),
   overagePricePerAction: decimal("overage_price_per_action", {
     precision: 10,
@@ -60,6 +60,25 @@ export const usageLimits = pgTable("usage_limits", {
   overageActionsThisPeriod: integer("overage_actions_this_period")
     .notNull()
     .default(0),
+
+  // Stripe integration
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  subscriptionStatus: text("subscription_status").$type<
+    | "active"
+    | "canceled"
+    | "incomplete"
+    | "incomplete_expired"
+    | "past_due"
+    | "paused"
+    | "trialing"
+    | "unpaid"
+    | "none"
+  >(),
+  stripePriceId: text("stripe_price_id"),
+  cancelAtPeriodEnd: boolean("cancel_at_period_end").notNull().default(false),
+  // Overage from previous billing period (in cents), to be added to next invoice
+  pendingOverageAmount: integer("pending_overage_amount").notNull().default(0),
 
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -215,12 +234,12 @@ export const usageLimitsRelations = relations(usageLimits, ({}) => ({}));
 
 export const providerApiKeysRelations = relations(
   providerApiKeys,
-  ({}) => ({})
+  ({}) => ({}),
 );
 
 export const storageIntegrationsRelations = relations(
   storageIntegrations,
-  ({}) => ({})
+  ({}) => ({}),
 );
 
 export const actionLogsRelations = relations(actionLogs, ({ one }) => ({
@@ -255,5 +274,5 @@ export const executionJobsRelations = relations(
       references: [executions.id],
     }),
     actionLogs: many(actionLogs),
-  })
+  }),
 );
