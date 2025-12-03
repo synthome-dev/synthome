@@ -9,13 +9,33 @@
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@synthome/sdk"><img src="https://img.shields.io/npm/v/@synthome/sdk?style=flat-square" alt="npm"></a>
-  <a href="https://discord.gg/4TdA9UPeJe"><img src="https://img.shields.io/discord/1444715314356158488?style=flat-square&label=discord" alt="Discord"></a>
+  <a href="https://synthome.dev">Website</a> • <a href="https://synthome.dev/docs">Documentation</a> • <a href="https://discord.gg/4TdA9UPeJe">Discord</a>
 </p>
 
 ---
 
-### Getting Started
+## What is Synthome?
+
+Synthome is the simplest way to build **multi-model AI media workflows** — all in TypeScript.
+
+AI video and image models behave differently across providers.
+Different inputs, different outputs, different response formats, different async handling.
+Building even a simple pipeline becomes a mess of glue code, retries, polling, and media stitching.
+
+Synthome standardizes all of this.
+
+**You write a clean pipeline → Synthome handles:**
+
+- Model invocation (Fal, Replicate, ElevenLabs, Hume, etc.)
+- Async job execution & retries
+- Media storage
+- Input/output normalization
+- Multi-step orchestration
+- JSON-defined pipelines (AI-generated or manual)
+
+It’s like **OpenRouter, but for AI media pipelines** — and fully composable.
+
+### Try in 5 Minutes (Getting Started)
 
 1. Create your API key at [synthome.dev](https://synthome.dev)
 2. Install the SDK
@@ -24,7 +44,7 @@
 npm install @synthome/sdk
 ```
 
-3. Read the [documentation](https://synthome.dev/docs)
+3. Read the docs https://synthome.dev/docs
 
 ### FAQ
 
