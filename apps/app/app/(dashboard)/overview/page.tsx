@@ -1,5 +1,6 @@
 import { PageTitle } from "@/components/page-title";
 import { PageWrapper } from "@/components/page-wrapper";
+import { UpgradeButton } from "@/features/billing";
 import { getRecentExecutions } from "@/features/logs/actions";
 import {
   ExecutionsTable,
@@ -20,9 +21,14 @@ export default async function OverviewPage() {
   const usageResult = await getMonthlyUsageStats();
   const usageStats = usageResult.success ? usageResult.data : null;
 
+  const showUpgradeButton = usageStats?.planType === "free";
+
   return (
     <PageWrapper>
-      <PageTitle className="mb-6">Overview</PageTitle>
+      <div className="mb-6 flex items-center justify-between">
+        <PageTitle>Overview</PageTitle>
+        {showUpgradeButton && <UpgradeButton />}
+      </div>
 
       {usageStats && <UsageOverview stats={usageStats} />}
 

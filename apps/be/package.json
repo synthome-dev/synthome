@@ -5,7 +5,6 @@
     "dev": "bun run --hot src/index.ts"
   },
   "dependencies": {
-    "@clerk/backend": "^1.21.0",
     "@repo/api-types": "workspace:*",
     "@repo/db": "workspace:*",
     "@repo/jobs": "workspace:*",

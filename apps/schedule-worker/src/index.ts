@@ -36,18 +36,18 @@ const pollingWorker = new PollingWorker({
   initialBackoffMs: 5000,
 });
 
-// Set up monthly usage reset scheduler
+// Set up daily usage reset scheduler (checks for expired billing periods)
 const scheduler = new Scheduler({ timezone: "UTC" });
 scheduler.register({
-  id: "monthly-usage-reset",
-  name: "Monthly Usage Reset",
-  cronExpression: "0 0 1 * *", // Run at midnight on the 1st of every month
+  id: "daily-usage-reset",
+  name: "Daily Usage Reset Check",
+  cronExpression: "0 0 * * *", // Run at midnight UTC every day
   enabled: true,
   handler: async () => {
-    console.log("[Scheduler] Running monthly usage reset...");
+    console.log("[Scheduler] Checking for expired billing periods...");
     const result = await resetMonthlyUsage();
     console.log(
-      `[Scheduler] Monthly usage reset completed: ${result.resetCount} organizations reset, ${result.errors.length} errors`,
+      `[Scheduler] Usage reset completed: ${result.resetCount} organizations reset, ${result.errors.length} errors`,
     );
     if (result.errors.length > 0) {
       console.error("[Scheduler] Errors during reset:", result.errors);
@@ -63,7 +63,7 @@ async function start() {
     await pollingWorker.start();
     console.log("✅ Polling worker started");
 
-    console.log("✅ Monthly usage reset scheduler registered");
+    console.log("✅ Daily usage reset scheduler registered");
   } catch (error) {
     console.error("❌ Failed to start workers:", error);
     process.exit(1);
