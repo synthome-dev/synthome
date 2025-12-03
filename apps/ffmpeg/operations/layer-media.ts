@@ -4,7 +4,7 @@ import { nanoid } from "nanoid";
 import { tmpdir } from "os";
 import { join } from "path";
 import type { LayerMediaOptions } from "../core/types";
-import { isVideoFile } from "../core/utils";
+import { isVideoFile, streamToDisk } from "../core/utils";
 import { calculateLayerDimensions, ensureEven } from "../dimensions/calculator";
 import { getPlacementConfig } from "../dimensions/placement";
 import { probeDimensions } from "../dimensions/probe";
@@ -13,8 +13,9 @@ import { processTimelineLayers } from "../layering/timeline-layers";
 /**
  * Layer multiple media files with placement and effects
  * Supports both regular layers and timeline layers
+ * Returns the path to the output file (caller must handle cleanup)
  */
-export async function layerMedia(options: LayerMediaOptions): Promise<Buffer> {
+export async function layerMedia(options: LayerMediaOptions): Promise<string> {
   const tempFiles: string[] = [];
   const outputPath = join(tmpdir(), `${nanoid()}.mp4`);
 
@@ -53,18 +54,14 @@ export async function layerMedia(options: LayerMediaOptions): Promise<Buffer> {
 
       for (const mediaUrl of layer.media) {
         console.log(`[LayerMedia] Downloading media ${i}: ${mediaUrl}`);
-        const response = await fetch(mediaUrl);
-        if (!response.ok) {
-          throw new Error(`Failed to download media: ${response.statusText}`);
-        }
-        const buffer = Buffer.from(await response.arrayBuffer());
 
         // Detect file type and use appropriate extension
         const isVideo = isVideoFile(mediaUrl);
         const ext = isVideo ? "mp4" : mediaUrl.endsWith(".png") ? "png" : "jpg";
         const path = join(tmpdir(), `${nanoid()}.${ext}`);
 
-        await Bun.write(path, buffer);
+        // Stream directly to disk - avoids loading entire file into RAM
+        await streamToDisk(mediaUrl, path);
         paths.push(path);
         tempFiles.push(path);
       }
@@ -245,13 +242,13 @@ export async function layerMedia(options: LayerMediaOptions): Promise<Buffer> {
         .on("end", resolve);
     });
 
-    return Buffer.from(await Bun.file(outputPath).arrayBuffer());
+    // Return path to output file - caller streams it
+    return outputPath;
   } finally {
-    // Cleanup all temp files
+    // Cleanup all temp files (but NOT outputPath - caller handles that)
     try {
       await Promise.all([
         ...tempFiles.map((file) => unlink(file).catch(() => {})),
-        unlink(outputPath).catch(() => {}),
       ]);
     } catch (e) {
       console.error("[LayerMedia] Cleanup error:", e);
