@@ -1,6 +1,5 @@
 import { Hono } from "hono";
 import { adminRouter } from "./routes/admin";
-import { clerkWebhooksRouter } from "./routes/clerk-webhooks";
 import { executeRouter } from "./routes/execute";
 import { webhooksRouter } from "./routes/webhooks";
 import { getOrchestrator } from "./services/execution-orchestrator";
@@ -14,7 +13,6 @@ app.get("/", (c) => {
 // Register production routes
 app.route("/api/execute", executeRouter);
 app.route("/api/webhooks", webhooksRouter);
-app.route("/api/clerk-webhooks", clerkWebhooksRouter);
 app.route("/api/admin", adminRouter);
 
 // Register development-only routes
@@ -38,7 +36,7 @@ if (isDevelopment) {
     } catch (error) {
       return c.json(
         { error: error instanceof Error ? error.message : "Unknown error" },
-        500
+        500,
       );
     }
   });

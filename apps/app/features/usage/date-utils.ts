@@ -75,3 +75,39 @@ export function formatCurrency(amount: number): string {
 export function formatNumber(num: number): string {
   return num.toLocaleString();
 }
+
+const MONTH_NAMES = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+
+/**
+ * Format a date as short format: "Dec 3"
+ * Uses UTC to avoid timezone issues with billing dates
+ */
+export function formatShortDate(date: Date | string): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  return `${MONTH_NAMES[d.getUTCMonth()]} ${d.getUTCDate()}`;
+}
+
+/**
+ * Format a date as full format: "Dec 3, 2025"
+ */
+export function formatFullDate(date: Date | string): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}

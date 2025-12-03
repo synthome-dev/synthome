@@ -1,10 +1,13 @@
 import { db, usageLimits, sql } from "@repo/db";
 
 /**
- * Reset usage counters for all organizations at the start of each billing period.
- * This should be run as a scheduled job (monthly).
+ * Reset usage counters for FREE plan organizations at the start of each billing period.
+ * This should be run as a scheduled job (daily to catch expired periods).
  *
- * For each organization:
+ * Note: Pro plan users have their usage reset via Stripe webhooks (invoice.created)
+ * This function only handles Free plan users who don't have Stripe subscriptions.
+ *
+ * For each FREE organization:
  * 1. Reset actionsUsedThisPeriod to 0
  * 2. Reset overageActionsThisPeriod to 0
  * 3. Update currentPeriodStart to now
@@ -14,16 +17,19 @@ export async function resetMonthlyUsage(): Promise<{
   resetCount: number;
   errors: Array<{ organizationId: string; error: string }>;
 }> {
-  console.log("[ResetMonthlyUsage] Starting monthly usage reset...");
+  console.log(
+    "[ResetMonthlyUsage] Starting monthly usage reset for free plans...",
+  );
 
-  // Get all usage limits that need resetting (where current period has ended)
+  // Get all FREE plan usage limits that need resetting (where current period has ended)
+  // Pro plans are handled by Stripe webhooks
   const now = new Date();
   const limitsToReset = await db.query.usageLimits.findMany({
-    where: sql`${usageLimits.currentPeriodEnd} <= ${now}`,
+    where: sql`${usageLimits.currentPeriodEnd} <= ${now} AND ${usageLimits.planType} = 'free'`,
   });
 
   console.log(
-    `[ResetMonthlyUsage] Found ${limitsToReset.length} organizations to reset`,
+    `[ResetMonthlyUsage] Found ${limitsToReset.length} free plan organizations to reset`,
   );
 
   const errors: Array<{ organizationId: string; error: string }> = [];
