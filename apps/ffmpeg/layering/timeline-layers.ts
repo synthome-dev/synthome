@@ -2,7 +2,7 @@ import { nanoid } from "nanoid";
 import { tmpdir } from "os";
 import { join } from "path";
 import type { LayerMediaOptions } from "../core/types";
-import { isVideoFile } from "../core/utils";
+import { isVideoFile, streamToDisk } from "../core/utils";
 import { ensureEven } from "../dimensions/calculator";
 import { probeDimensions } from "../dimensions/probe";
 import {
@@ -14,14 +14,15 @@ import { processLayers } from "./layers";
 /**
  * Process timeline layers - when backgrounds/overlays change over time
  * New approach: Stitch backgrounds first, then overlay main video once (no blinking!)
+ * Returns the path to the output file (caller must handle cleanup)
  */
 export async function processTimelineLayers(
   options: LayerMediaOptions,
   tempFiles: string[],
-  outputPath: string
-): Promise<Buffer> {
+  outputPath: string,
+): Promise<string> {
   console.log(
-    "[Timeline] Processing timeline layers with background stitching"
+    "[Timeline] Processing timeline layers with background stitching",
   );
 
   // Find the main layer (the layer with main: true, or the first non-timeline video)
@@ -38,17 +39,12 @@ export async function processTimelineLayers(
     if (layer.main || mainLayerIndex === -1) {
       mainLayerIndex = i;
       // Download and probe the main layer to get its duration
-      const response = await fetch(layer.media[0]);
-      if (!response.ok) {
-        throw new Error(
-          `Failed to download main layer: ${response.statusText}`
-        );
-      }
-      const buffer = Buffer.from(await response.arrayBuffer());
       const isVideo = isVideoFile(layer.media[0]);
       const ext = isVideo ? "mp4" : "jpg";
       const path = join(tmpdir(), `${nanoid()}.${ext}`);
-      await Bun.write(path, buffer);
+
+      // Stream directly to disk - avoids loading entire file into RAM
+      await streamToDisk(layer.media[0], path);
       tempFiles.push(path);
       mainLayerPath = path;
 
@@ -56,7 +52,7 @@ export async function processTimelineLayers(
       if (metadata.duration) {
         mainLayerDuration = metadata.duration;
         console.log(
-          `[Timeline] Main layer (${i}) duration: ${mainLayerDuration}s`
+          `[Timeline] Main layer (${i}) duration: ${mainLayerDuration}s`,
         );
       }
 
@@ -68,7 +64,7 @@ export async function processTimelineLayers(
 
   if (mainLayerIndex === -1) {
     throw new Error(
-      "No main layer found - at least one regular (non-timeline) layer required"
+      "No main layer found - at least one regular (non-timeline) layer required",
     );
   }
 
@@ -77,18 +73,18 @@ export async function processTimelineLayers(
     if ("isTimeline" in layer && layer.isTimeline) {
       // Check if this timeline needs auto-duration
       const itemsWithoutDuration = layer.timeline.filter(
-        (item) => !item.duration
+        (item) => !item.duration,
       );
 
       if (itemsWithoutDuration.length > 0) {
         console.log(
-          `[Timeline] Auto-calculating durations for ${itemsWithoutDuration.length} items`
+          `[Timeline] Auto-calculating durations for ${itemsWithoutDuration.length} items`,
         );
 
         // Calculate total duration of items that DO have explicit durations
         const explicitDuration = layer.timeline.reduce(
           (sum, item) => sum + (item.duration || 0),
-          0
+          0,
         );
 
         // Remaining duration to split among items without duration
@@ -96,7 +92,7 @@ export async function processTimelineLayers(
 
         if (remainingDuration <= 0) {
           throw new Error(
-            `Timeline items with explicit durations (${explicitDuration}s) exceed main layer duration (${mainLayerDuration}s)`
+            `Timeline items with explicit durations (${explicitDuration}s) exceed main layer duration (${mainLayerDuration}s)`,
           );
         }
 
@@ -104,7 +100,7 @@ export async function processTimelineLayers(
         const autoDuration = remainingDuration / itemsWithoutDuration.length;
 
         console.log(
-          `[Timeline] Auto-duration: ${autoDuration}s per item (${remainingDuration}s / ${itemsWithoutDuration.length} items)`
+          `[Timeline] Auto-duration: ${autoDuration}s per item (${remainingDuration}s / ${itemsWithoutDuration.length} items)`,
         );
 
         // Assign auto-calculated durations
@@ -118,11 +114,11 @@ export async function processTimelineLayers(
       // Validate total timeline duration matches main layer
       const totalTimelineDuration = layer.timeline.reduce(
         (sum, item) => sum + (item.duration || 0),
-        0
+        0,
       );
 
       console.log(
-        `[Timeline] Total timeline duration: ${totalTimelineDuration}s, Main layer: ${mainLayerDuration}s`
+        `[Timeline] Total timeline duration: ${totalTimelineDuration}s, Main layer: ${mainLayerDuration}s`,
       );
     }
   }
@@ -132,7 +128,7 @@ export async function processTimelineLayers(
   let maxHeight = 0;
 
   console.log(
-    "[Timeline] Probing all timeline media to find max dimensions..."
+    "[Timeline] Probing all timeline media to find max dimensions...",
   );
 
   // Store downloaded media paths for each timeline layer
@@ -155,22 +151,17 @@ export async function processTimelineLayers(
         }
 
         // Download and probe this timeline item
-        const response = await fetch(mediaUrl);
-        if (!response.ok) {
-          throw new Error(
-            `Failed to download timeline media: ${response.statusText}`
-          );
-        }
-        const buffer = Buffer.from(await response.arrayBuffer());
         const isVideo = isVideoFile(mediaUrl);
         const ext = isVideo ? "mp4" : mediaUrl.endsWith(".png") ? "png" : "jpg";
         const path = join(tmpdir(), `${nanoid()}.${ext}`);
-        await Bun.write(path, buffer);
+
+        // Stream directly to disk - avoids loading entire file into RAM
+        await streamToDisk(mediaUrl, path);
         tempFiles.push(path);
 
         const dims = await probeDimensions(path);
         console.log(
-          `[Timeline] Media dimensions: ${dims.width}x${dims.height}`
+          `[Timeline] Media dimensions: ${dims.width}x${dims.height}`,
         );
 
         // Cache it
@@ -193,7 +184,7 @@ export async function processTimelineLayers(
   const outputHeight = ensureEven(options.outputHeight || maxHeight);
 
   console.log(
-    `[Timeline] Using output resolution: ${outputWidth}x${outputHeight} (max from all backgrounds)`
+    `[Timeline] Using output resolution: ${outputWidth}x${outputHeight} (max from all backgrounds)`,
   );
 
   // NEW APPROACH: Identify background timeline layers and stitch them
@@ -214,7 +205,7 @@ export async function processTimelineLayers(
     if ("isTimeline" in layer && layer.isTimeline) {
       // This is a timeline layer - need to stitch it
       console.log(
-        `[Timeline] Stitching timeline layer ${layerIdx} with ${layer.timeline.length} segments`
+        `[Timeline] Stitching timeline layer ${layerIdx} with ${layer.timeline.length} segments`,
       );
 
       // Build background segments
@@ -236,7 +227,7 @@ export async function processTimelineLayers(
       // Stitch this timeline layer into a single video
       const stitchedPath = join(
         tmpdir(),
-        `${nanoid()}_stitched_layer_${layerIdx}.mp4`
+        `${nanoid()}_stitched_layer_${layerIdx}.mp4`,
       );
       tempFiles.push(stitchedPath);
 
@@ -245,11 +236,11 @@ export async function processTimelineLayers(
         outputWidth,
         outputHeight,
         stitchedPath,
-        tempFiles
+        tempFiles,
       );
 
       console.log(
-        `[Timeline] Layer ${layerIdx} stitched successfully: ${stitchedPath}`
+        `[Timeline] Layer ${layerIdx} stitched successfully: ${stitchedPath}`,
       );
 
       // Use the first item's properties (placement, chromaKey, etc.)
@@ -278,7 +269,7 @@ export async function processTimelineLayers(
 
   // Now process all layers together in a single pass!
   console.log(
-    "[Timeline] Processing all layers in single pass (no segmentation)"
+    "[Timeline] Processing all layers in single pass (no segmentation)",
   );
   return await processLayers(
     {
@@ -290,6 +281,6 @@ export async function processTimelineLayers(
       mainLayer: mainLayerIndex,
     },
     tempFiles,
-    outputPath
+    outputPath,
   );
 }

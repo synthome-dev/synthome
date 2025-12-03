@@ -4,6 +4,7 @@ import { tmpdir } from "os";
 import { join } from "path";
 import { unlink } from "fs/promises";
 import type { MergeMediaOptions, MergeVideosOptions } from "../core/types";
+import { streamToDisk } from "../core/utils";
 
 /**
  * Legacy merge function for backwards compatibility
@@ -11,7 +12,7 @@ import type { MergeMediaOptions, MergeVideosOptions } from "../core/types";
  */
 export async function mergeVideos(
   options: MergeVideosOptions,
-): Promise<Buffer> {
+): Promise<string> {
   // Convert to new format and call mergeMedia
   const items = options.videos.map((v) => ({
     url: v.url,
@@ -90,8 +91,9 @@ interface ProcessedVisualItem {
 /**
  * Merge multiple media items (videos, images) with optional audio overlays
  * Preserves video audio tracks and supports volume control
+ * Returns the path to the output file (caller must handle cleanup)
  */
-export async function mergeMedia(options: MergeMediaOptions): Promise<Buffer> {
+export async function mergeMedia(options: MergeMediaOptions): Promise<string> {
   const tempFiles: string[] = [];
   const outputPath = join(tmpdir(), `${nanoid()}.mp4`);
 
@@ -119,18 +121,12 @@ export async function mergeMedia(options: MergeMediaOptions): Promise<Buffer> {
         `[MergeMedia] Downloading visual item ${i + 1}/${visualItems.length}: ${item.url}`,
       );
 
-      const response = await fetch(item.url);
-      if (!response.ok) {
-        throw new Error(
-          `Failed to download media from ${item.url}: ${response.statusText}`,
-        );
-      }
-      const buffer = Buffer.from(await response.arrayBuffer());
-
       // Determine file extension
       const ext = item.type === "image" ? "jpg" : "mp4";
       const inputPath = join(tmpdir(), `${nanoid()}_input.${ext}`);
-      await Bun.write(inputPath, buffer);
+
+      // Stream directly to disk - avoids loading entire file into RAM
+      await streamToDisk(item.url, inputPath);
       tempFiles.push(inputPath);
 
       // Get dimensions from first item to use as target
@@ -346,12 +342,18 @@ export async function mergeMedia(options: MergeMediaOptions): Promise<Buffer> {
       }
     });
 
-    // Step 3: If no overlay audio items, we're done
+    // Step 3: If no overlay audio items, we're done - return path, not buffer
     if (audioItems.length === 0) {
       console.log(
         "[MergeMedia] No overlay audio tracks, returning concatenated video",
       );
-      return Buffer.from(await Bun.file(concatPath).arrayBuffer());
+      // Move concat to output path and clean up other temp files
+      const fs = await import("fs/promises");
+      await fs.rename(concatPath, outputPath);
+      // Remove concatPath from tempFiles since we renamed it
+      const concatIndex = tempFiles.indexOf(concatPath);
+      if (concatIndex > -1) tempFiles.splice(concatIndex, 1);
+      return outputPath;
     }
 
     // Step 4: Get total video duration for audio trimming
@@ -372,14 +374,6 @@ export async function mergeMedia(options: MergeMediaOptions): Promise<Buffer> {
         `[MergeMedia] Downloading audio ${i + 1}/${audioItems.length}: ${audioItem.url}`,
       );
 
-      const response = await fetch(audioItem.url);
-      if (!response.ok) {
-        throw new Error(
-          `Failed to download audio from ${audioItem.url}: ${response.statusText}`,
-        );
-      }
-      const buffer = Buffer.from(await response.arrayBuffer());
-
       // Detect audio format from URL
       const urlLower = audioItem.url.toLowerCase();
       let ext = "mp3";
@@ -389,7 +383,9 @@ export async function mergeMedia(options: MergeMediaOptions): Promise<Buffer> {
       else if (urlLower.includes(".ogg")) ext = "ogg";
 
       const audioPath = join(tmpdir(), `${nanoid()}_audio.${ext}`);
-      await Bun.write(audioPath, buffer);
+
+      // Stream directly to disk - avoids loading entire file into RAM
+      await streamToDisk(audioItem.url, audioPath);
       tempFiles.push(audioPath);
 
       const audioDuration = await getMediaDuration(audioPath);
@@ -426,7 +422,12 @@ export async function mergeMedia(options: MergeMediaOptions): Promise<Buffer> {
       console.log(
         "[MergeMedia] No valid audio overlay tracks after processing, returning video",
       );
-      return Buffer.from(await Bun.file(concatPath).arrayBuffer());
+      // Move concat to output path and clean up other temp files
+      const fs = await import("fs/promises");
+      await fs.rename(concatPath, outputPath);
+      const concatIndex = tempFiles.indexOf(concatPath);
+      if (concatIndex > -1) tempFiles.splice(concatIndex, 1);
+      return outputPath;
     }
 
     console.log(
@@ -510,13 +511,13 @@ export async function mergeMedia(options: MergeMediaOptions): Promise<Buffer> {
         .on("end", resolve);
     });
 
-    return Buffer.from(await Bun.file(outputPath).arrayBuffer());
+    // Return path to output file - caller streams it
+    return outputPath;
   } finally {
-    // Cleanup all temp files
+    // Cleanup all temp files (but NOT outputPath - caller handles that)
     try {
       await Promise.all([
         ...tempFiles.map((file) => unlink(file).catch(() => {})),
-        unlink(outputPath).catch(() => {}),
       ]);
     } catch (e) {
       console.error("[MergeMedia] Cleanup error:", e);

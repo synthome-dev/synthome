@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { unlink } from "fs/promises";
 import { processMedia, type FFmpegOptions } from "./operations/process-media";
 import { mergeVideos, mergeMedia } from "./operations/merge-videos";
 import type { MergeVideosOptions, MergeMediaOptions } from "./core/types";
@@ -10,6 +11,56 @@ import {
   type BurnSubtitlesOptions,
 } from "./operations/burn-subtitles";
 import { CaptionService, type TranscriptWord } from "./captions";
+
+/**
+ * Stream a file response and clean up the file after streaming completes
+ * This avoids loading entire file into RAM
+ */
+async function streamFileResponse(
+  filePath: string,
+  contentType: string,
+  filename: string,
+): Promise<Response> {
+  const file = Bun.file(filePath);
+  const fileSize = file.size;
+
+  // Create a TransformStream to track when streaming is complete
+  const { readable, writable } = new TransformStream();
+
+  // Start streaming in the background and clean up when done
+  (async () => {
+    try {
+      const reader = file.stream().getReader();
+      const writer = writable.getWriter();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        await writer.write(value);
+      }
+
+      await writer.close();
+    } catch (error) {
+      console.error("[StreamFile] Error streaming file:", error);
+    } finally {
+      // Clean up the temp file after streaming
+      try {
+        await unlink(filePath);
+        console.log(`[StreamFile] Cleaned up temp file: ${filePath}`);
+      } catch (e) {
+        console.error(`[StreamFile] Failed to clean up: ${filePath}`, e);
+      }
+    }
+  })();
+
+  return new Response(readable, {
+    headers: {
+      "Content-Type": contentType,
+      "Content-Length": fileSize.toString(),
+      "Content-Disposition": `attachment; filename="${filename}"`,
+    },
+  });
+}
 
 const app = new Hono();
 
@@ -183,14 +234,14 @@ app.post("/merge", async (c) => {
         audioCount: body.audio?.length || 0,
       });
 
-      const outputBuffer = await mergeMedia(body as MergeMediaOptions);
+      // Returns file path - we stream it to avoid loading into RAM
+      const outputPath = await mergeMedia(body as MergeMediaOptions);
 
-      c.header("Content-Type", "video/mp4");
-      c.header(
-        "Content-Disposition",
-        `attachment; filename="merged-${Date.now()}.mp4"`,
+      return streamFileResponse(
+        outputPath,
+        "video/mp4",
+        `merged-${Date.now()}.mp4`,
       );
-      return c.body(new Uint8Array(outputBuffer));
     } else if ("videos" in body && Array.isArray(body.videos)) {
       // Legacy MergeVideosOptions format
       if (body.videos.length < 2) {
@@ -201,14 +252,14 @@ app.post("/merge", async (c) => {
         videoCount: body.videos.length,
       });
 
-      const outputBuffer = await mergeVideos(body as MergeVideosOptions);
+      // Returns file path - we stream it to avoid loading into RAM
+      const outputPath = await mergeVideos(body as MergeVideosOptions);
 
-      c.header("Content-Type", "video/mp4");
-      c.header(
-        "Content-Disposition",
-        `attachment; filename="merged-${Date.now()}.mp4"`,
+      return streamFileResponse(
+        outputPath,
+        "video/mp4",
+        `merged-${Date.now()}.mp4`,
       );
-      return c.body(new Uint8Array(outputBuffer));
     } else {
       return c.json(
         { error: "Invalid request format. Expected 'items' or 'videos' array" },
@@ -238,14 +289,14 @@ app.post("/layer", async (c) => {
       outputHeight: body.outputHeight,
     });
 
-    const outputBuffer = await layerMedia(body);
+    // Returns file path - we stream it to avoid loading into RAM
+    const outputPath = await layerMedia(body);
 
-    c.header("Content-Type", "video/mp4");
-    c.header(
-      "Content-Disposition",
-      `attachment; filename="layered-${Date.now()}.mp4"`,
+    return streamFileResponse(
+      outputPath,
+      "video/mp4",
+      `layered-${Date.now()}.mp4`,
     );
-    return c.body(new Uint8Array(outputBuffer));
   } catch (error) {
     console.error("Error:", error);
     const errorMessage =
@@ -265,14 +316,14 @@ app.post("/burn-subtitles", async (c) => {
       return c.json({ error: "subtitleContent is required" }, 400);
     }
 
-    const outputBuffer = await burnSubtitles(body);
+    // Returns file path - we stream it to avoid loading into RAM
+    const outputPath = await burnSubtitles(body);
 
-    c.header("Content-Type", "video/mp4");
-    c.header(
-      "Content-Disposition",
-      `attachment; filename="captioned-${Date.now()}.mp4"`,
+    return streamFileResponse(
+      outputPath,
+      "video/mp4",
+      `captioned-${Date.now()}.mp4`,
     );
-    return c.body(new Uint8Array(outputBuffer));
   } catch (error) {
     console.error("Error:", error);
     return c.json({ error: "Failed to burn subtitles" }, 500);

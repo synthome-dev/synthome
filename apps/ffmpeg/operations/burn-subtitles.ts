@@ -3,6 +3,7 @@ import ffmpeg from "fluent-ffmpeg";
 import { tmpdir } from "os";
 import { join } from "path";
 import { unlink } from "fs/promises";
+import { streamToDisk } from "../core/utils";
 
 export interface BurnSubtitlesOptions {
   videoUrl: string;
@@ -10,9 +11,13 @@ export interface BurnSubtitlesOptions {
   subtitleFormat: "ass" | "srt";
 }
 
+/**
+ * Burn subtitles into video
+ * Returns the path to the output file (caller must handle cleanup)
+ */
 export async function burnSubtitles(
   options: BurnSubtitlesOptions,
-): Promise<Buffer> {
+): Promise<string> {
   const outputPath = join(tmpdir(), `${nanoid()}.mp4`);
   const subtitlePath = join(tmpdir(), `${nanoid()}.${options.subtitleFormat}`);
   const tempFiles: string[] = [subtitlePath];
@@ -28,15 +33,10 @@ export async function burnSubtitles(
       options.subtitleContent.substring(0, 300),
     );
 
-    // Download video
+    // Download video - stream directly to disk to avoid RAM usage
     console.log(`[BurnSubtitles] Downloading video from ${options.videoUrl}`);
-    const videoResponse = await fetch(options.videoUrl);
-    if (!videoResponse.ok) {
-      throw new Error(`Failed to download video: ${videoResponse.statusText}`);
-    }
-    const videoBuffer = Buffer.from(await videoResponse.arrayBuffer());
     const videoPath = join(tmpdir(), `${nanoid()}.mp4`);
-    await Bun.write(videoPath, videoBuffer);
+    await streamToDisk(options.videoUrl, videoPath);
     tempFiles.push(videoPath);
 
     console.log(`[BurnSubtitles] Burning subtitles...`);
@@ -73,14 +73,12 @@ export async function burnSubtitles(
         .save(outputPath);
     });
 
-    return Buffer.from(await Bun.file(outputPath).arrayBuffer());
+    // Return path to output file - caller streams it
+    return outputPath;
   } finally {
-    // Cleanup
+    // Cleanup temp files (but NOT outputPath - caller handles that)
     try {
-      await Promise.all([
-        ...tempFiles.map((f) => unlink(f).catch(() => {})),
-        unlink(outputPath).catch(() => {}),
-      ]);
+      await Promise.all([...tempFiles.map((f) => unlink(f).catch(() => {}))]);
     } catch (e) {
       console.error("Cleanup error:", e);
     }
