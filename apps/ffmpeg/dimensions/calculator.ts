@@ -5,6 +5,14 @@
 import type { PlacementConfig } from "../core/types.js";
 
 /**
+ * Ensure a dimension is even (divisible by 2) for FFmpeg compatibility
+ * libx264 with yuv420p pixel format requires even dimensions
+ */
+export function ensureEven(value: number): number {
+  return Math.floor(value / 2) * 2;
+}
+
+/**
  * Evaluate a dimension expression (e.g., "iw/2" -> 360)
  */
 export function evaluateDimensionExpression(
@@ -72,40 +80,33 @@ export function calculateLayerDimensions(
   let scaledHeight: number;
 
   // Calculate scaled dimensions preserving aspect ratio
+  // All dimensions are made even for FFmpeg libx264/yuv420p compatibility
   if (placementConfig.width && !placementConfig.height) {
     // Width specified: calculate from expression, preserve aspect ratio
-    scaledWidth = evaluateDimensionExpression(
-      placementConfig.width,
-      bgWidth,
-      bgHeight,
+    scaledWidth = ensureEven(
+      evaluateDimensionExpression(placementConfig.width, bgWidth, bgHeight),
     );
     // Preserve overlay aspect ratio
-    scaledHeight = Math.floor(scaledWidth * (overlayHeight / overlayWidth));
+    scaledHeight = ensureEven(scaledWidth * (overlayHeight / overlayWidth));
   } else if (placementConfig.height && !placementConfig.width) {
     // Height specified: calculate from expression, preserve aspect ratio
-    scaledHeight = evaluateDimensionExpression(
-      placementConfig.height,
-      bgWidth,
-      bgHeight,
+    scaledHeight = ensureEven(
+      evaluateDimensionExpression(placementConfig.height, bgWidth, bgHeight),
     );
     // Preserve overlay aspect ratio
-    scaledWidth = Math.floor(scaledHeight * (overlayWidth / overlayHeight));
+    scaledWidth = ensureEven(scaledHeight * (overlayWidth / overlayHeight));
   } else if (placementConfig.width && placementConfig.height) {
     // Both specified: use both values
-    scaledWidth = evaluateDimensionExpression(
-      placementConfig.width,
-      bgWidth,
-      bgHeight,
+    scaledWidth = ensureEven(
+      evaluateDimensionExpression(placementConfig.width, bgWidth, bgHeight),
     );
-    scaledHeight = evaluateDimensionExpression(
-      placementConfig.height,
-      bgWidth,
-      bgHeight,
+    scaledHeight = ensureEven(
+      evaluateDimensionExpression(placementConfig.height, bgWidth, bgHeight),
     );
   } else {
-    // No scaling specified: use original dimensions
-    scaledWidth = overlayWidth;
-    scaledHeight = overlayHeight;
+    // No scaling specified: use original dimensions (made even)
+    scaledWidth = ensureEven(overlayWidth);
+    scaledHeight = ensureEven(overlayHeight);
   }
 
   // Calculate position

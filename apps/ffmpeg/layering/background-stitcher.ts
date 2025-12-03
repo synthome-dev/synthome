@@ -19,6 +19,7 @@ import ffmpeg from "fluent-ffmpeg";
 import { join } from "path";
 import { tmpdir } from "os";
 import { nanoid } from "nanoid";
+import { ensureEven } from "../dimensions/calculator";
 
 export interface BackgroundSegment {
   mediaPath: string;
@@ -41,11 +42,15 @@ export async function stitchBackgrounds(
   outputPath: string,
   tempFiles: string[],
 ): Promise<void> {
+  // Ensure dimensions are even for FFmpeg libx264/yuv420p compatibility
+  const evenWidth = ensureEven(outputWidth);
+  const evenHeight = ensureEven(outputHeight);
+
   console.log(
     `[BackgroundStitcher] Stitching ${segments.length} background segments`,
   );
   console.log(
-    `[BackgroundStitcher] Target resolution: ${outputWidth}x${outputHeight}`,
+    `[BackgroundStitcher] Target resolution: ${evenWidth}x${evenHeight}`,
   );
 
   // If only one segment, just process it directly
@@ -53,8 +58,8 @@ export async function stitchBackgrounds(
     console.log("[BackgroundStitcher] Single segment - processing directly");
     await processSingleBackground(
       segments[0],
-      outputWidth,
-      outputHeight,
+      evenWidth,
+      evenHeight,
       outputPath,
     );
     return;
@@ -72,12 +77,7 @@ export async function stitchBackgrounds(
       `[BackgroundStitcher] Processing segment ${i + 1}/${segments.length}: ${segment.duration}s`,
     );
 
-    await processSingleBackground(
-      segment,
-      outputWidth,
-      outputHeight,
-      segmentPath,
-    );
+    await processSingleBackground(segment, evenWidth, evenHeight, segmentPath);
 
     normalizedSegmentPaths.push(segmentPath);
   }
