@@ -5,7 +5,7 @@
 <h1 align="center">Synthome</h1>
 
 <p align="center">
-  Composable AI video pipelines.
+  Composable AI media pipelines.
 </p>
 
 <p align="center">
