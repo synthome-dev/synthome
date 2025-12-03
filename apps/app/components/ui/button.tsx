@@ -25,43 +25,7 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        playground: [
-          [
-            "[--button-color-bg:theme(colors.gray.100)]",
-            "[--button-color-text:theme(colors.gray.900)]",
-            "hover:[--button-color-bg:theme(colors.gray.200)]",
-            "[--button-text-shadow:0px_1px_1px_theme(colors.gray.100)]",
-          ],
-        ],
-        "playground-black": [
-          [
-            "[--button-color-bg:theme(colors.gray.925)] [--button-color-text:theme(colors.white)]",
-            "hover:[--button-color-bg:theme(colors.gray.800)]",
-            "disabled:[--button-color-bg:theme(colors.gray.800)]",
-            "[--button-text-shadow:0px_1px_1px_theme(colors.black)]",
-          ],
-        ],
-        "playground-secondary": [
-          [
-            "[--button-color-bg:theme(colors.gray.100)] [--button-color-text:theme(colors.gray.900)]",
-            "hover:[--button-color-bg:theme(colors.gray.200)]",
-            "[--button-text-shadow:0px_1px_1px_theme(colors.gray.100)]",
-          ],
-        ],
         primary: [
-          [
-            "[--button-color-border:--button-color-bg]",
-            "[--button-color-bg:theme(colors.blue.500)]",
-            "[--button-color-icon:theme(colors.white/0.8)]",
-            "[--button-color-icon-hover:currentColor]",
-            "[--button-color-ring:theme(colors.blue.500/0.2)]",
-            "[--button-color-text:theme(colors.white)]",
-            "[--button-text-shadow:0px_1px_1px_theme(colors.blue.700)]",
-          ],
-          "hover:before:opacity-25 active:[--button-color-bg:theme(colors.blue.600)] relative shadow-[inset_0px_1px_0px_theme(colors.white/8%),inset_0px_-1px_0px_theme(colors.white/4%),0px_0px_0px_1px_theme(colors.blue.500),0px_2px_2px_-1px_theme(colors.blue.900/24%),0px_4px_4px_-2px_theme(colors.blue.900/12%)]",
-          "before:absolute before:inset-0 before:rounded-inherit before:transition-opacity",
-        ],
-        blue: [
           [
             "[--button-color-border:--button-color-bg]",
             "[--button-color-bg:theme(colors.blue.500)]",
@@ -87,7 +51,7 @@ const buttonVariants = cva(
           "hover:before:opacity-25 active:[--button-color-bg:theme(colors.orange.600)] relative shadow-[inset_0px_1px_0px_theme(colors.white/8%),inset_0px_-1px_0px_theme(colors.white/4%),0px_0px_0px_1px_theme(colors.orange.500),0px_2px_2px_-1px_theme(colors.orange.900/24%),0px_4px_4px_-2px_theme(colors.orange.900/12%)]",
           "before:absolute before:inset-0 before:rounded-inherit before:transition-opacity",
         ],
-        back: [
+        black: [
           [
             "[--button-color-border:--button-color-bg]",
             "[--button-color-bg:theme(colors.gray.900)]",
@@ -192,7 +156,8 @@ const buttonVariants = cva(
 );
 
 export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+  extends
+    React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean;
   wrapperClassName?: string;

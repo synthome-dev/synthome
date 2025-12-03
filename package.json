@@ -31,6 +31,7 @@
     "drizzle-orm": "0.38.3"
   },
   "dependencies": {
+    "stripe": "^20.0.0",
     "tailwindcss-animate": "^1.0.7"
   }
 }
