@@ -1,13 +1,13 @@
-import { nanoid } from "nanoid";
 import ffmpeg from "fluent-ffmpeg";
+import { unlink } from "fs/promises";
+import { nanoid } from "nanoid";
 import { tmpdir } from "os";
 import { join } from "path";
-import { unlink } from "fs/promises";
 import type { LayerMediaOptions } from "../core/types";
 import { isVideoFile } from "../core/utils";
-import { probeDimensions } from "../dimensions/probe";
-import { calculateLayerDimensions } from "../dimensions/calculator";
+import { calculateLayerDimensions, ensureEven } from "../dimensions/calculator";
 import { getPlacementConfig } from "../dimensions/placement";
+import { probeDimensions } from "../dimensions/probe";
 import { processTimelineLayers } from "../layering/timeline-layers";
 
 /**
@@ -74,8 +74,9 @@ export async function layerMedia(options: LayerMediaOptions): Promise<Buffer> {
 
     // Get first layer (background) dimensions
     const bgDimensions = await probeDimensions(layerPaths[0][0]);
-    const bgWidth = options.outputWidth || bgDimensions.width;
-    const bgHeight = options.outputHeight || bgDimensions.height;
+    // Ensure dimensions are even for FFmpeg libx264/yuv420p compatibility
+    const bgWidth = ensureEven(options.outputWidth || bgDimensions.width);
+    const bgHeight = ensureEven(options.outputHeight || bgDimensions.height);
 
     console.log(
       "[LayerMedia] Background dimensions:",

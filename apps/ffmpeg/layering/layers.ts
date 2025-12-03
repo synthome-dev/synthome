@@ -8,14 +8,17 @@ import { tmpdir } from "os";
 import { join } from "path";
 import type { LayerMediaOptions } from "../core/types.js";
 import { isVideoFile } from "../core/utils.js";
-import { probeDimensions } from "../dimensions/probe.js";
-import { calculateLayerDimensions } from "../dimensions/calculator.js";
+import {
+  calculateLayerDimensions,
+  ensureEven,
+} from "../dimensions/calculator.js";
 import { getPlacementConfig } from "../dimensions/placement.js";
+import { probeDimensions } from "../dimensions/probe.js";
 
 export async function processLayers(
   options: LayerMediaOptions,
   tempFiles: string[],
-  outputPath: string,
+  outputPath: string
 ): Promise<Buffer> {
   // Download all media files
   const layerPaths: string[][] = [];
@@ -85,24 +88,25 @@ export async function processLayers(
 
   if (!mainLayerDuration) {
     const mainLayerMetadata = await probeDimensions(
-      layerPaths[mainLayerIndex][0],
+      layerPaths[mainLayerIndex][0]
     );
     if (mainLayerMetadata.duration) {
       mainLayerDuration = mainLayerMetadata.duration;
       console.log(
-        `[LayerMedia] Main layer (${mainLayerIndex}) duration: ${mainLayerDuration}s`,
+        `[LayerMedia] Main layer (${mainLayerIndex}) duration: ${mainLayerDuration}s`
       );
     }
   } else {
     console.log(
-      `[LayerMedia] Using explicit output duration: ${mainLayerDuration}s`,
+      `[LayerMedia] Using explicit output duration: ${mainLayerDuration}s`
     );
   }
 
   // Get first layer (background) dimensions
   const bgDimensions = await probeDimensions(layerPaths[0][0]);
-  const bgWidth = options.outputWidth || bgDimensions.width;
-  const bgHeight = options.outputHeight || bgDimensions.height;
+  // Ensure dimensions are even for FFmpeg libx264/yuv420p compatibility
+  const bgWidth = ensureEven(options.outputWidth || bgDimensions.width);
+  const bgHeight = ensureEven(options.outputHeight || bgDimensions.height);
 
   console.log("[LayerMedia] Background dimensions:", `${bgWidth}x${bgHeight}`);
 
@@ -119,7 +123,7 @@ export async function processLayers(
 
   // First layer is the base - scale it to output dimensions
   filterComplex.push(
-    `${currentOutput}scale=${bgWidth}:${bgHeight}:force_original_aspect_ratio=decrease,pad=${bgWidth}:${bgHeight}:(ow-iw)/2:(oh-ih)/2,setsar=1[base]`,
+    `${currentOutput}scale=${bgWidth}:${bgHeight}:force_original_aspect_ratio=decrease,pad=${bgWidth}:${bgHeight}:(ow-iw)/2:(oh-ih)/2,setsar=1[base]`
   );
   currentOutput = "[base]";
 
@@ -129,7 +133,7 @@ export async function processLayers(
     const dims = await probeDimensions(layerPaths[i][0]);
     overlayDimensions.push(dims);
     console.log(
-      `[LayerMedia] Layer ${i} original dimensions: ${dims.width}x${dims.height}`,
+      `[LayerMedia] Layer ${i} original dimensions: ${dims.width}x${dims.height}`
     );
   }
 
@@ -155,7 +159,7 @@ export async function processLayers(
       bgHeight,
       overlayDims.width,
       overlayDims.height,
-      placementConfig,
+      placementConfig
     );
 
     console.log(`[LayerMedia] Layer ${i} calculated:`, calculated);
@@ -168,19 +172,19 @@ export async function processLayers(
       const blend = layer.blend ?? 0.05;
 
       filterComplex.push(
-        `${overlayLabel}chromakey=${chromaKeyColor}:${similarity}:${blend}[chroma${i}]`,
+        `${overlayLabel}chromakey=${chromaKeyColor}:${similarity}:${blend}[chroma${i}]`
       );
       overlayLabel = `[chroma${i}]`;
     }
 
     // Scale overlay to exact calculated dimensions
     filterComplex.push(
-      `${overlayLabel}scale=${calculated.width}:${calculated.height}[scaled${i}]`,
+      `${overlayLabel}scale=${calculated.width}:${calculated.height}[scaled${i}]`
     );
 
     // Overlay on current output
     filterComplex.push(
-      `${currentOutput}[scaled${i}]overlay=${calculated.x}:${calculated.y}[out${i}]`,
+      `${currentOutput}[scaled${i}]overlay=${calculated.x}:${calculated.y}[out${i}]`
     );
     currentOutput = `[out${i}]`;
   }
@@ -204,10 +208,10 @@ export async function processLayers(
 
     command
       .on("start", (commandLine: string) =>
-        console.log("[LayerMedia] FFmpeg command:", commandLine),
+        console.log("[LayerMedia] FFmpeg command:", commandLine)
       )
       .on("progress", (progress: { percent: number }) =>
-        console.log("[LayerMedia] Progress:", progress.percent, "% done"),
+        console.log("[LayerMedia] Progress:", progress.percent, "% done")
       )
       .on("error", reject)
       .save(outputPath)
