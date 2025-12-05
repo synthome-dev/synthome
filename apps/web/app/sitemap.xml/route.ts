@@ -1,7 +1,7 @@
 import { getAllPosts } from "@/lib/actions";
 import { source } from "@/lib/source";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://synthome.ai";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://synthome.dev";
 
 interface SitemapEntry {
   url: string;

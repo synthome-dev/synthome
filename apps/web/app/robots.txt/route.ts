@@ -1,4 +1,4 @@
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://synthome.ai";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://synthome.dev";
 
 export async function GET() {
   const robotsTxt = `# robots.txt for ${SITE_URL}
