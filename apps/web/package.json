@@ -7,7 +7,8 @@
     "build": "fumadocs-mdx && next build",
     "start": "next start",
     "lint": "eslint",
-    "postinstall": "fumadocs-mdx"
+    "postinstall": "fumadocs-mdx",
+    "import-post": "bun run scripts/import-single-post.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.34.0",

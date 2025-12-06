@@ -15,6 +15,10 @@ const nextConfig: NextConfig = {
         source: "/docs/:path*.mdx",
         destination: "/llms.mdx/:path*",
       },
+      {
+        source: "/changelog",
+        destination: "/blog/category/changelog",
+      },
     ];
   },
 };

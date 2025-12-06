@@ -23,7 +23,7 @@ const mobileLinks: MobileLink[] = [
   // { name: "Models", href: "/models" },
   { name: "Pricing", href: "/pricing" },
   { name: "Docs", href: "/docs" },
-  { name: "Blog", href: "/blog" },
+  { name: "Changelog", href: "/changelog" },
 ];
 
 export default function Header() {
@@ -165,9 +165,9 @@ const NavMenu = () => {
             <Link href="/docs">Docs</Link>
           </NavigationMenuLink>
         </NavigationMenuItem>
-        <NavigationMenuItem value="blog">
+        <NavigationMenuItem value="changelog">
           <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
-            <Link href="/blog">Blog</Link>
+            <Link href="/changelog">Changelog</Link>
           </NavigationMenuLink>
         </NavigationMenuItem>
       </NavigationMenuList>
