@@ -7,16 +7,101 @@ description: Use AI agents to dynamically generate and execute media pipelines
 
 One of Synthome's most powerful features is the ability to let AI agents generate execution plans. This enables dynamic, content-aware video creation without hardcoding pipeline logic.
 
-## How It Works
+## Quick Start with @synthome/ai
 
-The workflow is:
+The easiest way to integrate Synthome with AI agents is using the `@synthome/ai` package, designed to work seamlessly with the [Vercel AI SDK](https://sdk.vercel.ai):
 
-1. **Create a pipeline** using `compose()` and other operations
-2. **Export the plan** as JSON with `pipeline.toJSON()`
-3. **Let an AI agent modify** or generate the JSON
-4. **Execute the plan** with `executeFromPlan()`
+```bash
+npm install @synthome/ai @synthome/sdk ai @ai-sdk/openai
+```
 
-This separation allows AI agents to work with a simple JSON structure instead of code.
+### Basic Usage with Vercel AI SDK
+
+```typescript
+import { executePlanTool, planSystemPrompt } from "@synthome/ai";
+import { generateText } from "ai";
+import { openai } from "@ai-sdk/openai";
+
+const result = await generateText({
+  model: openai("gpt-4o"),
+  system: planSystemPrompt,
+  tools: {
+    executePlan: executePlanTool({
+      apiKey: process.env.SYNTHOME_API_KEY,
+    }),
+  },
+  prompt: "Create a video of a sunset over mountains",
+});
+```
+
+The `planSystemPrompt` teaches the AI how to generate valid execution plans, and `executePlanTool` handles validation and execution.
+
+## Available Tools
+
+### executePlanTool
+
+Generates and executes media workflows. The AI creates an ExecutionPlan and runs it immediately.
+
+```typescript
+import { executePlanTool, planSystemPrompt } from "@synthome/ai";
+
+const tool = executePlanTool({
+  apiKey: process.env.SYNTHOME_API_KEY,
+  // Optional: webhook for async execution
+  webhook: "https://myapp.com/webhook",
+  webhookSecret: process.env.WEBHOOK_SECRET,
+  // Optional: provider API keys
+  providerApiKeys: {
+    replicate: process.env.REPLICATE_API_KEY,
+    fal: process.env.FAL_KEY,
+  },
+});
+```
+
+### buildPlanTool
+
+Generates workflow plans without executing them. Use this to design workflows for later execution.
+
+```typescript
+import { buildPlanTool, planSystemPrompt } from "@synthome/ai";
+import { executeFromPlan } from "@synthome/sdk";
+
+const result = await generateText({
+  model: openai("gpt-4o"),
+  system: planSystemPrompt,
+  tools: {
+    buildPlan: buildPlanTool(),
+  },
+  prompt: "Design a workflow for creating a product video",
+});
+
+// Save the plan for later
+const plan = result.toolResults[0].result.plan;
+await db.savePlan("product-video", plan);
+
+// Execute whenever you want
+const execution = await executeFromPlan(plan, {
+  apiKey: process.env.SYNTHOME_API_KEY,
+});
+```
+
+### Using Both Tools
+
+Let the AI decide whether to execute immediately or build for later:
+
+```typescript
+const result = await generateText({
+  model: openai("gpt-4o"),
+  system: planSystemPrompt,
+  tools: {
+    executePlan: executePlanTool({ apiKey: process.env.SYNTHOME_API_KEY }),
+    buildPlan: buildPlanTool(),
+  },
+  prompt: "Create a video now",
+  // AI uses executePlan for immediate execution
+  // or buildPlan if user says "design for later"
+});
+```
 
 ## The Execution Plan Format
 
@@ -46,41 +131,41 @@ interface JobNode {
       "id": "scene-1",
       "type": "generate",
       "params": {
-        "model": "bytedance/seedance-1-pro",
+        "modelId": "bytedance/seedance-1-pro",
         "provider": "replicate",
         "prompt": "A rocket launching into space, cinematic"
       },
-      "output": "scene-1-output"
+      "output": "$scene-1"
     },
     {
       "id": "scene-2",
       "type": "generate",
       "params": {
-        "model": "bytedance/seedance-1-pro",
+        "modelId": "bytedance/seedance-1-pro",
         "provider": "replicate",
         "prompt": "Earth from orbit, blue planet"
       },
-      "output": "scene-2-output"
+      "output": "$scene-2"
     },
     {
       "id": "final",
       "type": "merge",
       "params": {
         "items": [
-          { "ref": "scene-1-output", "type": "video" },
-          { "ref": "scene-2-output", "type": "video" }
+          { "type": "video", "url": "_jobDependency:scene-1" },
+          { "type": "video", "url": "_jobDependency:scene-2" }
         ]
       },
       "dependsOn": ["scene-1", "scene-2"],
-      "output": "final-output"
+      "output": "$final"
     }
   ]
 }
 ```
 
-## Using executeFromPlan()
+## Direct Usage with executeFromPlan
 
-The `executeFromPlan()` function executes a plan directly:
+If you prefer manual control, use `executeFromPlan()` directly:
 
 ```typescript
 import { executeFromPlan } from "@synthome/sdk";
@@ -91,11 +176,11 @@ const plan = {
       id: "image-1",
       type: "generateImage",
       params: {
-        model: "google/nano-banana",
+        modelId: "google/nano-banana",
         provider: "fal",
         prompt: "A futuristic city at night",
       },
-      output: "image-output",
+      output: "$image-1",
     },
   ],
 };
@@ -118,108 +203,54 @@ const execution = await executeFromPlan(plan, {
 });
 ```
 
-## AI Agent Integration
+## Custom AI Integration
 
-### Prompt Template
+If you're not using the Vercel AI SDK, you can use the schemas and prompt directly:
 
-Give your AI agent this context to generate valid plans:
-
-```text
-You are generating an execution plan for Synthome SDK.
-
-Available job types:
-- generate: Generate a video (params: model, provider, prompt, duration, imageUrl)
-- generateImage: Generate an image (params: model, provider, prompt)
-- generateAudio: Generate audio/TTS (params: model, provider, text, voiceId)
-- merge: Combine media sequentially (params: items array with ref/url and type)
-- layer: Composite media with positioning (params: layers array)
-- addSubtitles: Add captions to video (params: subtitles or transcribe options)
-
-Available models:
-Video: bytedance/seedance-1-pro, minimax/video-01, veed/fabric-1.0
-Image: google/nano-banana, google/nano-banana-pro, bytedance/seedream-4
-Audio: elevenlabs/turbo-v2.5, hume/tts
-
-Output format:
-{
-  "jobs": [
-    {
-      "id": "unique-id",
-      "type": "jobType",
-      "params": { ... },
-      "dependsOn": ["other-job-id"], // optional
-      "output": "output-key"
-    }
-  ]
-}
-
-Use dependsOn to specify job dependencies. Jobs without dependencies run in parallel.
-For merge/layer, reference other job outputs with { "ref": "output-key" }.
-```
-
-### Example: Vercel AI SDK
+### Using Zod Schemas
 
 ```typescript
-import { generateObject } from "ai";
-import { openai } from "@ai-sdk/openai";
-import { z } from "zod";
+import { executionPlanSchema, planSystemPrompt } from "@synthome/ai";
 import { executeFromPlan } from "@synthome/sdk";
 
-// Define the execution plan schema
-const ExecutionPlanSchema = z.object({
-  jobs: z.array(
-    z.object({
-      id: z.string(),
-      type: z.enum(["generate", "generateImage", "generateAudio", "merge"]),
-      params: z.object({
-        model: z.string().optional(),
-        provider: z.string().optional(),
-        prompt: z.string().optional(),
-        duration: z.number().optional(),
-        items: z
-          .array(
-            z.object({
-              ref: z.string().optional(),
-              url: z.string().optional(),
-              type: z.enum(["video", "image", "audio"]),
-            }),
-          )
-          .optional(),
-      }),
-      dependsOn: z.array(z.string()).optional(),
-      output: z.string(),
-    }),
-  ),
-});
+// Use planSystemPrompt as your system message
+const systemMessage = planSystemPrompt;
 
-async function generateVideoFromDescription(description: string) {
-  const { object: plan } = await generateObject({
-    model: openai("gpt-4o"),
-    schema: ExecutionPlanSchema,
-    prompt: `Generate a Synthome SDK execution plan for: ${description}
-
-Available models:
-- Video: bytedance/seedance-1-pro (provider: replicate), minimax/video-01 (provider: replicate)
-- Image: google/nano-banana (provider: fal), bytedance/seedream-4 (provider: replicate)
-- Audio: elevenlabs/turbo-v2.5 (provider: elevenlabs)
-
-Use type "generate" for video, "generateImage" for images, "merge" to combine.
-Use dependsOn to specify job dependencies. Jobs without dependencies run in parallel.
-For merge, reference other job outputs with { "ref": "output-key", "type": "video" }.`,
-  });
-
-  // Execute the AI-generated plan
-  const execution = await executeFromPlan(plan);
-  return execution;
+// Validate AI output with the schema
+const result = executionPlanSchema.safeParse(aiGeneratedPlan);
+if (!result.success) {
+  console.error("Invalid plan:", result.error);
+  return;
 }
 
-// Usage
-const execution = await generateVideoFromDescription(
-  "A 3-scene video showing: sunrise over mountains, birds flying, sunset",
-);
+// Execute the validated plan
+const execution = await executeFromPlan(result.data);
 ```
 
-The Vercel AI SDK's `generateObject` with Zod schemas ensures type-safe, validated output from the AI model.
+### With OpenAI Function Calling
+
+```typescript
+import { executionPlanSchema, planSystemPrompt } from "@synthome/ai";
+import { zodToJsonSchema } from "zod-to-json-schema";
+
+const response = await openai.chat.completions.create({
+  model: "gpt-4o",
+  messages: [
+    { role: "system", content: planSystemPrompt },
+    { role: "user", content: "Create a video of ocean waves" },
+  ],
+  tools: [
+    {
+      type: "function",
+      function: {
+        name: "execute_plan",
+        description: "Execute a media workflow",
+        parameters: zodToJsonSchema(executionPlanSchema),
+      },
+    },
+  ],
+});
+```
 
 ## Converting Pipelines to Plans
 
@@ -255,7 +286,7 @@ const execution = await executeFromPlan(plan);
 
 ## Validation
 
-`executeFromPlan()` validates the plan before execution:
+Both `executePlanTool` and `executeFromPlan()` validate plans before execution:
 
 - Plan must have a `jobs` array
 - Each job must have `id`, `type`, and `params`
@@ -274,37 +305,22 @@ try {
 
 ## Best Practices
 
-### 1. Validate AI Output
+### 1. Use the AI Package
 
-Always validate AI-generated plans before execution:
+The `@synthome/ai` package handles schema validation, system prompts, and tool integration automatically.
+
+### 2. Use Webhooks for Long Jobs
+
+Video generation can take time. Use webhooks for non-blocking execution:
 
 ```typescript
-function validatePlan(plan: any): boolean {
-  if (!plan?.jobs || !Array.isArray(plan.jobs)) return false;
-  if (plan.jobs.length === 0) return false;
-
-  for (const job of plan.jobs) {
-    if (!job.id || !job.type || !job.params) return false;
-  }
-
-  return true;
-}
-
-const plan = JSON.parse(aiResponse);
-if (!validatePlan(plan)) {
-  throw new Error("Invalid plan generated by AI");
-}
+executePlanTool({
+  apiKey: process.env.SYNTHOME_API_KEY,
+  webhook: "https://myapp.com/webhook",
+});
 ```
 
-### 2. Use Structured Output
-
-Use `generateObject` with Zod schemas (as shown in the AI SDK example) to ensure type-safe, validated JSON output.
-
-### 3. Provide Clear Examples
-
-Give your AI agent concrete examples of valid plans for your use case.
-
-### 4. Handle Errors Gracefully
+### 3. Handle Errors Gracefully
 
 ```typescript
 try {
