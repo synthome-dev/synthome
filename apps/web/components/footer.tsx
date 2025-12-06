@@ -27,6 +27,10 @@ const links = [
         href: "/blog",
       },
       {
+        title: "Changelog",
+        href: "/changelog",
+      },
+      {
         title: "Terms",
         href: "/terms",
       },
