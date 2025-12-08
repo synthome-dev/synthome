@@ -21,13 +21,15 @@ export interface CaptionStyle {
   // Effects
   primaryColor?: string; // &HBBGGRR
   outlineColor?: string; // &HBBGGRR
-  backColor?: string; // &HBBGGRR (Shadow/Background)
+  backgroundColor?: string; // Background color for text box (supports hex #RRGGBB or ASS &HAABBGGRR)
 
   outlineWidth?: number;
   shadowDistance?: number;
 
   // Background Box
   borderStyle?: 1 | 3; // 1=Outline, 3=Opaque Box
+  padding?: number; // Padding around text when using opaque box (borderStyle: 3). Uses Outline property internally.
+  borderRadius?: number; // Border radius for background box (NOTE: requires custom rendering, not supported in native ASS)
 
   // Caption Behavior
   wordsPerCaption?: number; // How many words to show at once (1=karaoke style, 3=phrase style)

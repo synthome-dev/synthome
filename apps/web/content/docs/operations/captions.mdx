@@ -107,6 +107,27 @@ captions({
 });
 ```
 
+### Background Styling
+
+Add a background box behind your captions:
+
+```typescript
+captions({
+  video: "https://example.com/video.mp4",
+  model: audioModel("vaibhavs10/incredibly-fast-whisper", "replicate"),
+  style: {
+    fontFamily: "Arial",
+    fontSize: 48,
+    fontWeight: "normal",
+    color: "#FFFFFF",
+    backgroundColor: "#000000",
+    padding: 20,
+  },
+});
+```
+
+When `backgroundColor` is set, an opaque box is automatically added behind the text. Use `padding` to control the space between the text and the box edges.
+
 ### Positioning
 
 ```typescript
@@ -219,30 +240,31 @@ This pipeline:
 
 ### CaptionStyle
 
-| Property              | Type               | Description                          |
-| --------------------- | ------------------ | ------------------------------------ |
-| `preset`              | `string`           | Style preset (tiktok, youtube, etc.) |
-| `fontFamily`          | `string`           | Font name                            |
-| `fontSize`            | `number`           | Font size in pixels                  |
-| `fontWeight`          | `string \| number` | Font weight (bold, 700, etc.)        |
-| `color`               | `string`           | Text color (hex)                     |
-| `outlineColor`        | `string`           | Outline color (hex)                  |
-| `backColor`           | `string`           | Background color (hex)               |
-| `borderStyle`         | `number`           | Border style                         |
-| `outlineWidth`        | `number`           | Outline width in pixels              |
-| `shadowDistance`      | `number`           | Shadow offset                        |
-| `alignment`           | `string`           | Text alignment                       |
-| `marginV`             | `number`           | Vertical margin                      |
-| `marginL`             | `number`           | Left margin                          |
-| `marginR`             | `number`           | Right margin                         |
-| `wordsPerCaption`     | `number`           | Words shown at once                  |
-| `maxCaptionDuration`  | `number`           | Max seconds per caption              |
-| `maxCaptionChars`     | `number`           | Max characters per caption           |
-| `highlightActiveWord` | `boolean`          | Enable word highlighting             |
-| `activeWordColor`     | `string`           | Color for active word                |
-| `inactiveWordColor`   | `string`           | Color for inactive words             |
-| `activeWordScale`     | `number`           | Scale multiplier for active word     |
-| `animationStyle`      | `string`           | Animation: none, color, scale, glow  |
+| Property              | Type               | Description                                     |
+| --------------------- | ------------------ | ----------------------------------------------- |
+| `preset`              | `string`           | Style preset (tiktok, youtube, etc.)            |
+| `fontFamily`          | `string`           | Font name                                       |
+| `fontSize`            | `number`           | Font size in pixels                             |
+| `fontWeight`          | `string \| number` | Font weight ("normal", "bold", 400, 700)        |
+| `color`               | `string`           | Text color (hex)                                |
+| `outlineColor`        | `string`           | Outline color (hex)                             |
+| `backgroundColor`     | `string`           | Background box color (hex)                      |
+| `padding`             | `number`           | Padding around text in background box           |
+| `borderStyle`         | `number`           | 1=Outline only, 3=Opaque background box         |
+| `outlineWidth`        | `number`           | Outline width in pixels (when borderStyle is 1) |
+| `shadowDistance`      | `number`           | Shadow offset                                   |
+| `alignment`           | `string`           | Text alignment                                  |
+| `marginV`             | `number`           | Vertical margin                                 |
+| `marginL`             | `number`           | Left margin                                     |
+| `marginR`             | `number`           | Right margin                                    |
+| `wordsPerCaption`     | `number`           | Words shown at once                             |
+| `maxCaptionDuration`  | `number`           | Max seconds per caption                         |
+| `maxCaptionChars`     | `number`           | Max characters per caption                      |
+| `highlightActiveWord` | `boolean`          | Enable word highlighting                        |
+| `activeWordColor`     | `string`           | Color for active word                           |
+| `inactiveWordColor`   | `string`           | Color for inactive words                        |
+| `activeWordScale`     | `number`           | Scale multiplier for active word                |
+| `animationStyle`      | `string`           | Animation: none, color, scale, glow             |
 
 ## API Reference
 
