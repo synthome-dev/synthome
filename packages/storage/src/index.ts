@@ -104,7 +104,7 @@ function getEnvConfig(): StorageConfig {
   const endpoint = process.env.S3_URL;
   const region = process.env.S3_REGION || "us-east-1";
   const bucket = process.env.S3_BUCKET || "default";
-  const cdnUrl = process.env.S3_CDN_URL || "https://***REMOVED***";
+  const cdnUrl = process.env.S3_CDN_URL || "https://cdn.synthome.dev";
 
   if (!accessKeyId || !secretAccessKey || !endpoint) {
     throw new Error(
