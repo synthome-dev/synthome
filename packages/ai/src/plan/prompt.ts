@@ -277,13 +277,33 @@ Notice how:
 
 ## Job Dependencies
 
-Use \`dependsOn\` to specify job execution order. Reference outputs from previous jobs using:
-- \`_jobDependency:jobId\` - Reference output URL from a completed job
-- \`_imageJobDependency:jobId\` - Reference image output specifically
-- \`_videoJobDependency:jobId\` - Reference video output specifically
+**CRITICAL: When a job uses output from another job, you MUST:**
+1. Add the job ID to \`dependsOn\` array
+2. Use the correct dependency reference format (NEVER use \`$jobId\` directly)
+
+**Dependency reference formats:**
+- \`_jobDependency:jobId\` - Reference output URL from a completed job (general purpose)
+- \`_imageJobDependency:jobId\` - Reference image output specifically (use for \`image\` param in generate)
+- \`_videoJobDependency:jobId\` - Reference video output specifically (use for video URLs in merge/layer)
 - \`_transcriptJobDependency:jobId\` - Reference transcript output from a transcribe job
 
-Example with dependencies:
+**WRONG - Never do this:**
+\`\`\`json
+{
+  "image": "$img1",
+  "url": "$video1"
+}
+\`\`\`
+
+**CORRECT - Always use dependency references:**
+\`\`\`json
+{
+  "image": "_imageJobDependency:img1",
+  "url": "_videoJobDependency:video1"
+}
+\`\`\`
+
+**Example: Image to video workflow:**
 \`\`\`json
 {
   "jobs": [
@@ -308,6 +328,70 @@ Example with dependencies:
       },
       "dependsOn": ["bg-image"],
       "output": "$video"
+    }
+  ]
+}
+\`\`\`
+
+**Example: Multiple images animated and merged:**
+\`\`\`json
+{
+  "jobs": [
+    {
+      "id": "image1",
+      "type": "generateImage",
+      "params": {
+        "provider": "replicate",
+        "modelId": "bytedance/seedream-4",
+        "prompt": "A mountain landscape"
+      },
+      "output": "$image1"
+    },
+    {
+      "id": "image2",
+      "type": "generateImage",
+      "params": {
+        "provider": "replicate",
+        "modelId": "bytedance/seedream-4",
+        "prompt": "A beach scene"
+      },
+      "output": "$image2"
+    },
+    {
+      "id": "animation1",
+      "type": "generate",
+      "params": {
+        "provider": "replicate",
+        "modelId": "bytedance/seedance-1-pro",
+        "prompt": "Camera slowly flying forward",
+        "image": "_imageJobDependency:image1"
+      },
+      "dependsOn": ["image1"],
+      "output": "$animation1"
+    },
+    {
+      "id": "animation2",
+      "type": "generate",
+      "params": {
+        "provider": "replicate",
+        "modelId": "bytedance/seedance-1-pro",
+        "prompt": "Camera slowly flying forward",
+        "image": "_imageJobDependency:image2"
+      },
+      "dependsOn": ["image2"],
+      "output": "$animation2"
+    },
+    {
+      "id": "merged",
+      "type": "merge",
+      "params": {
+        "items": [
+          { "type": "video", "url": "_videoJobDependency:animation1" },
+          { "type": "video", "url": "_videoJobDependency:animation2" }
+        ]
+      },
+      "dependsOn": ["animation1", "animation2"],
+      "output": "$merged"
     }
   ]
 }
@@ -351,10 +435,12 @@ The signature header uses the execution's webhookSecret if provided.
 
 1. Every job must have a unique \`id\`
 2. Every job must have an \`output\` field (format: \`$jobId\`)
-3. Use \`dependsOn\` when a job needs output from another job
-4. Always specify \`provider\` and \`modelId\` for generation operations
-5. Use valid model names from the available models list
-6. For videos from images, include the \`image\` parameter in generate params
+3. **NEVER use \`$jobId\` to reference outputs from other jobs** - always use \`_jobDependency:jobId\`, \`_imageJobDependency:jobId\`, \`_videoJobDependency:jobId\`, or \`_transcriptJobDependency:jobId\`
+4. **ALWAYS add \`dependsOn\`** when a job references another job's output
+5. Always specify \`provider\` and \`modelId\` for generation operations
+6. Use valid model names from the available models list
+7. For videos from images, use \`_imageJobDependency:jobId\` for the \`image\` parameter
+8. For merge operations, use \`_videoJobDependency:jobId\` for video URLs and include ALL referenced jobs in \`dependsOn\`
 
 ## Response Format
 
