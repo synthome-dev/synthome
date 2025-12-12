@@ -155,12 +155,13 @@ export class MergeVideosJob extends BasePipelineJob {
     url: string,
     dependencies: Record<string, unknown>,
   ): string {
-    // Check for dependency markers
+    // Check for dependency markers (type-specific and generic)
     const videoMatch = url.match(/^_videoJobDependency:(.+)$/);
     const imageMatch = url.match(/^_imageJobDependency:(.+)$/);
     const audioMatch = url.match(/^_audioJobDependency:(.+)$/);
+    const genericMatch = url.match(/^_jobDependency:(.+)$/);
 
-    const match = videoMatch || imageMatch || audioMatch;
+    const match = videoMatch || imageMatch || audioMatch || genericMatch;
     if (!match || !match[1]) {
       // Not a dependency marker, return as-is
       return url;

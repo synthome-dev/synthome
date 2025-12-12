@@ -7,7 +7,7 @@ export class LayerJob extends BasePipelineJob {
 
   /**
    * Helper function to resolve job dependencies to media URLs
-   * Supports: _videoJobDependency, _imageJobDependency, _audioJobDependency
+   * Supports: _videoJobDependency, _imageJobDependency, _audioJobDependency, _jobDependency (generic)
    * Handles both result formats: { outputs: [{ url }] } and { url }
    */
   private resolveMediaDependency(
@@ -30,6 +30,12 @@ export class LayerJob extends BasePipelineJob {
     if (mediaItem.startsWith("_audioJobDependency:")) {
       const jobId = mediaItem.replace("_audioJobDependency:", "");
       return this.extractUrlFromDependency(jobId, dependencies, "audio");
+    }
+
+    // Check for generic dependency (supports any job type including merge)
+    if (mediaItem.startsWith("_jobDependency:")) {
+      const jobId = mediaItem.replace("_jobDependency:", "");
+      return this.extractUrlFromDependency(jobId, dependencies, "media");
     }
 
     return null;
