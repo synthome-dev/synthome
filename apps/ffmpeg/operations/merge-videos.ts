@@ -504,7 +504,10 @@ export async function mergeMedia(options: MergeMediaOptions): Promise<string> {
         );
       } else {
         // Multiple audio tracks - mix them together
-        const mixFilter = `${audioOutputs.join("")}amix=inputs=${audioOutputs.length}:duration=longest:normalize=0[outa]`;
+        // Use weights=1 for each input to prevent volume reduction (compatible with FFmpeg 4.x+)
+        // This replaces normalize=0 which is only available in FFmpeg 5.1+
+        const weights = Array(audioOutputs.length).fill("1").join(" ");
+        const mixFilter = `${audioOutputs.join("")}amix=inputs=${audioOutputs.length}:duration=longest:weights=${weights}[outa]`;
         audioFilters.push(mixFilter);
       }
 

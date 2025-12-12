@@ -8,7 +8,7 @@ export const seedance1ProRawOptionsSchema = z.object({
   seed: z.number().int().optional(),
   image: z.string().url().optional(),
   prompt: z.string(),
-  duration: z.number().int().optional(),
+  duration: z.number().optional(),
   camera_fixed: z.boolean().optional(),
   last_frame_image: z.string().url().optional(),
 });
