@@ -116,21 +116,136 @@ Composite multiple media layers together.
 }
 \`\`\`
 
-### addSubtitles
-Add subtitles to a video.
+### transcribe
+Transcribe audio from a video using speech-to-text.
 
+\`\`\`json
+{
+  "id": "transcribe",
+  "type": "transcribe",
+  "params": {
+    "provider": "replicate",
+    "modelId": "vaibhavs10/incredibly-fast-whisper:3ab86df6c8f54c11309d4d1f930ac292bad43ace52d10c80d87eb258b3c9f79c",
+    "videoUrl": "_videoJobDependency:final-video"
+  },
+  "dependsOn": ["final-video"],
+  "output": "$transcribe"
+}
+\`\`\`
+
+### addSubtitles
+Add subtitles/captions to a video. This requires a two-step process: first transcribe the audio, then burn the subtitles.
+
+**IMPORTANT: Subtitles must ALWAYS be the LAST operation in your workflow.**
+
+**Subtitle workflow requires two jobs:**
+1. **transcribe**: Uses Replicate with \`vaibhavs10/incredibly-fast-whisper\` to transcribe the audio from the final video
+2. **addSubtitles**: Burns the transcript into the video as subtitles
+
+**When to use subtitles:**
+- When the user explicitly requests captions, subtitles, or text overlay of speech
+- When creating accessible video content
+- When the video contains speech that should be readable
+
+**Critical rules for subtitles:**
+1. **Always the final step**: The transcribe + addSubtitles jobs must come AFTER the final video is complete
+2. **Depends on complete video**: If you have merge, layer, or other video operations, transcription must come AFTER all of them
+3. **Use the exact model**: Always use \`vaibhavs10/incredibly-fast-whisper:3ab86df6c8f54c11309d4d1f930ac292bad43ace52d10c80d87eb258b3c9f79c\` for transcription
+
+**Transcribe job:**
+\`\`\`json
+{
+  "id": "transcribe",
+  "type": "transcribe",
+  "params": {
+    "provider": "replicate",
+    "modelId": "vaibhavs10/incredibly-fast-whisper:3ab86df6c8f54c11309d4d1f930ac292bad43ace52d10c80d87eb258b3c9f79c",
+    "videoUrl": "_videoJobDependency:final-video"
+  },
+  "dependsOn": ["final-video"],
+  "output": "$transcribe"
+}
+\`\`\`
+
+**AddSubtitles job:**
 \`\`\`json
 {
   "id": "subtitled",
   "type": "addSubtitles",
   "params": {
-    "language": "en",
-    "style": "bold"
+    "transcript": "_transcriptJobDependency:transcribe",
+    "videoUrl": "_videoJobDependency:final-video"
   },
-  "dependsOn": ["vid1"],
+  "dependsOn": ["transcribe", "final-video"],
   "output": "$subtitled"
 }
 \`\`\`
+
+**Complete example workflow with subtitles:**
+\`\`\`json
+{
+  "jobs": [
+    {
+      "id": "audio1",
+      "type": "generateAudio",
+      "params": {
+        "provider": "elevenlabs",
+        "modelId": "elevenlabs/turbo-v2.5",
+        "text": "Welcome to our amazing video!",
+        "voice_id": "JBFqnCBsd6RMkjVDRZzb"
+      },
+      "output": "$audio1"
+    },
+    {
+      "id": "video1",
+      "type": "generate",
+      "params": {
+        "provider": "replicate",
+        "modelId": "minimax/video-01",
+        "prompt": "A beautiful landscape scene"
+      },
+      "output": "$video1"
+    },
+    {
+      "id": "merged",
+      "type": "merge",
+      "params": {
+        "items": [
+          { "type": "video", "url": "_jobDependency:video1" },
+          { "type": "audio", "url": "_jobDependency:audio1", "offset": 0 }
+        ]
+      },
+      "dependsOn": ["video1", "audio1"],
+      "output": "$merged"
+    },
+    {
+      "id": "transcribe",
+      "type": "transcribe",
+      "params": {
+        "provider": "replicate",
+        "modelId": "vaibhavs10/incredibly-fast-whisper:3ab86df6c8f54c11309d4d1f930ac292bad43ace52d10c80d87eb258b3c9f79c",
+        "videoUrl": "_videoJobDependency:merged"
+      },
+      "dependsOn": ["merged"],
+      "output": "$transcribe"
+    },
+    {
+      "id": "final-with-subtitles",
+      "type": "addSubtitles",
+      "params": {
+        "transcript": "_transcriptJobDependency:transcribe",
+        "videoUrl": "_videoJobDependency:merged"
+      },
+      "dependsOn": ["transcribe", "merged"],
+      "output": "$final-with-subtitles"
+    }
+  ]
+}
+\`\`\`
+
+Notice how:
+- \`transcribe\` depends on \`merged\` (the final video) and uses \`_videoJobDependency:merged\`
+- \`addSubtitles\` depends on both \`transcribe\` and \`merged\`, using \`_transcriptJobDependency\` for the transcript and \`_videoJobDependency\` for the video
 
 ## Available Models
 
@@ -165,6 +280,8 @@ Add subtitles to a video.
 Use \`dependsOn\` to specify job execution order. Reference outputs from previous jobs using:
 - \`_jobDependency:jobId\` - Reference output URL from a completed job
 - \`_imageJobDependency:jobId\` - Reference image output specifically
+- \`_videoJobDependency:jobId\` - Reference video output specifically
+- \`_transcriptJobDependency:jobId\` - Reference transcript output from a transcribe job
 
 Example with dependencies:
 \`\`\`json

@@ -164,6 +164,8 @@ export async function mergeMedia(options: MergeMediaOptions): Promise<string> {
               "yuv420p",
               "-r",
               "30",
+              "-preset",
+              "fast",
             ])
             .videoCodec("libx264")
             .toFormat("mp4")
@@ -209,6 +211,8 @@ export async function mergeMedia(options: MergeMediaOptions): Promise<string> {
             `scale=${targetWidth}:${targetHeight}:force_original_aspect_ratio=decrease,pad=${targetWidth}:${targetHeight}:(ow-iw)/2:(oh-ih)/2,setsar=1`,
             "-pix_fmt",
             "yuv420p",
+            "-preset",
+            "fast",
           ];
 
           if (videoHasAudio) {
@@ -252,95 +256,110 @@ export async function mergeMedia(options: MergeMediaOptions): Promise<string> {
       }
     }
 
-    // Step 2: Concatenate all visual items with audio
-    const concatPath = join(tmpdir(), `${nanoid()}_concat.mp4`);
-    tempFiles.push(concatPath);
+    // Step 2: Concatenate all visual items with audio (or skip if only 1 item)
+    let concatPath: string;
 
-    // Check if any visual items have audio
-    const hasAnyVideoAudio = processedVisualItems.some((item) => item.hasAudio);
+    if (processedVisualItems.length === 1) {
+      // Single item - skip concat step entirely, just use the scaled/processed file
+      console.log(`[MergeMedia] Single visual item, skipping concat step`);
+      concatPath = processedVisualItems[0].path;
+      // Remove from tempFiles since we're using it as concatPath
+      const idx = tempFiles.indexOf(concatPath);
+      if (idx > -1) tempFiles.splice(idx, 1);
+    } else {
+      concatPath = join(tmpdir(), `${nanoid()}_concat.mp4`);
+      tempFiles.push(concatPath);
 
-    console.log(
-      `[MergeMedia] Concatenating ${processedVisualItems.length} visual items (hasAnyVideoAudio: ${hasAnyVideoAudio})`,
-    );
+      // Check if any visual items have audio
+      const hasAnyVideoAudio = processedVisualItems.some(
+        (item) => item.hasAudio,
+      );
 
-    await new Promise<void>((resolve, reject) => {
-      let cmd = ffmpeg();
+      console.log(
+        `[MergeMedia] Concatenating ${processedVisualItems.length} visual items (hasAnyVideoAudio: ${hasAnyVideoAudio})`,
+      );
 
-      // Add all inputs
-      for (const item of processedVisualItems) {
-        cmd = cmd.input(item.path);
-      }
+      await new Promise<void>((resolve, reject) => {
+        let cmd = ffmpeg();
 
-      if (hasAnyVideoAudio) {
-        // Some videos have audio - need to handle audio concatenation
-        // For videos without audio, we need to generate silence
-        const filterParts: string[] = [];
-        const videoLabels: string[] = [];
-        const audioLabels: string[] = [];
-
-        for (let i = 0; i < processedVisualItems.length; i++) {
-          const item = processedVisualItems[i];
-          videoLabels.push(`[${i}:v]`);
-
-          if (item.hasAudio) {
-            audioLabels.push(`[${i}:a]`);
-          } else {
-            // Generate silence for items without audio
-            const silenceLabel = `silence${i}`;
-            filterParts.push(
-              `anullsrc=channel_layout=stereo:sample_rate=44100[${silenceLabel}]`,
-            );
-            // Trim silence to match video duration
-            const trimmedLabel = `strim${i}`;
-            filterParts.push(
-              `[${silenceLabel}]atrim=0:${item.duration}[${trimmedLabel}]`,
-            );
-            audioLabels.push(`[${trimmedLabel}]`);
-          }
+        // Add all inputs
+        for (const item of processedVisualItems) {
+          cmd = cmd.input(item.path);
         }
 
-        // Build concat filter for both video and audio
-        const videoInputs = videoLabels.join("");
-        const audioInputs = audioLabels.join("");
-        filterParts.push(
-          `${videoInputs}concat=n=${processedVisualItems.length}:v=1:a=0[outv]`,
-        );
-        filterParts.push(
-          `${audioInputs}concat=n=${processedVisualItems.length}:v=0:a=1[outa]`,
-        );
+        if (hasAnyVideoAudio) {
+          // Some videos have audio - need to handle audio concatenation
+          // For videos without audio, we need to generate silence
+          const filterParts: string[] = [];
+          const videoLabels: string[] = [];
+          const audioLabels: string[] = [];
 
-        cmd
-          .complexFilter(filterParts)
-          .outputOptions(["-map", "[outv]", "-map", "[outa]"])
-          .videoCodec("libx264")
-          .audioCodec("aac")
-          .outputOptions(["-pix_fmt", "yuv420p"])
-          .toFormat("mp4")
-          .on("start", (cmdStr: string) =>
-            console.log("[MergeMedia] Concat command:", cmdStr),
-          )
-          .on("error", reject)
-          .save(concatPath)
-          .on("end", resolve);
-      } else {
-        // No videos have audio - simple video-only concat
-        const inputs = processedVisualItems.map((_, i) => `[${i}:v]`).join("");
-        const filterComplex = `${inputs}concat=n=${processedVisualItems.length}:v=1:a=0[outv]`;
+          for (let i = 0; i < processedVisualItems.length; i++) {
+            const item = processedVisualItems[i];
+            videoLabels.push(`[${i}:v]`);
 
-        cmd
-          .complexFilter(filterComplex)
-          .outputOptions(["-map", "[outv]"])
-          .videoCodec("libx264")
-          .outputOptions(["-pix_fmt", "yuv420p"])
-          .toFormat("mp4")
-          .on("start", (cmdStr: string) =>
-            console.log("[MergeMedia] Concat command:", cmdStr),
-          )
-          .on("error", reject)
-          .save(concatPath)
-          .on("end", resolve);
-      }
-    });
+            if (item.hasAudio) {
+              audioLabels.push(`[${i}:a]`);
+            } else {
+              // Generate silence for items without audio
+              const silenceLabel = `silence${i}`;
+              filterParts.push(
+                `anullsrc=channel_layout=stereo:sample_rate=44100[${silenceLabel}]`,
+              );
+              // Trim silence to match video duration
+              const trimmedLabel = `strim${i}`;
+              filterParts.push(
+                `[${silenceLabel}]atrim=0:${item.duration}[${trimmedLabel}]`,
+              );
+              audioLabels.push(`[${trimmedLabel}]`);
+            }
+          }
+
+          // Build concat filter for both video and audio
+          const videoInputs = videoLabels.join("");
+          const audioInputs = audioLabels.join("");
+          filterParts.push(
+            `${videoInputs}concat=n=${processedVisualItems.length}:v=1:a=0[outv]`,
+          );
+          filterParts.push(
+            `${audioInputs}concat=n=${processedVisualItems.length}:v=0:a=1[outa]`,
+          );
+
+          cmd
+            .complexFilter(filterParts)
+            .outputOptions(["-map", "[outv]", "-map", "[outa]"])
+            .videoCodec("libx264")
+            .audioCodec("aac")
+            .outputOptions(["-pix_fmt", "yuv420p", "-preset", "fast"])
+            .toFormat("mp4")
+            .on("start", (cmdStr: string) =>
+              console.log("[MergeMedia] Concat command:", cmdStr),
+            )
+            .on("error", reject)
+            .save(concatPath)
+            .on("end", resolve);
+        } else {
+          // No videos have audio - simple video-only concat
+          const inputs = processedVisualItems
+            .map((_, i) => `[${i}:v]`)
+            .join("");
+          const filterComplex = `${inputs}concat=n=${processedVisualItems.length}:v=1:a=0[outv]`;
+
+          cmd
+            .complexFilter(filterComplex)
+            .outputOptions(["-map", "[outv]"])
+            .videoCodec("libx264")
+            .outputOptions(["-pix_fmt", "yuv420p", "-preset", "fast"])
+            .toFormat("mp4")
+            .on("start", (cmdStr: string) =>
+              console.log("[MergeMedia] Concat command:", cmdStr),
+            )
+            .on("error", reject)
+            .save(concatPath)
+            .on("end", resolve);
+        }
+      });
+    }
 
     // Step 3: If no overlay audio items, we're done - return path, not buffer
     if (audioItems.length === 0) {
