@@ -2,6 +2,40 @@ import { storageIntegrationService } from "@repo/api-keys";
 import { S3Client } from "bun";
 import JSZip from "jszip";
 
+// Default timeouts in milliseconds
+const DEFAULT_UPLOAD_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes for uploads
+const DEFAULT_DB_TIMEOUT_MS = 30 * 1000; // 30 seconds for DB queries
+const DEFAULT_DOWNLOAD_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes for downloads
+
+/**
+ * Wrap a promise with a timeout
+ * @param promise The promise to wrap
+ * @param timeoutMs Timeout in milliseconds
+ * @param operation Description of the operation for error messages
+ */
+async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  operation: string,
+): Promise<T> {
+  let timeoutId: Timer;
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(`${operation} timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+  });
+
+  try {
+    const result = await Promise.race([promise, timeoutPromise]);
+    clearTimeout(timeoutId!);
+    return result;
+  } catch (error) {
+    clearTimeout(timeoutId!);
+    throw error;
+  }
+}
+
 type FileBody =
   | string
   | ArrayBuffer
@@ -50,12 +84,20 @@ const isUrl = (str: string): boolean => {
 };
 
 const downloadFromUrl = async (url: string): Promise<Uint8Array> => {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Failed to download from URL: ${response.statusText}`);
-  }
-  const arrayBuffer = await response.arrayBuffer();
-  return new Uint8Array(arrayBuffer);
+  const fetchPromise = async () => {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to download from URL: ${response.statusText}`);
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    return new Uint8Array(arrayBuffer);
+  };
+
+  return withTimeout(
+    fetchPromise(),
+    DEFAULT_DOWNLOAD_TIMEOUT_MS,
+    `Download from ${url}`,
+  );
 };
 
 const convertToUint8Array = async (file: FileBody): Promise<Uint8Array> => {
@@ -108,7 +150,7 @@ function getEnvConfig(): StorageConfig {
 
   if (!accessKeyId || !secretAccessKey || !endpoint) {
     throw new Error(
-      "Storage configuration not found. Configure S3_ACCESS_KEY, S3_SECRET_KEY, and S3_URL environment variables."
+      "Storage configuration not found. Configure S3_ACCESS_KEY, S3_SECRET_KEY, and S3_URL environment variables.",
     );
   }
 
@@ -153,10 +195,11 @@ async function getClientForOrg(organizationId?: string): Promise<{
   config: StorageConfig;
 }> {
   if (organizationId) {
-    const orgConfig =
-      await storageIntegrationService.getStorageConfigForExecution(
-        organizationId
-      );
+    const orgConfig = await withTimeout(
+      storageIntegrationService.getStorageConfigForExecution(organizationId),
+      DEFAULT_DB_TIMEOUT_MS,
+      `Storage config lookup for org ${organizationId}`,
+    );
 
     if (orgConfig) {
       return {
@@ -172,22 +215,41 @@ async function getClientForOrg(organizationId?: string): Promise<{
 const upload = async (
   path: string,
   file: FileBody,
-  options?: UploadOptions
+  options?: UploadOptions,
 ): Promise<{ success: true; url: string } | { error: Error }> => {
+  const startTime = Date.now();
   try {
+    console.log(`[Storage] Starting upload to: ${path}`);
     const { s3, config } = await getClientForOrg(options?.organizationId);
-    const body = await convertToUint8Array(file);
+    console.log(`[Storage] Got client for org (${Date.now() - startTime}ms)`);
 
-    await s3.write(path, body, {
-      type: options?.contentType,
-    });
+    const body = await convertToUint8Array(file);
+    const fileSizeKB = Math.round(body.length / 1024);
+    console.log(
+      `[Storage] Converted to buffer: ${fileSizeKB}KB (${Date.now() - startTime}ms)`,
+    );
+
+    await withTimeout(
+      s3.write(path, body, {
+        type: options?.contentType,
+      }),
+      DEFAULT_UPLOAD_TIMEOUT_MS,
+      `S3 upload to ${path} (${fileSizeKB}KB)`,
+    );
+
+    console.log(
+      `[Storage] Upload completed: ${path} (${Date.now() - startTime}ms)`,
+    );
 
     return {
       success: true,
       url: `${config.cdnUrl}/${path}`,
     };
   } catch (error) {
-    console.error("Error uploading file:", error);
+    console.error(
+      `[Storage] Upload failed after ${Date.now() - startTime}ms:`,
+      error,
+    );
     return {
       error: error as Error,
     };
@@ -197,7 +259,7 @@ const upload = async (
 const zipAndUpload = async (
   path: string,
   files: File[],
-  options?: ZipUploadOptions
+  options?: ZipUploadOptions,
 ): Promise<{ success: true; url: string } | { error: Error }> => {
   const zip = new JSZip();
 
@@ -217,15 +279,19 @@ const zipAndUpload = async (
 
 const deleteFile = async (
   path: string,
-  options?: DeleteOptions
+  options?: DeleteOptions,
 ): Promise<void> => {
   const { s3 } = await getClientForOrg(options?.organizationId);
-  await s3.delete(path);
+  await withTimeout(
+    s3.delete(path),
+    DEFAULT_DB_TIMEOUT_MS,
+    `S3 delete ${path}`,
+  );
 };
 
 const getFileUrl = async (
   path: string,
-  options?: GetFileUrlOptions
+  options?: GetFileUrlOptions,
 ): Promise<string> => {
   const { config } = await getClientForOrg(options?.organizationId);
   return `${config.cdnUrl}/${path}`;
