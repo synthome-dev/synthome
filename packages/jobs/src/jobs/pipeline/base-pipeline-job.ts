@@ -1,6 +1,7 @@
 import type PgBoss from "pg-boss";
 import { BaseJob } from "../../core/base-job";
 import { db, executionJobs, executions, eq, logAction } from "@repo/db";
+import { JobClient } from "../../client/job-client";
 
 export interface PipelineJobData {
   executionId: string;
@@ -130,9 +131,8 @@ export abstract class BasePipelineJob extends BaseJob<PipelineJobData> {
     ) {
       try {
         // Determine if this is overage
-        const { checkIfOverage, calculateOverageCost } = await import(
-          "@repo/db"
-        );
+        const { checkIfOverage, calculateOverageCost } =
+          await import("@repo/db");
         const isOverage = await checkIfOverage(execution.organizationId);
         const estimatedCost = isOverage
           ? await calculateOverageCost(execution.organizationId, 1)
@@ -173,11 +173,40 @@ export abstract class BasePipelineJob extends BaseJob<PipelineJobData> {
     }
 
     // Trigger orchestrator to check execution completion and emit dependent jobs
-    const { getOrchestrator } = await import(
-      "../../orchestrator/execution-orchestrator"
-    );
+    const { getOrchestrator } =
+      await import("../../orchestrator/execution-orchestrator");
     const orchestrator = await getOrchestrator();
     await orchestrator.checkAndEmitDependentJobs(job.executionId, job.jobId);
+
+    // Emit async job webhook delivery if sendJobWebhook is true (uses execution's webhook URL)
+    const params = (job.metadata as any)?.params;
+    if (params?.sendJobWebhook === true && execution?.webhook) {
+      try {
+        const jobClient = new JobClient();
+        await jobClient.start();
+        await jobClient.emit("job-webhook-delivery", {
+          executionId: job.executionId,
+          jobId: job.jobId,
+          operation: job.operation,
+          status: "completed",
+          result,
+          error: null,
+          completedAt: new Date().toISOString(),
+          webhook: execution.webhook,
+          webhookSecret: execution.webhookSecret,
+        });
+        await jobClient.stop();
+        console.log(
+          `[BasePipelineJob] Emitted job webhook delivery for ${job.jobId}`,
+        );
+      } catch (webhookError) {
+        // Don't fail the job if webhook emission fails
+        console.error(
+          `[BasePipelineJob] Failed to emit job webhook for ${job.jobId}:`,
+          webhookError,
+        );
+      }
+    }
   }
 
   protected async failJob(jobRecordId: string, error: string): Promise<void> {
@@ -201,9 +230,8 @@ export abstract class BasePipelineJob extends BaseJob<PipelineJobData> {
       .where(eq(executionJobs.id, jobRecordId));
 
     // Trigger orchestrator to check execution completion
-    const { getOrchestrator } = await import(
-      "../../orchestrator/execution-orchestrator"
-    );
+    const { getOrchestrator } =
+      await import("../../orchestrator/execution-orchestrator");
     const orchestrator = await getOrchestrator();
     await orchestrator.checkAndEmitDependentJobs(job.executionId, job.jobId);
   }

@@ -3,6 +3,7 @@ import type { MediaOutput } from "@repo/model-schemas";
 import { storage } from "@repo/storage";
 import { generateId } from "@repo/tools";
 import { getOrchestrator } from "../orchestrator/execution-orchestrator";
+import { JobClient } from "../client/job-client";
 
 /**
  * Complete an async job after receiving webhook or polling result
@@ -119,6 +120,36 @@ export async function completeAsyncJob(
     // 5. Trigger dependent jobs via orchestrator
     const orchestrator = await getOrchestrator();
     await orchestrator.checkAndEmitDependentJobs(job.executionId, job.jobId);
+
+    // 6. Emit async job webhook delivery if sendJobWebhook is true (uses execution's webhook URL)
+    const params = (job.metadata as any)?.params;
+    if (params?.sendJobWebhook === true && execution?.webhook) {
+      try {
+        const jobClient = new JobClient();
+        await jobClient.start();
+        await jobClient.emit("job-webhook-delivery", {
+          executionId: job.executionId,
+          jobId: job.jobId,
+          operation: job.operation,
+          status: "completed",
+          result,
+          error: null,
+          completedAt: new Date().toISOString(),
+          webhook: execution.webhook,
+          webhookSecret: execution.webhookSecret,
+        });
+        await jobClient.stop();
+        console.log(
+          `[AsyncJobCompletion] Emitted job webhook delivery for ${job.jobId}`,
+        );
+      } catch (webhookError) {
+        // Don't fail the job if webhook emission fails
+        console.error(
+          `[AsyncJobCompletion] Failed to emit job webhook for ${job.jobId}:`,
+          webhookError,
+        );
+      }
+    }
 
     console.log(
       `[AsyncJobCompletion] Successfully completed job ${jobRecordId}`,

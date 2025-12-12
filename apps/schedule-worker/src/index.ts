@@ -9,6 +9,7 @@ import {
   RemoveBackgroundJob,
   RemoveImageBackgroundJob,
   WebhookDeliveryJob,
+  JobWebhookDeliveryJob,
   AddSubtitlesJob,
   TranscribeJob,
 } from "@repo/jobs";
@@ -28,6 +29,7 @@ jobManager.register(LayerJob);
 jobManager.register(AddSubtitlesJob);
 jobManager.register(TranscribeJob);
 jobManager.register(WebhookDeliveryJob);
+jobManager.register(JobWebhookDeliveryJob);
 
 const pollingWorker = new PollingWorker({
   intervalMs: 10000, // Check every 10 seconds

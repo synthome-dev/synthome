@@ -493,9 +493,20 @@ export async function mergeMedia(options: MergeMediaOptions): Promise<string> {
         audioOutputs.push(`[${outputLabel}]`);
       }
 
-      // Mix all audio tracks together
-      const mixFilter = `${audioOutputs.join("")}amix=inputs=${audioOutputs.length}:duration=longest:normalize=0[outa]`;
-      audioFilters.push(mixFilter);
+      // Mix all audio tracks together (or pass through if only one)
+      if (audioOutputs.length === 1) {
+        // Single audio track - just rename it to [outa], no mixing needed
+        // Replace the last filter's output label with [outa]
+        const lastFilterIndex = audioFilters.length - 1;
+        audioFilters[lastFilterIndex] = audioFilters[lastFilterIndex].replace(
+          /\[[^\]]+\]$/,
+          "[outa]",
+        );
+      } else {
+        // Multiple audio tracks - mix them together
+        const mixFilter = `${audioOutputs.join("")}amix=inputs=${audioOutputs.length}:duration=longest:normalize=0[outa]`;
+        audioFilters.push(mixFilter);
+      }
 
       cmd
         .complexFilter(audioFilters)

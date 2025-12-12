@@ -54,6 +54,7 @@ export type {
   GenerateVideoOptions,
   GenerateVideoProvider,
   GenerateVideoUnified,
+  JobWebhookOptions,
 } from "./compose/generate-video.js";
 
 export { generateImage } from "./compose/generate-image.js";

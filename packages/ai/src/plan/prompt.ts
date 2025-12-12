@@ -196,6 +196,40 @@ Example with dependencies:
 }
 \`\`\`
 
+## Per-Job Webhooks (Optional)
+
+Add \`sendJobWebhook: true\` to any generate job params to receive a webhook when that specific job completes. The webhook is sent to the execution's webhook URL (set at execution level). This is useful for caching/reusing generated assets independently.
+
+\`\`\`json
+{
+  "id": "img1",
+  "type": "generateImage",
+  "params": {
+    "provider": "replicate",
+    "modelId": "bytedance/seedream-4",
+    "prompt": "A sunset",
+    "sendJobWebhook": true
+  },
+  "output": "$img1"
+}
+\`\`\`
+
+When the job completes, a POST request is sent to the execution's webhook URL with:
+\`\`\`json
+{
+  "executionId": "exec_123",
+  "jobId": "img1",
+  "operation": "generateImage",
+  "status": "completed",
+  "result": {
+    "outputs": [{ "type": "image", "url": "https://cdn.../output.png" }]
+  },
+  "completedAt": "2024-01-01T12:00:00Z"
+}
+\`\`\`
+
+The signature header uses the execution's webhookSecret if provided.
+
 ## Rules
 
 1. Every job must have a unique \`id\`

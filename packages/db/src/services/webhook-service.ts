@@ -29,8 +29,8 @@ export async function findPendingWebhooks() {
         // Webhook not yet delivered
         sql`${executions.webhookDeliveredAt} IS NULL`,
         // Haven't exceeded retry limit
-        lt(executions.webhookDeliveryAttempts, MAX_RETRY_ATTEMPTS)
-      )
+        lt(executions.webhookDeliveryAttempts, MAX_RETRY_ATTEMPTS),
+      ),
     );
 
   // Also get failed executions
@@ -42,8 +42,8 @@ export async function findPendingWebhooks() {
         eq(executions.status, "failed"),
         sql`${executions.webhook} IS NOT NULL`,
         sql`${executions.webhookDeliveredAt} IS NULL`,
-        lt(executions.webhookDeliveryAttempts, MAX_RETRY_ATTEMPTS)
-      )
+        lt(executions.webhookDeliveryAttempts, MAX_RETRY_ATTEMPTS),
+      ),
     );
 
   return [...pendingExecutions, ...failedExecutions];
@@ -93,7 +93,7 @@ export async function deliverWebhook(execution: {
   if (execution.webhookSecret) {
     headers["X-Webhook-Signature"] = generateSignature(
       payloadString,
-      execution.webhookSecret
+      execution.webhookSecret,
     );
   }
 
@@ -101,7 +101,7 @@ export async function deliverWebhook(execution: {
 
   try {
     console.log(
-      `[WebhookService] Delivering webhook to ${execution.webhook} (attempt ${currentAttempt}/${MAX_RETRY_ATTEMPTS})`
+      `[WebhookService] Delivering webhook to ${execution.webhook} (attempt ${currentAttempt}/${MAX_RETRY_ATTEMPTS})`,
     );
 
     const response = await fetch(execution.webhook, {
@@ -138,7 +138,7 @@ export async function deliverWebhook(execution: {
       .where(eq(executions.id, execution.id));
 
     console.log(
-      `[WebhookService] ✅ Webhook delivered successfully to ${execution.webhook}`
+      `[WebhookService] ✅ Webhook delivered successfully to ${execution.webhook}`,
     );
 
     return { success: true };
@@ -146,7 +146,7 @@ export async function deliverWebhook(execution: {
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error";
     console.error(
-      `[WebhookService] Failed to deliver webhook: ${errorMessage}`
+      `[WebhookService] Failed to deliver webhook: ${errorMessage}`,
     );
 
     // Update delivery attempt and error
@@ -163,6 +163,90 @@ export async function deliverWebhook(execution: {
 }
 
 /**
+ * Job webhook payload for per-job webhook delivery
+ */
+interface JobWebhookPayload {
+  executionId: string;
+  jobId: string;
+  operation: string;
+  status: "completed" | "failed";
+  result: any | null;
+  error: string | null;
+  completedAt: string;
+}
+
+/**
+ * Deliver webhook for a specific job completion (opt-in per-job webhook)
+ * This is triggered when a job has sendJobWebhook: true and uses the execution's webhook URL
+ */
+export async function deliverJobWebhook(job: {
+  executionId: string;
+  jobId: string;
+  operation: string;
+  status: string;
+  result: any;
+  error: string | null;
+  completedAt: Date | null;
+  webhook: string;
+  webhookSecret?: string | null;
+}): Promise<{ success: boolean; error?: string }> {
+  const payload: JobWebhookPayload = {
+    executionId: job.executionId,
+    jobId: job.jobId,
+    operation: job.operation,
+    status: job.status as "completed" | "failed",
+    result: job.result,
+    error: job.error,
+    completedAt: job.completedAt?.toISOString() || new Date().toISOString(),
+  };
+
+  const payloadString = JSON.stringify(payload);
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+
+  // Add signature if secret is provided
+  if (job.webhookSecret) {
+    headers["X-Webhook-Signature"] = generateSignature(
+      payloadString,
+      job.webhookSecret,
+    );
+  }
+
+  try {
+    console.log(
+      `[WebhookService] Delivering job webhook for ${job.jobId} to ${job.webhook}`,
+    );
+
+    const response = await fetch(job.webhook, {
+      method: "POST",
+      headers,
+      body: payloadString,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => "Unknown error");
+      const error = `Job webhook delivery failed: ${response.status} ${response.statusText} - ${errorText}`;
+      console.error(`[WebhookService] ${error}`);
+      return { success: false, error };
+    }
+
+    console.log(
+      `[WebhookService] ✅ Job webhook delivered successfully for ${job.jobId} to ${job.webhook}`,
+    );
+
+    return { success: true };
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    console.error(
+      `[WebhookService] Failed to deliver job webhook: ${errorMessage}`,
+    );
+    return { success: false, error: errorMessage };
+  }
+}
+
+/**
  * Process all pending webhooks
  */
 export async function processWebhookDeliveries(): Promise<{
@@ -173,7 +257,7 @@ export async function processWebhookDeliveries(): Promise<{
   const pendingWebhooks = await findPendingWebhooks();
 
   console.log(
-    `[WebhookService] Found ${pendingWebhooks.length} pending webhooks to deliver`
+    `[WebhookService] Found ${pendingWebhooks.length} pending webhooks to deliver`,
   );
 
   let delivered = 0;

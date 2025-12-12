@@ -6,6 +6,15 @@ import type {
   AudioOperation,
 } from "../core/video.js";
 
+/**
+ * Optional per-job webhook notification
+ * When true, a webhook will be sent to the execution's webhook URL when this job completes
+ */
+export interface JobWebhookOptions {
+  /** Send a webhook when this specific job completes (uses execution's webhook URL) */
+  sendJobWebhook?: boolean;
+}
+
 export interface GenerateVideoOptions<TModelOptions extends ProviderConfig> {
   model: VideoModel<TModelOptions>;
   image?: string | ImageOperation; // Direct URL or nested image generation
@@ -13,11 +22,13 @@ export interface GenerateVideoOptions<TModelOptions extends ProviderConfig> {
 }
 
 export type GenerateVideoUnified = GenerateVideoOptions<ProviderConfig> &
-  UnifiedVideoOptions;
+  UnifiedVideoOptions &
+  JobWebhookOptions;
 
 export type GenerateVideoProvider<TModelOptions extends ProviderConfig> =
   GenerateVideoOptions<TModelOptions> &
-    Partial<Omit<TModelOptions, "image" | "audio" | "apiKey">>;
+    Partial<Omit<TModelOptions, "image" | "audio" | "apiKey">> &
+    JobWebhookOptions;
 
 function isUnifiedOptions(
   options: GenerateVideoUnified | GenerateVideoProvider<any>,
@@ -65,6 +76,7 @@ export function generateVideo<TModelOptions extends ProviderConfig>(
       startImage,
       endImage,
       cameraMotion,
+      sendJobWebhook,
     } = options;
 
     params = {
@@ -82,6 +94,7 @@ export function generateVideo<TModelOptions extends ProviderConfig>(
       startImage,
       endImage,
       cameraMotion,
+      sendJobWebhook,
     };
   } else {
     params = {
