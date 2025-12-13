@@ -148,10 +148,7 @@ export class GenerateImageJob extends BasePipelineJob {
           // Parse the raw response using the model's polling parser
           const parsedResult = parseModelPolling(modelId, rawResponse);
 
-          console.log(
-            `[GenerateImageJob] Image generated successfully:`,
-            parsedResult,
-          );
+          console.log(`[GenerateImageJob] Image generated successfully`);
 
           await this.updateJobProgress(jobRecordId, "completed", 100);
           await this.completeJob(jobRecordId, parsedResult);

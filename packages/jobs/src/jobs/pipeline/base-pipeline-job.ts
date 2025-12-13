@@ -161,7 +161,7 @@ export abstract class BasePipelineJob extends BaseJob<PipelineJobData> {
           .where(eq(executionJobs.id, jobRecordId));
 
         console.log(
-          `[BasePipelineJob] Logged action for job ${job.jobId} (${job.operation}) - isOverage: ${isOverage}`,
+          `[BasePipelineJob] Logged action for job ${job.jobId} (${job.operation})`,
         );
       } catch (error) {
         console.error(

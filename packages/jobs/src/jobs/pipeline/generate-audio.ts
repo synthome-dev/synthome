@@ -156,7 +156,7 @@ export class GenerateAudioJob extends BasePipelineJob {
           // Parse the raw response using the model's polling parser
           const parsedResult = parseModelPolling(modelId, rawResponse);
 
-          console.log(`[GenerateAudioJob] Audio generated successfully:`);
+          console.log(`[GenerateAudioJob] Audio generated successfully`);
 
           // Check if result contains base64 audio string and upload to CDN
           // New format: { status, outputs: [{ type, url, mimeType }] }

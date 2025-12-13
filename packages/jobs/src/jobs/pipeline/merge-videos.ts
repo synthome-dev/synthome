@@ -138,7 +138,7 @@ export class MergeVideosJob extends BasePipelineJob {
       const orchestrator = await getOrchestrator();
       await orchestrator.checkAndEmitDependentJobs(executionId, jobId);
 
-      console.log(`[MergeVideosJob] Media merged successfully:`, result);
+      console.log(`[MergeVideosJob] Media merged successfully`);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";

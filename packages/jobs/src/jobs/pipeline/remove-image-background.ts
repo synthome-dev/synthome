@@ -179,8 +179,7 @@ export class RemoveImageBackgroundJob extends BasePipelineJob {
           const parsedResult = parseModelPolling(modelId, rawResponse);
 
           console.log(
-            `[RemoveImageBackgroundJob] Background removed successfully:`,
-            parsedResult,
+            `[RemoveImageBackgroundJob] Background removed successfully`,
           );
 
           await this.updateJobProgress(jobRecordId, "completed", 100);

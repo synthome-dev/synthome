@@ -6,6 +6,32 @@ import { unlink } from "fs/promises";
 import type { MergeMediaOptions, MergeVideosOptions } from "../core/types";
 import { streamToDisk } from "../core/utils";
 
+// Timeout for FFmpeg operations (5 minutes)
+const FFMPEG_TIMEOUT_MS = 5 * 60 * 1000;
+
+/**
+ * Wrap a promise with a timeout
+ */
+function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  operation: string,
+): Promise<T> {
+  let timeoutId: Timer;
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(
+        new Error(`[MergeMedia] ${operation} timed out after ${timeoutMs}ms`),
+      );
+    }, timeoutMs);
+  });
+
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    clearTimeout(timeoutId);
+  });
+}
+
 /**
  * Legacy merge function for backwards compatibility
  * Only merges videos without audio support
@@ -279,86 +305,131 @@ export async function mergeMedia(options: MergeMediaOptions): Promise<string> {
         `[MergeMedia] Concatenating ${processedVisualItems.length} visual items (hasAnyVideoAudio: ${hasAnyVideoAudio})`,
       );
 
-      await new Promise<void>((resolve, reject) => {
-        let cmd = ffmpeg();
+      const concatStartTime = Date.now();
 
-        // Add all inputs
-        for (const item of processedVisualItems) {
-          cmd = cmd.input(item.path);
-        }
+      await withTimeout(
+        new Promise<void>((resolve, reject) => {
+          let cmd = ffmpeg();
 
-        if (hasAnyVideoAudio) {
-          // Some videos have audio - need to handle audio concatenation
-          // For videos without audio, we need to generate silence
-          const filterParts: string[] = [];
-          const videoLabels: string[] = [];
-          const audioLabels: string[] = [];
-
-          for (let i = 0; i < processedVisualItems.length; i++) {
-            const item = processedVisualItems[i];
-            videoLabels.push(`[${i}:v]`);
-
-            if (item.hasAudio) {
-              audioLabels.push(`[${i}:a]`);
-            } else {
-              // Generate silence for items without audio
-              const silenceLabel = `silence${i}`;
-              filterParts.push(
-                `anullsrc=channel_layout=stereo:sample_rate=44100[${silenceLabel}]`,
-              );
-              // Trim silence to match video duration
-              const trimmedLabel = `strim${i}`;
-              filterParts.push(
-                `[${silenceLabel}]atrim=0:${item.duration}[${trimmedLabel}]`,
-              );
-              audioLabels.push(`[${trimmedLabel}]`);
-            }
+          // Add all inputs
+          for (const item of processedVisualItems) {
+            cmd = cmd.input(item.path);
           }
 
-          // Build concat filter for both video and audio
-          const videoInputs = videoLabels.join("");
-          const audioInputs = audioLabels.join("");
-          filterParts.push(
-            `${videoInputs}concat=n=${processedVisualItems.length}:v=1:a=0[outv]`,
-          );
-          filterParts.push(
-            `${audioInputs}concat=n=${processedVisualItems.length}:v=0:a=1[outa]`,
-          );
+          if (hasAnyVideoAudio) {
+            // Some videos have audio - need to handle audio concatenation
+            // For videos without audio, we need to generate silence
+            const filterParts: string[] = [];
+            const videoLabels: string[] = [];
+            const audioLabels: string[] = [];
 
-          cmd
-            .complexFilter(filterParts)
-            .outputOptions(["-map", "[outv]", "-map", "[outa]"])
-            .videoCodec("libx264")
-            .audioCodec("aac")
-            .outputOptions(["-pix_fmt", "yuv420p", "-preset", "fast"])
-            .toFormat("mp4")
-            .on("start", (cmdStr: string) =>
-              console.log("[MergeMedia] Concat command:", cmdStr),
-            )
-            .on("error", reject)
-            .save(concatPath)
-            .on("end", resolve);
-        } else {
-          // No videos have audio - simple video-only concat
-          const inputs = processedVisualItems
-            .map((_, i) => `[${i}:v]`)
-            .join("");
-          const filterComplex = `${inputs}concat=n=${processedVisualItems.length}:v=1:a=0[outv]`;
+            for (let i = 0; i < processedVisualItems.length; i++) {
+              const item = processedVisualItems[i];
+              videoLabels.push(`[${i}:v]`);
 
-          cmd
-            .complexFilter(filterComplex)
-            .outputOptions(["-map", "[outv]"])
-            .videoCodec("libx264")
-            .outputOptions(["-pix_fmt", "yuv420p", "-preset", "fast"])
-            .toFormat("mp4")
-            .on("start", (cmdStr: string) =>
-              console.log("[MergeMedia] Concat command:", cmdStr),
-            )
-            .on("error", reject)
-            .save(concatPath)
-            .on("end", resolve);
-        }
-      });
+              if (item.hasAudio) {
+                audioLabels.push(`[${i}:a]`);
+              } else {
+                // Generate silence for items without audio
+                const silenceLabel = `silence${i}`;
+                filterParts.push(
+                  `anullsrc=channel_layout=stereo:sample_rate=44100[${silenceLabel}]`,
+                );
+                // Trim silence to match video duration
+                const trimmedLabel = `strim${i}`;
+                filterParts.push(
+                  `[${silenceLabel}]atrim=0:${item.duration}[${trimmedLabel}]`,
+                );
+                audioLabels.push(`[${trimmedLabel}]`);
+              }
+            }
+
+            // Build concat filter for both video and audio
+            const videoInputs = videoLabels.join("");
+            const audioInputs = audioLabels.join("");
+            filterParts.push(
+              `${videoInputs}concat=n=${processedVisualItems.length}:v=1:a=0[outv]`,
+            );
+            filterParts.push(
+              `${audioInputs}concat=n=${processedVisualItems.length}:v=0:a=1[outa]`,
+            );
+
+            cmd
+              .complexFilter(filterParts)
+              .outputOptions(["-map", "[outv]", "-map", "[outa]"])
+              .videoCodec("libx264")
+              .audioCodec("aac")
+              .outputOptions(["-pix_fmt", "yuv420p", "-preset", "fast"])
+              .toFormat("mp4")
+              .on("start", (cmdStr: string) =>
+                console.log("[MergeMedia] Concat command:", cmdStr),
+              )
+              .on("stderr", (stderrLine: string) => {
+                // Log progress from FFmpeg stderr (contains encoding progress)
+                if (
+                  stderrLine.includes("frame=") ||
+                  stderrLine.includes("time=")
+                ) {
+                  console.log(
+                    "[MergeMedia] Concat progress:",
+                    stderrLine.trim(),
+                  );
+                }
+              })
+              .on("error", (err: Error) => {
+                console.error("[MergeMedia] Concat error:", err.message);
+                reject(err);
+              })
+              .on("end", () => {
+                console.log(
+                  `[MergeMedia] Concat completed in ${Date.now() - concatStartTime}ms`,
+                );
+                resolve();
+              })
+              .save(concatPath);
+          } else {
+            // No videos have audio - simple video-only concat
+            const inputs = processedVisualItems
+              .map((_, i) => `[${i}:v]`)
+              .join("");
+            const filterComplex = `${inputs}concat=n=${processedVisualItems.length}:v=1:a=0[outv]`;
+
+            cmd
+              .complexFilter(filterComplex)
+              .outputOptions(["-map", "[outv]"])
+              .videoCodec("libx264")
+              .outputOptions(["-pix_fmt", "yuv420p", "-preset", "fast"])
+              .toFormat("mp4")
+              .on("start", (cmdStr: string) =>
+                console.log("[MergeMedia] Concat command:", cmdStr),
+              )
+              .on("stderr", (stderrLine: string) => {
+                if (
+                  stderrLine.includes("frame=") ||
+                  stderrLine.includes("time=")
+                ) {
+                  console.log(
+                    "[MergeMedia] Concat progress:",
+                    stderrLine.trim(),
+                  );
+                }
+              })
+              .on("error", (err: Error) => {
+                console.error("[MergeMedia] Concat error:", err.message);
+                reject(err);
+              })
+              .on("end", () => {
+                console.log(
+                  `[MergeMedia] Concat completed in ${Date.now() - concatStartTime}ms`,
+                );
+                resolve();
+              })
+              .save(concatPath);
+          }
+        }),
+        FFMPEG_TIMEOUT_MS,
+        "Concat operation",
+      );
     }
 
     // Step 3: If no overlay audio items, we're done - return path, not buffer

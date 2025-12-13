@@ -25,6 +25,7 @@ declare module "fluent-ffmpeg" {
     ): this;
     on(event: "end", callback: () => void): this;
     on(event: "error", callback: (err: Error) => void): this;
+    on(event: "stderr", callback: (stderrLine: string) => void): this;
     save(outputPath: string): this;
   }
 

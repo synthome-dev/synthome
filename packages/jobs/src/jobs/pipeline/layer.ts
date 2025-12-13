@@ -369,7 +369,7 @@ export class LayerJob extends BasePipelineJob {
       // Complete the job with result
       await this.completeJob(jobRecordId, result);
 
-      console.log(`[LayerJob] Job completed successfully:`, result);
+      console.log(`[LayerJob] Job completed successfully`);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error";
