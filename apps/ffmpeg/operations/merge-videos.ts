@@ -232,24 +232,30 @@ export async function mergeMedia(options: MergeMediaOptions): Promise<string> {
           }
 
           // Build output options - preserve audio if present
+          // IMPORTANT: Normalize to 30fps to avoid frame duplication during concat
           const outputOpts = [
             "-vf",
             `scale=${targetWidth}:${targetHeight}:force_original_aspect_ratio=decrease,pad=${targetWidth}:${targetHeight}:(ow-iw)/2:(oh-ih)/2,setsar=1`,
             "-pix_fmt",
             "yuv420p",
+            "-r",
+            "30",
             "-preset",
             "fast",
           ];
 
           if (videoHasAudio) {
-            // Preserve audio with volume adjustment
-            if (volume !== 1) {
-              outputOpts.push("-af", `volume=${volume}`);
-            }
+            // Preserve audio with volume adjustment and normalize sample rate for concat
+            const audioFilter =
+              volume !== 1
+                ? `volume=${volume},aresample=44100`
+                : "aresample=44100";
+            outputOpts.push("-af", audioFilter);
             cmd
               .outputOptions(outputOpts)
               .videoCodec("libx264")
               .audioCodec("aac")
+              .outputOptions(["-ar", "44100", "-ac", "2"]) // Normalize audio: 44.1kHz stereo
               .toFormat("mp4")
               .on("start", (cmdStr: string) =>
                 console.log("[MergeMedia] Scale video command:", cmdStr),
